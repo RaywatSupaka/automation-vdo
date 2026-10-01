@@ -1,0 +1,128 @@
+{
+  "manifest_version": 3,
+  "name": "SmartFlow AI",
+  "version": "0.15.486",
+  "description": "ผู้ช่วยเบราว์เซอร์ SmartFlow AI สำหรับ Shopee, ChatGPT/Gemini Web, Google Flow และ Meta AI Video (ทดลอง)",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabs",
+    "downloads",
+    "clipboardWrite",
+    "alarms",
+    "debugger"
+  ],
+  "host_permissions": [
+    "https://affiliate.shopee.co.th/*",
+    "https://shopee.co.th/*",
+    "https://chatgpt.com/*",
+    "https://auth.openai.com/*",
+    "https://*.oaiusercontent.com/*",
+    "https://*.blob.core.windows.net/*",
+    "https://gemini.google.com/*",
+    "https://accounts.google.com/*",
+    "https://*.googleusercontent.com/*",
+    "https://*.gstatic.com/*",
+    "https://*.ggpht.com/*",
+    "https://labs.google/*",
+    "https://flow.google.com/*",
+    "https://www.meta.ai/*",
+    "http://127.0.0.1:8765/*"
+  ],
+  "action": {
+    "default_title": "SmartFlow AI",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://affiliate.shopee.co.th/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://shopee.co.th/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "single_answer.js",
+        "conversation_recovery.js",
+        "chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "single_answer.js",
+        "chatgpt.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/*",
+        "https://labs.google/flow/*",
+        "https://flow.google.com/*"
+      ],
+      "js": [
+        "src/platforms/google-flow/injected-result-observer.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/*",
+        "https://labs.google/flow/*",
+        "https://flow.google.com/*"
+      ],
+      "js": [
+        "src/platforms/google-flow/result-observer-content.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://labs.google/fx/*",
+        "https://labs.google/flow/*",
+        "https://flow.google.com/*"
+      ],
+      "js": [
+        "single_answer.js",
+        "flow.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

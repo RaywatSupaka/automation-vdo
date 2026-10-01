@@ -1,0 +1,20 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync('browser_extension/background.js', 'utf8');
+const start = source.indexOf('function flowSpeechAttemptMatches(');
+const end = source.indexOf('\nfunction aiRunStorageKey(', start);
+assert(start >= 0 && end > start);
+const context = vm.createContext({});
+vm.runInContext(source.slice(start, end), context);
+
+const old = {jobId:'STORY-TEST', shotIndex:3, tabId:7};
+const retry = {jobId:'STORY-TEST', shotIndex:3, tabId:8, speechRetryId:'fresh-one'};
+assert.equal(context.flowSpeechAttemptMatches({speech_retry_id:'fresh-one'}, old), false);
+assert.equal(context.flowSpeechAttemptMatches({speech_retry_id:'fresh-one'}, retry), true);
+assert.equal(context.flowSpeechAttemptMatches({speech_retry_id:'fresh-two'}, retry), false);
+assert.equal(context.flowSpeechAttemptMatches({}, old), true);
+assert(source.includes('if (!reusableProjectTab && !speechRetryId)'));
+assert(source.includes('if(!pkg.speech_retry_id && await openFlowReviewRebuild(command,pkg))'));
+assert(source.includes('speech_retry_id:speechRetryId'));
+console.log('Flow speech retry project ownership: old project rejected, same attempt resumed, next attempt isolated');

@@ -1,0 +1,12 @@
+[
+  {"name":"live_scene8", "answer":"แสดงการคิด\nI couldn't create that video from this image this time. The lift with the heavy wooden structure is what's making it difficult to generate cleanly. I can still help you get the same story beat in a slightly different way that will work:\nOption 1 - Same characters, lighter action: Keep เจ้ายักษ์ and เจ้าถั่ว in the same market, but have เจ้ายักษ์ gently pushing aside the fallen crates and tarp to clear the path, with the market people behind — same warm 9:16 cinematic look, same Thai narration line: เมื่อกลับถึงตลาด เจ้ายักษ์พบโครงกันสาดที่พังจากพายุขวางทาง จึงยกมันขึ้นเปิดทางให้คนเดินออกมา\nOption 2 - After the lift: Use your image as the start and animate the moment right after the path is open — the structure is already lifted to the side, people walking through with relief, เจ้าถั่วยืนดูอยู่ข้าง ๆ, with subtle rain drips and a slow dolly-in.\nWant me to generate one of those versions in vertical 9:16 with Thai audio and no text or watermark?", "expected":true},
+  {"name":"thai", "answer":"สร้างวิดีโอได้สองแบบ ตัวเลือกที่ 1: เดินในสวน ตัวเลือกที่ 2: นั่งมองทะเล ต้องการให้สร้างข้อไหนคะ?", "expected":true},
+  {"name":"english_no_failure", "answer":"For your video: Option 1: Walk in the garden. Option 2: Sit beside the lake. Which option would you like?", "expected":true},
+  {"name":"no_question", "answer":"Video options: Option 1: Walk. Option 2: Sit by the lake.", "expected":false},
+  {"name":"not_video", "answer":"Option 1: A photo. Option 2: Another photo. Want me to create one?", "expected":false},
+  {"name":"policy", "answer":"I cannot create that video under safety policy. Option 1: Walk. Option 2: Sit beside the lake. Want me to generate one?", "expected":false},
+  {"name":"quota", "answer":"Video quota reached. Option 1: Walk. Option 2: Sit beside the lake. Want me to generate one?", "expected":false},
+  {"name":"duplicate", "answer":"Video Option 1: Walk. Option 1: Sit beside the lake. Want me to generate one?", "expected":false},
+  {"name":"three", "answer":"Video Option 1: Walk. Option 2: Sit beside the lake. Option 3: Stand still. Want me to generate one?", "expected":false},
+  {"name":"empty_choice", "answer":"Video Option 1: Walk. Option 2: Want me to generate one?", "expected":false}
+]

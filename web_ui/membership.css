@@ -1,0 +1,23 @@
+.membership-gate{position:fixed;inset:0;z-index:15000;display:grid;place-items:center;padding:24px;overflow:auto;background:radial-gradient(ellipse at 18% 20%,#10283e 0,transparent 50%),radial-gradient(ellipse at 85% 90%,#211538 0,transparent 50%),#080b16;color:#edf3ff;font-family:"Segoe UI",Tahoma,sans-serif}
+.membership-gate[hidden]{display:none}
+.membership-card{width:min(100%,460px);padding:40px;border:1px solid #2a3b54;border-radius:24px;background:#101726ed;box-shadow:0 28px 90px #0006;box-sizing:border-box}
+.membership-brand{display:flex;align-items:center;gap:14px;margin-bottom:36px;font-size:19px;font-weight:800;letter-spacing:.4px}
+.membership-brand img{width:48px;height:48px;border-radius:14px;object-fit:contain}
+.membership-card .eyebrow{color:#44d9f5;font-size:11px;letter-spacing:2px}
+.membership-card h1{font-size:29px;line-height:1.35;margin:14px 0 10px}
+.membership-card p{color:#afc0d7;font-size:14px;line-height:1.8}
+.membership-card label{display:grid;gap:9px;font-size:13px;margin-top:26px}
+.membership-card input{width:100%;box-sizing:border-box;background:#080e1c;color:#fff;border:1px solid #3e526e;border-radius:12px;padding:15px;font:inherit;min-width:0}
+.membership-card input:focus{outline:2px solid #21ceec;outline-offset:2px}
+.membership-card button{font:inherit;cursor:pointer}
+.membership-card button:disabled{opacity:.6;cursor:wait}
+.membership-submit{width:100%;margin-top:16px;border:0;border-radius:12px;background:linear-gradient(100deg,#21cbea,#7551ee);color:#fff;padding:15px;font-weight:700!important}
+.membership-message{min-height:48px;font-size:13px!important;color:#c7d8ee!important;margin:14px 0}
+.membership-help{display:flex;flex-wrap:wrap;gap:16px;border-top:1px solid #27354b;padding-top:20px}
+.membership-help button,.membership-help a{border:0;background:none;padding:0;color:#77def0;text-decoration:none;font:inherit;font-size:12px}
+.membership-card small{display:block;color:#899bb4;font-size:11px;line-height:1.8;margin-top:24px}
+.membership-account{font:inherit;color:#b8c9e1;background:transparent;border:1px solid #293953;padding:10px;border-radius:10px;cursor:pointer;margin:10px}
+.membership-gate[aria-busy=true] .membership-submit{background-size:200% 100%;animation:membership-check 2s ease infinite}
+@keyframes membership-check{50%{background-position:100% 0}}
+@media(max-width:520px){.membership-gate{padding:16px}.membership-card{padding:28px 22px}.membership-card h1{font-size:25px}}
+@media(prefers-reduced-motion:reduce){.membership-gate[aria-busy=true] .membership-submit{animation:none}}

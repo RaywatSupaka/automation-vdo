@@ -1,0 +1,1 @@
+{"manifest_version":3,"name":"Isolated SmartFlow review transport fixture","version":"1.0","permissions":["storage"],"background":{"service_worker":"worker.js"}}

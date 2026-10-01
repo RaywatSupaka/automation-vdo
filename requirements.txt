@@ -1,0 +1,7 @@
+uiautomator2>=3.2.0
+adbutils>=2.8.0
+Pillow>=10.4.0
+PyThaiNLP>=5.1.2
+fonttools>=4.63.0
+pywebview>=5.4,<7
+cryptography>=45

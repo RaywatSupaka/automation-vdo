@@ -1,0 +1,12 @@
+.logo-profile-switch{display:flex;flex-wrap:wrap;gap:8px;width:100%}.logo-profile-switch button[aria-pressed=true]{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan)}
+.logo-editor-hint{margin:0;width:100%;color:var(--muted);font-size:12px;line-height:1.6}.logo-coordinate-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.logo-fine-controls{border-top:1px solid var(--line);padding-top:12px}.logo-fine-controls summary{cursor:pointer;color:var(--muted);font-size:12px;padding-bottom:10px}.logo-fine-controls>.field,.logo-fine-controls>.logo-coordinate-fields{margin-top:12px}
+#logo-editor-stage{position:relative;min-height:280px;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box}
+#logo-editor-frame{position:relative;flex:none;overflow:hidden;touch-action:none;background:linear-gradient(145deg,#172444,#233758);outline:1px solid #485b7a}
+#logo-editor-frame #logo-frame-image{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;border-radius:0;filter:none;object-fit:fill}
+#logo-drag-handle{position:absolute;display:block;min-width:0;min-height:0;padding:0;border:0;border-radius:0;background:none;touch-action:none;cursor:grab;user-select:none;box-shadow:0 0 0 1px #fff7;outline-offset:3px}
+#logo-drag-handle:focus-visible{outline:3px solid var(--cyan)}#logo-drag-handle:active{cursor:grabbing}
+#logo-drag-handle #logo-overlay-image{display:block;width:100%;height:100%;max-width:none;max-height:none;border-radius:0;filter:none;object-fit:fill;pointer-events:none}
+.logo-center-guide{position:absolute;z-index:0;pointer-events:none;background:#fff2}.logo-center-guide.horizontal{height:1px;width:100%;top:50%;left:0}.logo-center-guide.vertical{width:1px;height:100%;left:50%;top:0}
+#logo-render-check{width:100%;font-size:12px;color:var(--muted)}#logo-render-check img{display:block;max-width:100%;max-height:300px;width:auto;height:auto;margin:12px auto 0}
+@media(max-width:700px){.logo-profile-switch{display:grid;grid-template-columns:1fr 1fr}.logo-profile-switch .button{padding:10px 5px;min-width:0}.logo-preview-panel{padding:14px}.logo-coordinate-fields{gap:8px}}

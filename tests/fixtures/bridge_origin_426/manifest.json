@@ -1,0 +1,1 @@
+{"manifest_version":3,"name":"Isolated bridge origin fixture","version":"1.0","permissions":["downloads"],"host_permissions":["http://127.0.0.1/*"],"background":{"service_worker":"worker.js"}}

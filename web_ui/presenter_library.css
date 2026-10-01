@@ -1,0 +1,27 @@
+/* Library-only layout. Does not change generation or position previews. */
+.presenter-library-toolbar{display:flex;gap:12px;margin:16px 0 22px;flex-wrap:wrap}
+.presenter-library-toolbar input,.presenter-library-toolbar select,.presenter-detail-dialog select{padding:12px 14px;border:1px solid #33415c;border-radius:12px;background:#0c1221;color:#eef3ff;min-height:44px}
+.presenter-library-toolbar input{flex:1;min-width:180px}
+.presenter-cards{align-items:start;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.presenter-card{display:flex;flex-direction:column;gap:10px;transition:border-color .18s ease,box-shadow .18s ease}
+.presenter-card:hover{border-color:#437187;box-shadow:0 8px 28px #0003}
+.presenter-card img{height:210px}
+.presenter-cover-empty{height:210px;display:grid;place-items:center;background:#101927;border-radius:12px;color:#899bb8;font-size:13px}
+.presenter-card h3{margin:0;line-height:1.5;font-size:16px}
+.presenter-card small{margin:0;border-radius:8px;background:#142338;padding:6px 9px;font-size:12px}
+.presenter-card .actions{margin-top:4px}
+.presenter-card-menu{border-top:1px solid #273149;padding-top:10px}
+.presenter-card-menu summary{cursor:pointer;color:#adbed4;font-size:12px;padding:6px 0}
+.presenter-card-menu[open]{display:grid;gap:8px}
+.presenter-trash{color:#ff9cae!important}
+.presenter-detail-dialog{box-sizing:border-box;width:min(680px,calc(100vw - 32px));max-height:90vh;padding:24px;border:1px solid #365777;border-radius:22px;background:#0e1426;color:#edf3ff;overflow:auto}
+.presenter-detail-dialog::backdrop{background:#030714cc;backdrop-filter:blur(5px)}
+.presenter-detail-head{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.presenter-detail-head h2{font-size:21px;overflow-wrap:anywhere;margin:0}
+.presenter-detail-dialog video,.presenter-detail-dialog img{display:block;width:100%;max-height:52vh;object-fit:contain;background:#080e18;border-radius:12px;margin:14px 0}
+.presenter-detail-dialog .actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.presenter-detail-dialog p{overflow-wrap:anywhere;line-height:1.7;color:#b5c5dc}
+.presenter-detail-dialog summary{cursor:pointer;padding:12px 0}
+.presenter-detail-dialog button:focus-visible,.presenter-card button:focus-visible,.presenter-card summary:focus-visible{outline:2px solid #2bd5f4;outline-offset:3px}
+@media(max-width:500px){.presenter-cards{grid-template-columns:1fr}.presenter-detail-dialog{padding:16px}.presenter-detail-head{align-items:flex-start}.presenter-library-toolbar select{width:100%}}
+@media(prefers-reduced-motion:reduce){.presenter-card{transition:none}}

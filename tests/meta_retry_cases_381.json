@@ -1,0 +1,22 @@
+[
+  ["I couldn't create that video from this image this time. The lift with the heavy wooden structure is what's making it difficult to generate cleanly. I can still help you get the same story beat in a slightly different way that will work.", "completed_no_video"],
+  ["I couldn’t generate the video this time.", "completed_no_video"],
+  ["Could not create the video.", "completed_no_video"],
+  ["Unable to generate the video.", "completed_no_video"],
+  ["Failed to make the video.", "completed_no_video"],
+  ["ไม่สามารถสร้างวิดีโอนี้ได้ในครั้งนี้", "completed_no_video"],
+  ["สร้างวิดีโอไม่สำเร็จ", "completed_no_video"],
+  ["I couldn't create it due to safety guidelines.", "policy"],
+  ["I cannot generate this. This is not allowed.", "policy"],
+  ["I couldn't create it because you have reached your daily limit.", "quota"],
+  ["ถึงขีดจำกัดการใช้งาน", "quota"],
+  ["Generating your video now", ""],
+  ["Here is your video", ""],
+  ["", ""],
+  ["Dog at crossing (file unavailable). This video was created using a legacy model.", "completed_no_video"],
+  ["Video file is unavailable", "completed_no_video"],
+  ["ไฟล์วิดีโอไม่พร้อมใช้งาน", "completed_no_video"],
+  ["File unavailable due to safety policy", "policy"],
+  ["File unavailable. Quota exceeded.", "quota"],
+  ["This video was created using a legacy model.", ""]
+]

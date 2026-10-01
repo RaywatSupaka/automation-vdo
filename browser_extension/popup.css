@@ -1,0 +1,45 @@
+:root {
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: #eef3ff;
+  background: #080c1a;
+}
+* { box-sizing: border-box; }
+body {
+  width: 360px;
+  margin: 0;
+  padding: 18px;
+  background: linear-gradient(145deg, #080c1a, #101833);
+}
+header { display: flex; align-items: center; gap: 11px; margin-bottom: 15px; }
+.brand-logo { width: 42px; height: 42px; border-radius: 9px; object-fit: cover; box-shadow: 0 0 17px #1caef077; }
+h1 { font-size: 17px; margin: 0; }
+small { color: #8fa2cb; }
+.status-card, .product-card, .flow-card {
+  background: #111a35;
+  border: 1px solid #29365d;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 18px #0003;
+}
+.status-card div { display: flex; align-items: center; gap: 8px; padding: 3px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #78839c; }
+.dot.ok { background: #32d59b; box-shadow: 0 0 8px #32d59b88; }
+.dot.bad { background: #ff5c7a; }
+.product-card { display: flex; gap: 11px; margin-top: 10px; }
+.product-card img { width: 64px; height: 64px; border-radius: 9px; object-fit: cover; background: #1b2543; }
+.product-card div { min-width: 0; }
+.product-card strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; }
+.product-card span { display: block; color: #35d9f4; font-weight: 600; margin-top: 7px; }
+.flow-card { margin-top: 10px; border-color: #7444ba; background: linear-gradient(145deg, #111a35, #241640); }
+.flow-card strong, .flow-card span, .flow-card small { display: block; }
+.flow-card span { margin-top: 5px; color: #d8b7ff; font-size: 12px; }
+.flow-card small { margin-top: 4px; color: #91a2c7; }
+.message { min-height: 18px; font-size: 12px; color: #9eadd0; }
+.hidden { display: none !important; }
+button { width: 100%; border: 0; border-radius: 10px; padding: 10px 12px; margin-top: 8px; font-weight: 650; cursor: pointer; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.primary { background: linear-gradient(135deg, #3978ff, #ad37ee); color: #fff; }
+.flow { background: linear-gradient(135deg, #17a6d8, #8e39ee); color: #fff; }
+.secondary { background: #27204a; color: #dfb7ff; }
+.ghost { background: #182343; color: #cad8f5; }
+footer { text-align: center; font-size: 10px; color: #7786a8; margin-top: 13px; }

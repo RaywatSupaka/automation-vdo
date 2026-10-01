@@ -1,0 +1,20 @@
+[
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable.\n\nPlease try again in a little while and I'll create the vertical 9:16 closing tableau from your reference image with the final adjustment and slow pull-back, silent with no text or watermark as requested.", "transient_service_error"],
+  ["The video couldn’t be generated right now — the safety check service is temporarily unavailable.", "transient_service_error"],
+  ["The video could not be generated right now - the safety check service is temporarily unavailable.", "transient_service_error"],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable. Safety policy also prohibits this request.", "policy"],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable. Quota exceeded.", "quota"],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable. Please log in again.", "authentication_required"],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable. นโยบายไม่อนุญาต", "policy"],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable. ขีดจำกัดการใช้งาน", "quota"],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable. กรุณาเข้าสู่ระบบ", "authentication_required"],
+  ["The video couldn't be generated because it violates our safety policy.", "policy"],
+  ["The safety check service rejected the image as prohibited content.", "policy"],
+  ["Safety check is running; please wait.", "policy"],
+  ["Quoted previous error: The video couldn't be generated right now — the safety check service is temporarily unavailable.", "policy"],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailableWithout punctuation", "policy"],
+  ["I couldn't generate the video because the service is temporarily unavailable.", "transient_service_error"],
+  ["Server error: could not generate a video. Please log in again.", "authentication_required"],
+  ["I'm designing your video now.", ""],
+  ["The video couldn't be generated right now — the safety check service is temporarily unavailable. I can try designing it again later.", "transient_service_error"]
+]

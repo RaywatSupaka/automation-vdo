@@ -1,0 +1,116 @@
+{
+  "job_id": "STORY-20260906-6E3623",
+  "video_title": "เจ้าด่าง หมาหลงที่จำกลิ่นบ้านได้เสมอ",
+  "video_description": "เรื่องราวซาบซึ้งใจของเจ้าด่าง หมาไทยหลังอานที่พลัดหลงจากเจ้านายและฝ่าฟันอุปสรรคเพื่อหาทางกลับบ้าน #หมาหลง #เรื่องเล่าสัตว์เลี้ยง #ความผูกพัน #เจ้าตูบ #เรื่องซึ้ง",
+  "narration_script": "เสียงพลุในคืนนั้นเปลี่ยนชีวิตของเจ้าด่างไปตลอดกาล ด้วยความตกใจสุดขีด มันเตลิดวิ่งหนีอย่างไร้ทิศทางจนหลงเข้ามาในเมืองใหญ่ที่ไม่คุ้นเคย เมื่อแสงตะวันเช้าส่องมา เจ้าด่างต้องเผชิญกับโลกที่แปลกตา ท่ามกลางเสียงแตรและฝูงชนที่เร่งรีบ มันเดินซมซานตามหาเจ้าของจนเหนื่อยล้า ต้องอาศัยกินเศษอาหารข้างทางเพื่อประทังชีวิต ในคืนฝนตกหนัก เจ้าด่างนอนขดตัวสั่นใต้กันสาดร้านค้าอย่างโดดเดี่ยว แต่แล้วสายลมก็พัดพากลิ่นคุ้นเคยมา กลิ่นสายไหมและกลิ่นอบอุ่นของเด็กหญิงตัวน้อย มันออกวิ่งตามกลิ่นนั้นอย่างไม่คิดชีวิต ข้ามสะพานไม้เก่าที่เชื่อมสู่ชุมชนริมคลอง และที่ปลายสะพานนั้นเอง เด็กหญิงกำลังถือป้ายตามหามันด้วยน้ำตา ทั้งสองโผเข้ากอดกันด้วยความรักที่ไม่มีวันจางหาย ถ้าเรื่องของเจ้าด่างทำให้คุณซึ้งใจ ฝากกดหัวใจให้ด้วยนะครับ แล้วสัตว์เลี้ยงของคุณเคยทำอะไรที่ทำให้คุณจำไม่ลืมบ้าง ลองเล่าให้ฟังในคอมเมนต์หน่อยนะครับ",
+  "pronunciation_notes": {},
+  "visual_bible": {
+    "visual_style": "Cinematic warm realistic film photography, 35mm film texture, emotional and atmospheric lighting, 9:16 vertical composition, shallow depth of field, no text, no watermarks",
+    "characters": [
+      {
+        "id": "char_dang",
+        "name": "เจ้าด่าง (Chao Dang)",
+        "appearance": "Thai Ridgeback mixed-breed dog, medium-sized, short golden-tan fur with a distinctive white patch on chest and forehead, expressive amber-brown eyes, alert pointed ears, slightly worn red nylon collar with a small brass bell"
+      },
+      {
+        "id": "char_may",
+        "name": "น้องเมย์ (Nong May)",
+        "appearance": "Thai girl around 8 years old, shoulder-length black hair tied in twin pigtails, wearing a cheerful yellow cotton t-shirt, denim shorts, and red canvas sneakers"
+      }
+    ],
+    "environment": "A bustling Thai suburban town blending neon-lit night alleys, busy commercial streets with street food vendors, an old wooden bridge over a quiet canal, and a cozy suburban home front porch",
+    "color_and_lighting": "Dynamic progression from chaotic dark night with blue and purple shadows, cold wet gray rainy tones in the middle, shifting into warm golden-hour amber and morning sunbeams towards the end",
+    "camera_rules": "Vertical 9:16 aspect ratio, ground-level dog perspective for emotional connection, clear foreground, midground, and background separation"
+  },
+  "story_entities": [
+    {
+      "id": "char_dang",
+      "name": "เจ้าด่าง (Chao Dang)",
+      "aliases": [
+        "เจ้าด่าง",
+        "ด่าง"
+      ],
+      "visual_identity": "Thai Ridgeback mixed-breed dog, golden-tan fur, white patch on chest, pointed ears, wearing a red collar with a brass bell"
+    },
+    {
+      "id": "char_may",
+      "name": "น้องเมย์ (Nong May)",
+      "aliases": [
+        "น้องเมย์",
+        "เมย์"
+      ],
+      "visual_identity": "Thai 8-year-old girl, twin pigtails, yellow t-shirt, denim shorts, red sneakers"
+    }
+  ],
+  "scene_narrations": [
+    "เสียงพลุในคืนนั้นเปลี่ยนชีวิตของเจ้าด่างไปตลอดกาล",
+    "ด้วยความตกใจสุดขีด มันเตลิดวิ่งหนีอย่างไร้ทิศทางจนหลงเข้ามาในเมืองใหญ่ที่ไม่คุ้นเคย",
+    "เมื่อแสงตะวันเช้าส่องมา เจ้าด่างต้องเผชิญกับโลกที่แปลกตา ท่ามกลางเสียงแตรและฝูงชนที่เร่งรีบ",
+    "มันเดินซมซานตามหาเจ้าของจนเหนื่อยล้า ต้องอาศัยกินเศษอาหารข้างทางเพื่อประทังชีวิต",
+    "ในคืนฝนตกหนัก เจ้าด่างนอนขดตัวสั่นใต้กันสาดร้านค้าอย่างโดดเดี่ยว",
+    "แต่แล้วสายลมก็พัดพากลิ่นคุ้นเคยมา กลิ่นสายไหมและกลิ่นอบอุ่นของเด็กหญิงตัวน้อย",
+    "มันออกวิ่งตามกลิ่นนั้นอย่างไม่คิดชีวิต ข้ามสะพานไม้เก่าที่เชื่อมสู่ชุมชนริมคลอง",
+    "และที่ปลายสะพานนั้นเอง เด็กหญิงกำลังถือป้ายตามหามันด้วยน้ำตา",
+    "ทั้งสองโผเข้ากอดกันด้วยความรักที่ไม่มีวันจางหาย",
+    "ถ้าเรื่องของเจ้าด่างทำให้คุณซึ้งใจ ฝากกดหัวใจให้ด้วยนะครับ แล้วสัตว์เลี้ยงของคุณเคยทำอะไรที่ทำให้คุณจำไม่ลืมบ้าง ลองเล่าให้ฟังในคอมเมนต์หน่อยนะครับ"
+  ],
+  "scene_prompts": [
+    "Vertical 9:16 aspect ratio. Nighttime festive neighborhood. Foreground: Chao Dang, a golden-tan Thai mixed-breed dog with a white chest patch and red collar with brass bell, startled with wide fearful eyes and ears pinned back in an open grass yard. Midground: a low wooden fence of a suburban house. Background: colorful bursts of fireworks lighting up the night sky with dramatic purple and golden smoke. Cinematic 35mm film photography, crisp focal clarity, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Nighttime city avenue. Chao Dang, the golden-tan dog with a white chest patch and red collar, sprinting rapidly across a wet asphalt street, ears flapping back in panic. Foreground: motion-blurred pavement with reflective rain puddles. Midground: Chao Dang running terrified. Background: towering city buildings with dazzling neon signs and distant streaks of vehicle headlights. Dynamic low camera angle, cinematic lighting, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Morning daylight on a busy metropolitan street. Chao Dang, the golden-tan dog with a white chest patch and red collar, standing cautiously on a concrete sidewalk, looking confused and lost. Foreground: feet and legs of hurried pedestrians walking past. Midground: Chao Dang looking up timidly. Background: heavy morning traffic with colorful city buses, street stalls, and towering billboards under hazy morning sunlight. Soft warm lighting, realistic cinematic frame, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Late afternoon urban alleyway. Chao Dang, the golden-tan dog with a white chest patch and red collar, sniffing gently near an overturned cardboard box behind a street food stall. Foreground: discarded cardboard and clean cobblestone path. Midground: Chao Dang exhausted, thin posture, sniffing for food. Background: narrow alley between brick buildings glowing with soft golden hour light filtering through steam from a distant noodle shop. Deep emotional atmosphere, 35mm film look, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Rainy nighttime street scene. Chao Dang, the golden-tan dog with a white chest patch and red collar, shivering and curled up on a dry patch of concrete beneath a blue fabric shop awning. Foreground: rain droplets splashing on the pavement. Midground: Chao Dang looking out with longing, sorrowful eyes. Background: heavy pouring rain blurring the distant warm street lamps and passing umbrella silhouettes. Melancholic mood, cinematic film grain, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Early morning misty dawn. Chao Dang, the golden-tan dog with a white chest patch and red collar, suddenly standing alert on all fours under a blooming frangipani tree, nose lifted high in the air catching a familiar scent, ears pricked up with newfound hope. Foreground: wet dew drops on fallen white-and-yellow petals. Midground: Chao Dang in sharp focus looking determined. Background: misty suburban road bathed in soft peach and gold sunrise light. Cinematic warmth, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Sunrise along a serene canal. Chao Dang, the golden-tan dog with a white chest patch and red collar, sprinting eagerly across a rustic weathered wooden footbridge. Foreground: rustic wooden planks of the bridge with motion blur. Midground: Chao Dang leaping forward with joyful determination. Background: calm canal water reflecting the golden morning sky, lined with lush banana palms and traditional riverside wooden houses. Action shot, uplifting cinematic lighting, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Morning golden hour at the edge of a riverside community. Midground: Nong May, an 8-year-old Thai girl with twin pigtails, wearing a yellow t-shirt and denim shorts, standing on the grass verge clutching a hand-drawn poster against her chest, crying happy tears as she spots her dog. Background: green tropical garden and a cozy wooden home with morning sunbeams streaming through the trees. Heartwarming scene, soft warm lighting, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Emotional reunion in front of a cozy Thai suburban porch. Nong May, the 8-year-old Thai girl in a yellow t-shirt, kneeling on the grass weeping joyful tears while hugging Chao Dang tightly. Chao Dang, the golden-tan dog with a white chest patch and red collar, enthusiastically licking her cheek, tail wagging in pure bliss. Foreground: lush green grass with soft morning dew. Midground: Nong May and Chao Dang embracing. Background: sunlit front yard, cozy porch with potted orchids, bathed in golden morning light. Tender emotional photography, no text, no watermarks.",
+    "Vertical 9:16 aspect ratio. Peaceful late morning conclusion. Nong May, the 8-year-old Thai girl in a yellow t-shirt, sitting side by side with Chao Dang, the golden-tan dog with a white chest patch and red collar, on the wooden porch steps of their warm home. Nong May gently rests her hand on Chao Dang's head as they both gaze happily toward the bright sunlit garden. Foreground: wooden steps with soft shadows. Midground: the loving duo relaxing together in harmony. Background: sun-drenched blossoming garden filled with yellow marigolds and morning light. Cinematic masterpiece, peaceful resolution, no text, no watermarks."
+  ],
+  "scene_durations": [
+    4,
+    4,
+    5,
+    5,
+    4,
+    4,
+    4,
+    4,
+    5,
+    6
+  ],
+  "scene_entities": [
+    [
+      "char_dang"
+    ],
+    [
+      "char_dang"
+    ],
+    [
+      "char_dang"
+    ],
+    [
+      "char_dang"
+    ],
+    [
+      "char_dang"
+    ],
+    [
+      "char_dang"
+    ],
+    [
+      "char_dang"
+    ],
+    [
+      "char_may"
+    ],
+    [
+      "char_may",
+      "char_dang"
+    ],
+    [
+      "char_may",
+      "char_dang"
+    ]
+  ],
+  "warnings": []
+}

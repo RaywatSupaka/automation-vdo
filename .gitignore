@@ -1,0 +1,69 @@
+# SmartFlow user/runtime data
+workspace/
+logs/
+data/
+videos/
+deliverables/
+screenshots/
+backups/
+archives/
+config.json
+settings/
+profiles/
+chrome-profile/
+chrome_profiles/
+
+# Local credentials and signing material (public verification key stays tracked)
+.env
+.env.*
+!.env.example
+.credentials/
+.secrets/
+credentials*.json
+service-account*.json
+*.pem
+*.pfx
+*.p12
+*.key
+*.sqlite
+*.sqlite3
+*.db
+
+# User media libraries and external runtime downloads
+assets/logos/user/
+assets/audio/background/
+assets/intro/
+assets/screenfx/
+tools/scrcpy-win64-*/
+tools/scrcpy-win64-*.zip
+*.exe
+*.dll
+
+# Operational history/captures remain local; retain the sanitized current logic
+docs/history/
+docs/reports/*
+!docs/reports/chatgpt-submit-contract-486-20261001.md
+*.zip
+*.mp4
+*.webm
+*.mov
+
+# Python/build caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.build-env/
+venv/
+build/
+dist/
+
+# Local launcher artifacts
+SmartFlow AI.exe
+*.log
+
+# Editor/OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

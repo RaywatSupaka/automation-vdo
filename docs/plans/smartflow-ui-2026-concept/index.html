@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="th">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SmartFlow AI • UX concept (ไม่ใช่โปรแกรมจริง)</title><link rel="stylesheet" href="concept.css"></head>
+<body>
+<div class="prototype-label"><span><b>DESIGN PREVIEW</b> SmartFlow AI · ข้อมูลจำลอง / ไม่เชื่อมโปรแกรมจริง</span><button id="show-board">ดูแอนิเมชันทุกสถานะ <span>↗</span></button></div>
+<div class="workspace" id="workspace">
+  <aside class="sidebar">
+    <div class="brand"><img src="brand-original.png" alt="SmartFlow AI — AI Clip Creator"><span>YOUR CREATIVE WORKSPACE</span></div>
+    <nav aria-label="เมนูหลัก" id="navigation"></nav>
+    <button class="connection" id="connection-open"><i class="status-dot"></i><span><strong>Extension เชื่อมต่อแล้ว</strong><small>พร้อมทำงานกับโปรแกรม</small></span><span class="chevron">›</span></button>
+    <button class="account"><span class="avatar">K</span><span><strong>พื้นที่ทำงานของคุณ</strong><small>SmartFlow AI · Desktop</small></span><span data-icon="settings"></span></button>
+  </aside>
+  <main>
+    <header class="topbar"><div class="breadcrumb">พื้นที่ทำงาน <span>/</span> <b>คลังวิดีโอ</b></div><div class="top-right"><span class="credits"><span data-icon="wave"></span> เสียง <b>786,210</b><em></em><span data-icon="captions"></span> ซับ <b>647</b></span><button class="icon-button" aria-label="การแจ้งเตือน" data-icon="bell"></button></div></header>
+    <div class="content">
+      <div class="page-head"><div><span class="eyebrow">YOUR CREATIONS</span><h1>ทุกไอเดีย พร้อมเป็นผลงาน</h1><p>จัดการคลิปที่สร้างไว้ และทำงานต่อได้ในที่เดียว</p></div><button class="button primary" id="create"><span data-icon="plus"></span>สร้างคลิปใหม่</button></div>
+      <section class="current-job"><div class="job-visual"><span data-icon="video"></span><i></i></div><div class="job-copy"><span class="tiny-label"><i class="status-dot"></i> กำลังสร้างคลิป · ตัวอย่าง</span><strong>Philips เครื่องนวดคอ บ่า ไหล่</strong><p>ฉาก 3 จาก 7 · กำลังสร้างวิดีโอ</p></div><div class="job-progress"><b>36<span>%</span></b><div class="track"><i style="width:36%"></i></div></div><button class="button secondary" id="progress-open">ดูความคืบหน้า <span data-icon="arrow"></span></button></section>
+      <div class="library-toolbar"><div class="tabs" role="tablist" aria-label="ชนิดคลิป"><button class="selected" role="tab" aria-selected="true">ทั้งหมด <span>24</span></button><button role="tab" aria-selected="false">คลิปสินค้า</button><button role="tab" aria-selected="false">Story Shorts</button><button role="tab" aria-selected="false">ละครสั้น</button></div><label class="search"><span data-icon="search"></span><input placeholder="ค้นหาผลงาน" aria-label="ค้นหาผลงาน"></label></div>
+      <div class="library-summary"><span>ผลงานล่าสุด <b>24 คลิป</b></span><span>อัปเดตล่าสุด ▾</span></div>
+      <section class="library" id="library" aria-label="ตัวอย่างคลังวิดีโอ"></section>
+      <div class="bottom-note"><span data-icon="shield"></span> งานและไฟล์ต้นฉบับของคุณยังอยู่ครบ <span>•</span> ภาพและตัวเลขในหน้านี้เป็นข้อมูลจำลอง</div>
+    </div>
+  </main>
+</div>
+<section class="state-board" id="state-board" hidden><header><div><span class="eyebrow">SMARTFLOW MOTION LANGUAGE</span><h1>แต่ละสถานะ มีการเคลื่อนไหวของตัวเอง</h1><p>ขยับเพื่อสื่อความหมาย · ไม่เพิ่มเปอร์เซ็นต์เอง · หยุดเมื่อซ่อนหน้าต่าง</p></div><button class="button secondary" id="back-workspace">กลับหน้าตัวอย่าง</button></header><div id="state-grid"></div><footer>ตัวอย่างการเคลื่อนไหวเท่านั้น · สถานะสำเร็จจริงจะแสดงแถบแจ้งเตือน ไม่ค้างป๊อปอัปบังงานต่อไป</footer></section>
+<dialog id="progress-dialog" aria-labelledby="progress-title">
+  <div class="dialog-head"><span class="eyebrow"><i class="status-dot"></i> SMARTFLOW • CREATION STUDIO</span><button class="icon-button" id="minimize" aria-label="ย่อหน้าต่าง"><span data-icon="minus"></span></button></div>
+  <div class="progress-hero"><div class="scene-label">ฉาก <b id="scene-number">03</b> <span>/ 07</span></div><div class="motion-art" id="motion-art"></div><span class="provider-pill" id="provider-pill">Google Flow · วิดีโอ</span></div>
+  <div class="progress-copy"><h2 id="progress-title">กำลังเปลี่ยนภาพให้มีชีวิต</h2><p id="progress-description">สร้างการเคลื่อนไหวสำหรับฉาก 3 โดยใช้ภาพที่บันทึกไว้</p></div>
+  <div class="progress-meter"><div><span id="progress-label">ความคืบหน้ารวม</span><strong id="percent">36<small>%</small></strong></div><div class="track big" id="progress-track" role="progressbar" aria-label="ความคืบหน้างานตัวอย่าง" aria-valuenow="36" aria-valuemin="0" aria-valuemax="100"><i></i></div><p><span id="phase-note">เสร็จครบแล้ว 2 จาก 7 ฉาก</span><span><i class="status-dot"></i> <span id="freshness">กำลังรับสถานะ</span></span></p></div>
+  <ol class="stepper" id="stepper"></ol>
+  <div class="activity-line" role="status"><span data-icon="activity"></span><span id="activity-message">รอผลจาก Google Flow · ยังไม่ได้สร้างซ้ำ</span><span class="elapsed">ข้อมูลจำลอง</span></div>
+  <details class="diagnostics"><summary>รายละเอียดทางเทคนิค <span>⌄</span></summary><p>Job: DEMO-STORY-0001 · Extension 0.15.384<br>ในการใช้งานจริง ข้อมูลนี้อ่านจากสถานะของงานเดิมเท่านั้น</p></details>
+  <footer class="dialog-footer"><span><span data-icon="shield"></span> ย่อหน้าต่างได้ งานยังทำต่อ</span><div><button class="button danger-quiet" id="demo-cancel">หยุดงาน</button><button class="button secondary" id="continue-background">ทำงานเบื้องหลัง <span data-icon="arrow"></span></button><button class="button primary" id="attention-action" hidden>เปิด Chrome เพื่อยืนยัน</button></div></footer>
+  <div class="demo-controls"><span>ลองสถานะ</span><div id="state-controls"></div></div>
+</dialog>
+<dialog class="extension-dialog" id="extension-dialog" aria-labelledby="extension-title"><div class="dialog-head"><span class="eyebrow">BROWSER CONNECTION</span><button class="icon-button" id="extension-close" aria-label="ปิด"><span data-icon="close"></span></button></div><div class="extension-heading"><div class="extension-symbol" data-icon="puzzle"></div><div><h2 id="extension-title">SmartFlow Extension</h2><p><i class="status-dot"></i> เชื่อมต่อแล้ว · พร้อมใช้งาน</p></div></div><div class="connection-rows"><div><span>เบราว์เซอร์</span><strong>Google Chrome</strong></div><div><span>รุ่นที่เชื่อมต่อ</span><strong>0.15.384 <i class="version-badge">ตรงกับโปรแกรม</i></strong></div><div><span>งานปัจจุบัน</span><strong>กำลังสร้างวิดีโอ · ฉาก 3/7</strong></div></div><p class="connection-note"><span data-icon="shield"></span> ไม่ต้องติดตั้งใหม่ หากสถานะเชื่อมต่อเป็นสีเขียว</p><details class="diagnostics"><summary>วิธีติดตั้ง / แก้ปัญหาการเชื่อมต่อ <span>⌄</span></summary><p>รายละเอียดจะเปิดเมื่อคุณต้องการ ไม่แสดงคำสั่งติดตั้งทั้งหมดตลอดเวลา<br>ตัวอย่างนี้ไม่สั่ง Reload และไม่เชื่อมเบราว์เซอร์จริง</p></details><footer class="dialog-footer"><span>สถานะในภาพเป็นข้อมูลจำลอง</span><button class="button secondary" id="extension-check">ตรวจการเชื่อมต่อ</button></footer></dialog>
+<button class="floating-progress" id="floating-progress" hidden><i class="status-dot"></i><span><b>กำลังสร้างวิดีโอ</b><small>ฉาก 3/7 · 36% · ตัวอย่าง</small></span><span data-icon="expand"></span></button>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="concept.js"></script>
+</body></html>

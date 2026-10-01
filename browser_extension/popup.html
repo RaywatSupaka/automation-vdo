@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SmartFlow AI</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header><img class="brand-logo" src="logo.png" alt="SmartFlow AI"><div><h1>SmartFlow AI</h1><small>Browser Automation Bridge</small></div></header>
+  <section class="status-card">
+    <div><span id="bridgeDot" class="dot"></span><span id="bridgeStatus">กำลังตรวจโปรแกรม...</span></div>
+    <div><span id="pageDot" class="dot"></span><span id="pageStatus">กำลังอ่านหน้า...</span></div>
+  </section>
+  <section id="productCard" class="product-card hidden">
+    <img id="productImage" alt="รูปสินค้า">
+    <div><strong id="productName"></strong><span id="productMeta"></span></div>
+  </section>
+  <section id="flowCard" class="flow-card hidden">
+    <strong>Video AI Helper</strong>
+    <span id="flowJob"></span>
+    <small id="flowReview"></small>
+  </section>
+  <p id="message" class="message"></p>
+  <button id="importButton" class="primary" disabled>นำสินค้าเข้าโปรแกรม</button>
+  <button id="openFlowButton" class="flow hidden">เปิด Google Flow พร้อม Job นี้</button>
+  <button id="copyPromptButton" class="secondary hidden">คัดลอกพรอมต์วิดีโอ</button>
+  <button id="downloadImageButton" class="secondary hidden">ดาวน์โหลดรูปสำหรับ Flow</button>
+  <button id="joinButton" class="secondary hidden">ยืนยันและกด “เข้าร่วมเลย”</button>
+  <button id="refreshButton" class="ghost">ตรวจหน้านี้อีกครั้ง</button>
+  <footer>Shopee → SmartFlow → Google Flow</footer>
+  <script src="popup.js"></script>
+</body>
+</html>

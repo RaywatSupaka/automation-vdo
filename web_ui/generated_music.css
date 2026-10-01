@@ -1,0 +1,11 @@
+.audio-generated-music{border:1px solid var(--line,#29334b);border-radius:12px;padding:12px;margin-top:10px;background:rgba(126,170,240,.035)}
+.audio-generated-music>summary{cursor:pointer;font-weight:600;display:list-item;list-style-position:inside}
+.audio-generated-music [data-generated-music-badge]{float:right;color:var(--muted,#adb6cb);font-size:12px}
+.generated-music-switch{display:flex;align-items:flex-start;gap:10px;margin:14px 0}
+.generated-music-switch input{width:18px;height:18px;margin-top:3px;accent-color:#7cd5ef}
+.generated-music-switch small,.audio-generated-music small{display:block;color:var(--muted,#adb6cb);font-size:12px;line-height:1.6;margin-top:5px}
+.generated-music-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+.generated-music-grid label{font-size:12px}.generated-music-grid select{width:100%;margin-top:5px}
+.audio-generated-music.has-conflict{border-color:#ba9565}.audio-generated-music.has-conflict [data-generated-music-status]{color:#f0c58f}
+.audio-generated-music [hidden]{display:none!important}
+@media(max-width:600px){.generated-music-grid{grid-template-columns:1fr}}

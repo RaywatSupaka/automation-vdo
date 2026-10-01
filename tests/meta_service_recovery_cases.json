@@ -1,0 +1,19 @@
+[
+  ["The video could not be generated right now — the video generator returned a server error twice without producing media.", "transient_service_error"],
+  ["I couldn't generate the video because the service is temporarily unavailable.", "transient_service_error"],
+  ["The video could not be created due to a network error.", "transient_service_error"],
+  ["สร้างวิดีโอไม่สำเร็จ เนื่องจากข้อผิดพลาดของเซิร์ฟเวอร์", "transient_service_error"],
+  ["The video could not be generated: server error. Safety policy prevents this request.", "policy"],
+  ["The video could not be generated: server error. Quota exceeded.", "quota"],
+  ["Server error", ""],
+  ["The service is temporarily unavailable.", ""],
+  ["The server error is resolved. Here is your video.", ""],
+  ["Generating your video now. A server error was shown earlier.", ""],
+  ["The video could not be generated right now.", ""],
+  ["I couldn't create the video from this image.", "completed_no_video"],
+  ["The video (file unavailable) was created using a legacy model.", "completed_no_video"],
+  ["ขออภัย ดูเหมือนว่าทางฝั่งของฉันจะเกิดปัญหาบางอย่าง โปรดลองอีกครั้ง", "technical_redesign"],
+  ["  ขออภัย   ดูเหมือนว่าทางฝั่งของฉันจะเกิดปัญหาบางอย่าง   โปรดลองอีกครั้ง。  ", "technical_redesign"],
+  ["ขออภัย ดูเหมือนว่าทางฝั่งของฉันจะเกิดปัญหาบางอย่าง โปรดลองอีกครั้ง นโยบายไม่อนุญาต", "policy"],
+  ["ขออภัย ดูเหมือนว่าทางฝั่งของฉันจะเกิดปัญหาบางอย่าง โปรดลองอีกครั้ง โควตาหมด", "quota"]
+]

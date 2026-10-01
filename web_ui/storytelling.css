@@ -1,0 +1,16 @@
+.storytelling-panel{border:1px solid var(--border,#2b364c);border-radius:18px;padding:20px;margin:20px 0;background:var(--panel,#101728);min-width:0}
+.storytelling-panel legend{font-weight:750;padding:0 8px}.storytelling-intro,.storytelling-panel>small{color:var(--muted,#aab9cf);font-size:13px}
+.storytelling-speaker{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px;margin:0}
+.storytelling-speaker select{min-width:0;width:100%;min-height:44px}.storytelling-speaker select:focus-visible{outline:2px solid #8beafb;outline-offset:3px}
+.storytelling-writing-help{margin:0 0 10px;color:var(--muted,#aab9cf);font-size:13px;min-width:0}
+.storytelling-writing-help summary{cursor:pointer;padding:10px 0}.storytelling-writing-help>small{display:block;margin-top:8px;line-height:1.6}
+.storytelling-example{border-left:2px solid #3bcbdf;padding:10px 14px;color:#c7deed;background:#0b1423;border-radius:0 8px 8px 0;font-size:13px;line-height:1.8}
+.storytelling-warning{color:#ffd589;background:#302519;padding:12px;border-radius:10px;font-size:13px;line-height:1.7}
+.storytelling-panel [hidden],.character-grid [hidden],.drama-options-card [hidden]{display:none!important}
+.storytelling-advanced{margin:10px 0;border-top:1px solid var(--border,#2b364c)}.storytelling-advanced summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:10px;color:#a7def1}
+.storytelling-advanced summary:before{content:'▸'}.storytelling-advanced[open]>summary:before{content:'▾'}
+.storytelling-advanced-state{font-weight:400;color:var(--muted,#aab9cf)}.storytelling-advanced-note{line-height:1.7;color:var(--muted,#aab9cf)}
+.storytelling-structure .creative-picker{margin:0}
+.storytelling-advanced-fields{display:grid;gap:12px}.drama-render-advanced>label,.drama-render-advanced>.image-picker{margin:14px 0}.drama-render-advanced>summary{cursor:pointer;padding:14px}
+.drama-manage-menu{position:relative}.drama-manage-items{position:absolute;right:0;top:100%;z-index:5;padding:10px;min-width:180px;display:grid;gap:6px;border:1px solid #354258;background:#101728;border-radius:12px;box-shadow:0 12px 30px #0008}.drama-manage-menu summary{cursor:pointer;list-style:none}
+@media(max-width:680px){.storytelling-panel{padding:14px}.storytelling-speaker{gap:10px}.storytelling-advanced summary{flex-wrap:wrap}}

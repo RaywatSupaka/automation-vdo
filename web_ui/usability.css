@@ -1,0 +1,40 @@
+/* Consistent controls and readable secondary information across creator pages. */
+.landscape-result .detail-layout{grid-template-columns:1fr}
+.landscape-result video,.landscape-result .detail-preview img{aspect-ratio:16/9!important;width:100%;height:auto!important;max-height:65vh;object-fit:contain}
+[data-view="longvideo"] .panel{padding:24px}
+[data-view="longvideo"] .field{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+[data-view="longvideo"] .button{margin:8px 8px 8px 0}
+[data-view="longvideo"] .hint{color:var(--muted,#aab4ca);line-height:1.7}
+.page .field small,.usability-note,.flow-policy-note{font-size:12px;line-height:1.65;color:#aebbd0}
+.flow-policy-note{display:block;margin-top:6px;border-left:2px solid #d9ab56;padding-left:9px}
+.button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #38d5f3;outline-offset:3px}
+.button{min-height:38px}
+.button:disabled,button:disabled{cursor:not-allowed;opacity:.55}
+.field select,.field input,.field textarea{min-width:0;max-width:100%}
+.drama-series-item footer,.drama-submit-bar,.form-footer{flex-wrap:wrap;gap:10px}
+.drama-series-actions{flex-wrap:wrap}
+.modal{overscroll-behavior:contain}
+.modal-card{max-width:100%;box-sizing:border-box}
+.detail-copy-field{overflow-wrap:anywhere}
+[data-view="dashboard"]>.dashboard-grid{margin-bottom:20px}
+[data-view="dashboard"] .hero{min-height:0}
+[data-view="dashboard"] .hero-copy{padding-top:26px;padding-bottom:26px}
+.page .panel{scroll-margin-top:80px}
+@media(max-width:760px){.form-grid.two{grid-template-columns:minmax(0,1fr)}.drama-submit-bar>.button,.drama-submit-bar>.drama-create-button{flex:1 1 180px}.top-actions .live-chip{display:none}}
+@media(prefers-reduced-motion:no-preference){.button{transition:background-color .15s,border-color .15s,box-shadow .15s}.page.active>.panel{animation:usability-appear .18s ease-out}@keyframes usability-appear{from{opacity:.6;transform:translateY(4px)}to{opacity:1;transform:none}}}
+@media(prefers-reduced-motion:reduce){.page .panel,.button{animation:none;transition:none}}
+
+/* Keep critical recovery information readable and visible without a popup. */
+.workspace-issues{display:grid;gap:12px;margin-bottom:18px;border:1px solid rgba(255,189,91,.34);border-radius:15px;padding:16px 18px;background:rgba(67,45,22,.34)}
+.workspace-issues[hidden]{display:none}
+.workspace-issues strong{font-size:15px;color:#ffe0a5}
+.workspace-issues p{margin:5px 0 0;color:#e5d4b8;font-size:12px;line-height:1.55}
+.workspace-issue-list{display:grid;gap:8px;max-height:260px;overflow:auto}
+.workspace-issue-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(255,189,91,.17);border-radius:10px;padding:9px 11px;background:rgba(8,11,21,.48)}
+.workspace-issue-row span{min-width:0;overflow-wrap:anywhere}
+.workspace-issue-row b,.workspace-issue-row small{display:block}
+.workspace-issue-row b{font-size:12px}.workspace-issue-row small,.workspace-issue-list>small{margin-top:3px;color:#d1c5b5;font-size:11px}
+.workspace-issue-row button{flex:0 0 auto}
+.navigation .nav-creator-copy small,.navigation .nav-label,.field-help,.automation-error-card pre{font-size:11px}
+.page-heading span,.eyebrow{font-size:11px}
+@media(max-width:700px){.workspace-issue-row{align-items:stretch;flex-direction:column}.workspace-issue-row button{align-self:flex-start}}

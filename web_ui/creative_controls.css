@@ -1,0 +1,46 @@
+.creative-picker{display:grid;gap:6px;margin:8px 0;min-width:0}
+.creative-picker>span{font-size:.85rem;font-weight:650}
+.creative-picker .creative-current{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--line,#334155);background:var(--surface,#151a30);color:var(--text,#f4f7ff);text-align:left;white-space:normal;line-height:1.5}
+.creative-current-label{min-width:0;overflow-wrap:anywhere}
+.creative-current-action{flex:none;color:var(--muted,#94a3b8);font-size:11px;font-weight:500}
+.creative-current-action::after{content:' ▾'}
+.creative-picker>small{color:var(--muted,#94a3b8);line-height:1.5}
+
+/* .modal is a viewport overlay; only its card may have a compact width. */
+.modal.creative-dialog{width:100vw;height:100dvh;max-width:none;max-height:none;inset:0;margin:0;padding:16px;box-sizing:border-box;overflow:hidden}
+.creative-dialog .modal-card{display:flex;flex-direction:column;gap:12px;width:min(620px,100%);max-width:100%;max-height:calc(100dvh - 32px);min-width:0;min-height:0;margin:0;padding:20px;box-sizing:border-box;overflow:hidden}
+.creative-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;min-width:0}
+.creative-header h2{margin:0;min-width:0;font-size:20px;line-height:1.4;overflow-wrap:anywhere}
+.creative-header .creative-close{flex:none;min-width:34px;width:34px;min-height:34px;height:34px;padding:0;font-size:24px;font-weight:400;line-height:1}
+.creative-dialog .creative-search{display:block;flex:none;width:100%;max-width:100%;min-width:0;min-height:42px;box-sizing:border-box;border:1px solid var(--line,#334155);border-radius:10px;padding:10px 12px;background:var(--bg,#070914);color:var(--text,#f4f7ff);font:inherit;font-size:13px;line-height:1.5}
+.creative-search::placeholder{color:var(--muted,#94a3b8)}
+.creative-dialog .creative-search:focus-visible{outline:2px solid var(--cyan,#38bdf8);outline-offset:1px}
+.creative-dialog .creative-example{flex:none;min-height:0;margin:0;color:var(--muted,#94a3b8);font-size:12px;line-height:1.5}
+.creative-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;align-items:stretch;gap:8px;flex:0 1 auto;min-width:0;min-height:0;max-height:440px;padding:3px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.creative-group{grid-column:1/-1;padding:8px 2px 2px;color:var(--muted,#94a3b8);font-size:12px;line-height:1.5}
+.creative-group:first-child{padding-top:0}
+.creative-option{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;min-height:68px;margin:0;border:1px solid var(--line,#334155);border-radius:10px;padding:10px 12px;background:rgba(255,255,255,.02);color:var(--text,#f4f7ff);font:inherit;line-height:1.5;text-align:left;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.creative-option-title{font-size:13px;font-weight:650}
+.creative-option>small{color:var(--muted,#94a3b8);font-size:11px;font-weight:400;line-height:1.5}
+.creative-option:hover{border-color:var(--line-bright,#38bdf8);background:rgba(49,216,255,.04)}
+.creative-option[aria-pressed=true]{border-color:var(--cyan,#38bdf8);background:rgba(49,216,255,.09)}
+.creative-option[aria-pressed=true] .creative-option-title::after{content:' ✓';color:var(--cyan,#38bdf8)}
+.creative-option:focus-visible{outline:2px solid var(--cyan,#38bdf8);outline-offset:1px}
+.creative-empty{grid-column:1/-1;margin:0;padding:16px 4px;color:var(--muted,#94a3b8);font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.creative-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;min-width:0;border-top:1px solid var(--line,#334155);padding-top:12px}
+.creative-footer>small{min-width:0;color:var(--muted,#94a3b8);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.creative-footer>.button{flex:none;min-width:64px}
+.ps-style-grid[hidden],.cq-product-script-options[hidden]{display:none!important}
+.creative-picker[hidden]{display:none}
+.creative-queue-pickers{display:grid;gap:6px}
+@media(max-width:560px){
+  .modal.creative-dialog{padding:12px}
+  .creative-dialog .modal-card{max-height:calc(100dvh - 24px);padding:16px;gap:10px}
+  .creative-options{grid-template-columns:minmax(0,1fr)}
+  .creative-header h2{font-size:18px}
+}
+@media(max-height:460px){
+  .creative-dialog .modal-card{padding:12px;gap:8px}
+  .creative-header h2{font-size:17px}
+  .creative-footer{padding-top:8px}
+}
