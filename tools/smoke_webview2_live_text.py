@@ -23,7 +23,7 @@ from desktop.embedded_provider import EmbeddedProvider
 from desktop.webview2_request import OneShotRunner, RequestJournal, observe_script
 
 
-def recent_owned_conversation(created_at):
+def recent_owned_conversation(created_at, provisional_path=""):
     history = embedded_provider.PROFILE / "EBWebView" / "Default" / "History"
     if not history.is_file():
         return ""
@@ -37,26 +37,34 @@ def recent_owned_conversation(created_at):
     for (url,) in rows:
         if re.fullmatch(r"https://chatgpt\.com/c/[A-Za-z0-9_:-]+", url):
             matches.append(url)
-    return matches[0] if len(matches) == 1 else ""
+    if len(matches) == 1:
+        return matches[0]
+    provisional = "https://chatgpt.com" + provisional_path
+    stable = [url for url in matches if ":" not in url.removeprefix("https://chatgpt.com/c/")]
+    return stable[0] if len(matches) == 2 and provisional in matches and len(stable) == 1 else ""
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--send", action="store_true", help="send one harmless text request")
     parser.add_argument("--inspect-pending", action="store_true", help="read only the saved one-request chat")
+    parser.add_argument("--marker", default="WEBVIEW2_OK", help="unique harmless answer marker")
     args = parser.parse_args()
     if os.environ.get("SMARTFLOW_DEV_BYPASS_MEMBERSHIP") != "1":
         raise SystemExit("DEV MODE only")
-    if args.send and RequestJournal().read().get("phase") not in {None, "completed", "failed_before_send"}:
+    if not re.fullmatch(r"[A-Z0-9_]{3,30}", args.marker):
+        raise SystemExit("Invalid answer marker")
+    if args.send and RequestJournal().read().get("phase") not in {None, "completed", "reviewed_completed", "failed_before_send"}:
         raise SystemExit("An earlier Send needs review; no replay")
 
     result = {"ok": False, "ready": False, "phase": "", "answer_matches": False}
-    prompt = "ตอบเพียงคำว่า WEBVIEW2_OK โดยไม่มีข้อความอื่น"
+    prompt = f"ตอบเพียงคำว่า {args.marker} โดยไม่มีข้อความอื่น"
     if args.inspect_pending:
         receipt = RequestJournal().read()
         if receipt.get("phase") != "needs_review":
             raise SystemExit("No uncertain request")
-        conversation = recent_owned_conversation(float(receipt["created_at"]))
+        conversation = recent_owned_conversation(float(receipt["created_at"]),
+                                                 str(receipt.get("conversation_path") or ""))
         if not conversation:
             raise SystemExit("No unique recent conversation for this receipt")
         embedded_provider.PROVIDER_URL = conversation
@@ -104,7 +112,7 @@ def main():
                               user_count=observed.get("user_count"),
                               assistant_count=observed.get("assistant_count"),
                               busy=observed.get("busy"),
-                              answer_matches=str(observed.get("assistant_text") or "").strip() == "WEBVIEW2_OK")
+                              answer_matches=str(observed.get("assistant_text") or "").strip() == args.marker)
                 result["structure"] = structure
                 result["ok"] = bool(result["latest_user_matches"])
                 return
@@ -117,7 +125,7 @@ def main():
             receipt = runner.run(prompt, acceptance_timeout=20, result_timeout=120)
             result["phase"] = receipt.get("phase") or ""
             result["request_id"] = receipt.get("request_id") or ""
-            result["answer_matches"] = runner.answer.strip() == "WEBVIEW2_OK"
+            result["answer_matches"] = runner.answer.strip() == args.marker
             result["ok"] = result["phase"] == "completed" and result["answer_matches"]
             if not result["ok"]:
                 result["reason"] = receipt.get("reason") or "answer_unexpected"

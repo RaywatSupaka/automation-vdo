@@ -124,8 +124,10 @@ class RequestJournal:
             raise ValueError("scene_index ไม่ถูกต้อง")
         with self.lock:
             current = self.read()
-            if current.get("phase") not in {None, "completed", "failed_before_send"}:
+            if current.get("phase") not in {None, "completed", "reviewed_completed", "failed_before_send"}:
                 raise RuntimeError("มีคำขอเดิมที่ยังไม่ยืนยันผล • ตรวจคำขอเดิมก่อน")
+            if current.get("request_id"):
+                self._archive(current)
             row = {
                 "request_id": "WV2-" + uuid.uuid4().hex[:16].upper(),
                 "job_id": job_id or "LAB-" + uuid.uuid4().hex[:12].upper(),
@@ -154,6 +156,18 @@ class RequestJournal:
         temporary = self.path.with_suffix(".tmp")
         temporary.write_text(json.dumps(row, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         os.replace(temporary, self.path)
+
+    def _archive(self, row: dict) -> None:
+        request_id = str(row.get("request_id") or "")
+        if not re.fullmatch(r"WV2-[0-9A-F]{16}", request_id):
+            raise RuntimeError("receipt เดิมไม่ถูกต้อง • ไม่ทับข้อมูล")
+        target = self.path.parent / "embedded-request-receipts" / (request_id + ".json")
+        if target.exists():
+            return
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_suffix(".tmp")
+        temporary.write_text(json.dumps(row, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        os.replace(temporary, target)
 
 
 def preflight(snapshot: dict) -> str:
@@ -279,12 +293,39 @@ class OneShotRunner:
         deadline = self.now() + result_timeout
         stable_text = ""
         stable_samples = 0
+        last_result_evidence = {}
         while self.now() < deadline:
             try:
                 current = self._read(observe_script(prompt))
-                if (current.get("url") != owned_url or
-                        current.get("latest_user_matches") is not True):
+                current_url = str(current.get("url") or "")
+                last_result_evidence = {
+                    "observed_url_kind": url_kind(current_url),
+                    "observed_user_count": int(current.get("user_count") or 0),
+                    "observed_assistant_count": int(current.get("assistant_count") or 0),
+                    "observed_user_matches": current.get("latest_user_matches") is True,
+                    "observed_busy": bool(current.get("busy")),
+                }
+                if current.get("origin") != "https://chatgpt.com" or url_kind(current_url) == "other":
                     break
+                if current_url != owned_url:
+                    # ChatGPT can replace provisional /c/WEB:... with a stable
+                    # conversation ID. Adopt only after the exact new user turn
+                    # is visible on that route, never on URL shape alone.
+                    if (CHAT_URL.fullmatch(current_url) and
+                            current.get("latest_user_matches") is True and
+                            int(current.get("user_count") or 0) > row["baseline_user_count"]):
+                        owned_url = current_url
+                        self.journal.transition(request_id, {"accepted"}, "accepted",
+                                                conversation_path=current_url[len("https://chatgpt.com"):],
+                                                conversation_sha256=hashlib.sha256(current_url.encode()).hexdigest())
+                    else:
+                        stable_samples = 0
+                        self.sleep(1)
+                        continue
+                if current.get("latest_user_matches") is not True:
+                    stable_samples = 0
+                    self.sleep(1)
+                    continue
                 answer = str(current.get("assistant_text") or "").strip()
                 ready_answer = (int(current.get("assistant_count") or 0) >
                                 row["baseline_assistant_count"] and
@@ -304,5 +345,5 @@ class OneShotRunner:
                 pass
             self.sleep(1)
         self.journal.transition(request_id, {"accepted"}, "needs_review",
-                                reason="result_unconfirmed")
+                                reason="result_unconfirmed", **last_result_evidence)
         return self.journal.read()

@@ -104,6 +104,47 @@ class WebView2RequestTests(unittest.TestCase):
         self.assertEqual(row["phase"], "completed")
         self.assertEqual(provider.clicked, 1)
 
+    def test_owner_reviewed_completed_allows_new_distinct_request(self):
+        row = self.journal.start("คำขอแรก")
+        self.journal.transition(row["request_id"], {"prepared"}, "needs_review")
+        self.journal.transition(row["request_id"], {"needs_review"}, "reviewed_completed",
+                                verification_source="owner_reported")
+        second = self.journal.start("คำขอที่สอง")
+        self.assertNotEqual(row["request_id"], second["request_id"])
+        archive = self.journal.path.parent / "embedded-request-receipts" / (row["request_id"] + ".json")
+        self.assertEqual(json.loads(archive.read_text(encoding="utf-8"))["phase"], "reviewed_completed")
+
+    def test_provisional_route_migrates_only_after_owned_user_turn(self):
+        stable_url = "https://chatgpt.com/c/1234-5678"
+
+        class RedirectProvider(FakeProvider):
+            observations = 0
+
+            def evaluate(self, script):
+                if "login_visible:" in script:
+                    return json.dumps({**BASE, "url": "https://chatgpt.com/", "user_count": 0,
+                                       "assistant_count": 0})
+                if "latest_user_matches:" in script:
+                    self.observations += 1
+                    if self.observations == 1:
+                        return json.dumps({"origin": "https://chatgpt.com", "url": URL,
+                                           "latest_user_matches": True, "user_count": 1,
+                                           "assistant_count": 0, "busy": True})
+                    if self.observations == 2:
+                        return json.dumps({"origin": "https://chatgpt.com", "url": stable_url,
+                                           "latest_user_matches": False, "user_count": 0,
+                                           "assistant_count": 0, "busy": False})
+                    return json.dumps({"origin": "https://chatgpt.com", "url": stable_url,
+                                       "latest_user_matches": True, "user_count": 1,
+                                       "assistant_count": 1, "assistant_text": "คำตอบทดสอบ", "busy": False})
+                return super().evaluate(script)
+
+        provider = RedirectProvider()
+        row = OneShotRunner(provider, self.journal, sleep=lambda _: None).run("คำขอทดสอบใหม่")
+        self.assertEqual(row["phase"], "completed")
+        self.assertEqual(row["conversation_path"], "/c/1234-5678")
+        self.assertEqual(provider.clicked, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

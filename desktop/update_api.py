@@ -72,7 +72,7 @@ class UpdateApi:
             if self._provider_test_thread and self._provider_test_thread.is_alive():
                 return {"ok": False, "error": "คำขอเดิมยังทำงานอยู่"}
             journal = RequestJournal()
-            if journal.read().get("phase") not in {None, "completed", "failed_before_send"}:
+            if journal.read().get("phase") not in {None, "completed", "reviewed_completed", "failed_before_send"}:
                 return {"ok": False, "error": "คำขอเดิมยังไม่ยืนยันผล • ตรวจแชตเดิมก่อน"}
             runner = OneShotRunner(self._embedded_provider, journal)
             self._provider_test_runner = runner

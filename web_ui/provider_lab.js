@@ -18,6 +18,7 @@
       const phase = row.phase || '';
       const labels = {prepared:'เตรียมข้อความ',dispatching:'ตรวจว่าหน้าเว็บรับคำขอแล้วหรือไม่',
         accepted:'ChatGPT รับคำขอแล้ว กำลังรอคำตอบ',completed:'รับคำตอบแล้ว',
+        reviewed_completed:'ผู้ใช้ตรวจยืนยันคำตอบเดิมแล้ว',
         needs_review:'ยังยืนยันผลไม่ได้ • ตรวจคำขอเดิมในแชต ไม่ส่งซ้ำ',
         failed_before_send:'ยังไม่ได้ส่ง • ตรวจช่องข้อความในแชต'};
       if (row.error) testStatus.textContent = row.error;
