@@ -534,7 +534,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.500-20261002.1";
+const FLOW_HELPER_BUILD = "flow-0.15.502-20261002.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";
@@ -7748,6 +7748,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       let gesturePhase = "not_started";
       let validatedStoryClaim = false;
       let canAttestNoDispatch = !storyClaim && !reminderClaim;
+      let sendPreflightRechecks = 0;
+      const sendPreflightReasons = [];
       try {
       let reminderDocumentId = '';
       const assertReminderOwner = async () => {
@@ -8086,8 +8088,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await assertSendOwner();
         [injection] = await readInitialSendPoint();
       }
+      // The composer can render before its Send control or a previous answer settles.
+      // Re-read the exact owned draft only; no second request, click, or draft rewrite.
+      for (let sample = 0; message.provider === 'chatgpt'
+        && ['send_not_ready', 'response_active', 'target_blocked', 'send_target_ambiguous'].includes(injection?.result?.reason)
+        && sample < 3; sample++) {
+        sendPreflightReasons.push(injection.result.reason);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        await assertSendOwner();
+        [injection] = await readInitialSendPoint();
+        sendPreflightRechecks++;
+      }
       const point = injection?.result;
-      if (!point?.ok) { const error=new Error(point?.error || "หาตำแหน่งปุ่มส่ง AI Web ไม่สำเร็จ"); error.preflightReason=point?.reason; throw error; }
+      if (!point?.ok) {
+        const error=new Error(`${point?.error || "หาตำแหน่งปุ่มส่ง AI Web ไม่สำเร็จ"}${sendPreflightRechecks ? ` • ตรวจซ้ำ ${sendPreflightRechecks} ครั้ง ห่างกัน 5 วินาทีแล้ว` : ''}`);
+        error.preflightReason=point?.reason;
+        throw error;
+      }
       const debuggee = { tabId };
       await chrome.debugger.attach(debuggee, "1.3");
       let stableBeforePress = false;
@@ -8191,7 +8208,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const clickEvents = clickProofInjection?.result?.events || [];
       const trustedClickSeen = clickProofInjection?.result?.trustedClickSeen === true;
       const diagnostics = { gesture_phase: gesturePhase, target_stable_before_press: stableBeforePress,
-        send_target_strategy: finalPoint?.point_strategy || point.point_strategy };
+        send_target_strategy: finalPoint?.point_strategy || point.point_strategy,
+        preflight_rechecks:sendPreflightRechecks, preflight_reasons:sendPreflightReasons.slice(0,3) };
       if (clickProofInjection?.result) diagnostics.target_changed = clickProofInjection.result.targetChanged;
       for (const key of ["target_node_changes_prepress", "target_geometry_changes_prepress",
                          "target_node_changes_during_gesture", "target_geometry_changes_during_gesture"]) {
@@ -8228,7 +8246,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } catch (error) {
         if (gesturePhase !== 'not_started' || !canAttestNoDispatch) throw error;
         sendResponse({ok:false, error:String(error?.message || error), notDispatched:true,
-          diagnostics:{gesture_phase:'not_started', preflight_reason:['draft_mismatch','send_not_ready','send_target_ambiguous','response_active','composer_form_changed','capture_missing','target_changed','readiness_changed','target_blocked'].includes(error.preflightReason)?error.preflightReason:'rejected_before_press'}});
+          diagnostics:{gesture_phase:'not_started', preflight_reason:['draft_mismatch','send_not_ready','send_target_ambiguous','response_active','composer_form_changed','capture_missing','target_changed','readiness_changed','target_blocked'].includes(error.preflightReason)?error.preflightReason:'rejected_before_press',
+            preflight_rechecks:sendPreflightRechecks, preflight_reasons:sendPreflightReasons.slice(0,3)}});
         return;
       } finally {
         aiSendInFlight.delete(tabId);

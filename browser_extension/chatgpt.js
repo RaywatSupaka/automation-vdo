@@ -1664,6 +1664,7 @@
         const review=storyImageRecoveryError('STORY_IMAGE_RECEIPT_REVIEW',storySend.scene_index,
           'CHATGPT_IMAGE_RESULT_'+(error.notDispatched?'SEND_NOT_STARTED':'SEND_UNCONFIRMED')+' • '+error.message);
         if(storySend.sameChatReminder && error.notDispatched)review.notDispatched=true;
+        if(error.sendDiagnostics)review.sendDiagnostics=error.sendDiagnostics;
         throw review;
       }
       throw error;
@@ -1692,6 +1693,10 @@
       'target_node_changes_during_gesture','target_geometry_changes_during_gesture']){
       if(Number.isInteger(trusted.diagnostics?.[key]))sendDiagnostics[key]=Math.max(0,Math.min(1000,trusted.diagnostics[key]));
     }
+    if(Number.isInteger(trusted.diagnostics?.preflight_rechecks))
+      sendDiagnostics.preflight_rechecks=Math.max(0,Math.min(3,trusted.diagnostics.preflight_rechecks));
+    if(Array.isArray(trusted.diagnostics?.preflight_reasons))
+      sendDiagnostics.preflight_reasons=trusted.diagnostics.preflight_reasons.slice(0,3);
     await report("ai_send_dispatched", `ส่งคำสั่งคลิก ${AI_NAME} แล้ว 1 ครั้ง • กำลังตรวจว่าหน้าเว็บรับข้อความ`, 0, {
       send_method: trusted.method || "trusted_ai_send",
       prompt_length: expectedPrompt.length,

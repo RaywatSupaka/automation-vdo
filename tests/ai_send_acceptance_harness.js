@@ -16,7 +16,7 @@ function section(source, start, end) {
 // real content acceptance loop. Only browser surfaces and time are mocked.
 function fixture(options = {}) {
   const prompt = "Repair this existing response as JSON; do not create a new job.";
-  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0 };
+  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0, preflightReads: 0, delays: [] };
   const originalEditor = state.editor;
   const claim={key:'smartpostStoryGeneratedImage:chatgpt:JOB-TEST:6',nonce:'test-nonce',scene_index:6};
   const storage={[claim.key]:{job_id:'JOB-TEST',run_id:'run-test',send_nonce:'test-nonce',send_phase:'dispatching',
@@ -29,7 +29,9 @@ function fixture(options = {}) {
   const rect = { left: 20, top: 20, width: 40, height: 40, bottom: 60, right: 60 };
   function queryButtons(selector) {
     return selector === 'button' || selector === 'button[type="submit"]'
-      || selector === `button[aria-label="${state.label}"]` ? [state.button] : [];
+      || selector === `button[aria-label="${state.label}"]`
+      ? [state.button, ...(options.ambiguousUntilPreflightReads && state.preflightReads < options.ambiguousUntilPreflightReads
+        ? [state.extraButton] : [])] : [];
   }
   const composerForm = { isConnected: true, querySelectorAll: queryButtons };
   originalEditor.isConnected = true;
@@ -37,7 +39,7 @@ function fixture(options = {}) {
   originalEditor.getBoundingClientRect = () => rect;
   function makeButton() {
     const node = {
-      isConnected: true, disabled: options.disabled === true, innerText: "", textContent: "",
+      isConnected: true, get disabled() { return options.disabled === true || (options.readyAfterPreflightReads && state.preflightReads < options.readyAfterPreflightReads); }, innerText: "", textContent: "",
       form: composerForm, type: 'submit',
       getBoundingClientRect: () => ({ ...rect, left: rect.left + state.offset, right: rect.right + state.offset }),
       getAttribute: (name) => name === "aria-label" ? state.label : name === 'type' ? 'submit'
@@ -54,7 +56,7 @@ function fixture(options = {}) {
     };
     return node;
   }
-  const button = makeButton(); state.button = button;
+  const button = makeButton(); state.button = button; state.extraButton = makeButton();
   const page = vm.createContext({
     window: {}, innerHeight: 1000, innerWidth: 1000, HTMLTextAreaElement: class {},
     Date: { now: () => clock },
@@ -94,7 +96,7 @@ function fixture(options = {}) {
       state.ownerChecks++;
       return { active: !(options.loseOwnership && state.ownerChecks > 1), ownerTabId: 12, activeRunId: "run-test" };
     },
-    setTimeout: (callback) => { callback(); return 1; },
+    setTimeout: (callback, delay) => { state.delays.push(delay); callback(); return 1; },
     chrome: {
       storage:{local:{get:async()=>structuredClone(storage),set:async value=>Object.assign(storage,structuredClone(value))}},
       windows: { update: async () => {} }, tabs: {
@@ -105,6 +107,10 @@ function fixture(options = {}) {
         }
       },
       scripting: { executeScript: async ({ func, args = [] }) => {
+        if (args[1] === true && func.toString().includes('resolveChatGPTComposerSendTarget')) {
+          state.preflightReads++;
+          if (options.changeDraftAfterPreflightRead === state.preflightReads) state.editor.innerText = 'Changed draft';
+        }
         page.injectedArgs = args;
         return [{ result: await vm.runInContext(`(${func.toString()})(...injectedArgs)`, page) }];
       } },
@@ -218,6 +224,40 @@ async function tests() {
     await assert.rejects(f.run());
     assert.equal(f.commands.filter(event=>event.type==='mousePressed').length,0);
     assert.equal(f.responses[0].notDispatched,true);
+    assert.equal(f.responses[0].diagnostics.preflight_rechecks,3);
+    assert.deepEqual(f.state.delays.filter(delay => delay === 5000),[5000,5000,5000]);
+  }
+  for (const readyAfterPreflightReads of [2,3,4]) {
+    const f=fixture({storyClaim:true,acceptImmediately:true,readyAfterPreflightReads});
+    await f.run();
+    assert.equal(f.state.preflightReads,readyAfterPreflightReads);
+    assert.equal(f.state.delays.filter(delay => delay === 5000).length,readyAfterPreflightReads-1);
+    f.checkSingleDispatch();
+  }
+  for (const ambiguousUntilPreflightReads of [2,4]) {
+    const f=fixture({storyClaim:true,acceptImmediately:true,ambiguousUntilPreflightReads});
+    await f.run();
+    assert.equal(f.state.preflightReads,ambiguousUntilPreflightReads);
+    assert.equal(f.state.delays.filter(delay => delay === 5000).length,ambiguousUntilPreflightReads-1);
+    assert.equal(f.reports[0].detail.preflight_rechecks,ambiguousUntilPreflightReads-1);
+    f.checkSingleDispatch();
+  }
+  {
+    const f=fixture({storyClaim:true,ambiguousUntilPreflightReads:99});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true);
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'send_target_ambiguous');
+    assert.equal(f.responses[0].diagnostics.preflight_rechecks,3);
+    assert.equal(f.state.delays.filter(delay => delay === 5000).length,3);
+    assert.equal(f.commands.filter(event => event.type === 'mousePressed').length,0);
+  }
+  {
+    const f=fixture({storyClaim:true,readyAfterPreflightReads:4,changeDraftAfterPreflightRead:2});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true);
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'draft_mismatch');
+    assert.equal(f.state.delays.filter(delay => delay === 5000).length,1);
+    assert.equal(f.commands.filter(event => event.type === 'mousePressed').length,0);
   }
   for(const gemini of [false,true]){
     const f=fixture({singleAnswer:true,gemini,storyClaim:!gemini,acceptImmediately:true});
@@ -386,7 +426,7 @@ async function tests() {
     f=fixture({storyClaim:true,[option]:true});await assert.rejects(f.run());
     assert.equal(f.commands.filter(e=>e.type==='mousePressed').length,0,option);
   }
-  process.stdout.write(JSON.stringify({ ok: true, cases: 35 }) + "\n");
+  process.stdout.write(JSON.stringify({ ok: true, cases: 42 }) + "\n");
 }
 
 module.exports = { fixture };

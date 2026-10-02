@@ -84,6 +84,14 @@ def safe_ai_send_diagnostics(payload: Mapping[str, object]) -> AISendDiagnostics
             value = source.get(key)
             if type(value) is int and 0 <= value <= 1000:
                 result[key] = value
+        rechecks = source.get("preflight_rechecks")
+        if type(rechecks) is int and 0 <= rechecks <= 3:
+            result["preflight_rechecks"] = rechecks
+        reasons = source.get("preflight_reasons")
+        if isinstance(reasons, list):
+            allowed_reasons = {"send_not_ready", "response_active", "target_blocked", "send_target_ambiguous"}
+            result["preflight_reasons"] = [reason for reason in reasons[:3]
+                                            if isinstance(reason, str) and reason in allowed_reasons]
         allowed_fields = {
             "job", "run", "url", "prompt", "userCount", "userSignature",
             "assistantCount", "assistantSignature", "imageSignature", "sourceSignature",

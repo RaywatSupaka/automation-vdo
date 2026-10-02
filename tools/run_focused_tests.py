@@ -26,7 +26,7 @@ SUITES = {
     },
     "story-dispatch": {
         "python": ["test_story_duplicate_dispatch.py"],
-        "node": ["tests/story_bootstrap_tab_guard.cjs", "tests/story_retained_reference_resume.cjs"],
+        "node": ["tests/story_bootstrap_tab_guard.cjs", "tests/story_retained_reference_resume.cjs", "tests/ai_send_acceptance_harness.js"],
         "syntax": ["browser_extension/background.js", "browser_extension/chatgpt.js"],
     },
     "story-recovery-ui": {
@@ -109,6 +109,7 @@ FILE_SUITES = {
     "tests/test_story_duplicate_dispatch.py": ("story-dispatch",),
     "tests/story_bootstrap_tab_guard.cjs": ("story-dispatch",),
     "tests/story_retained_reference_resume.cjs": ("story-dispatch",),
+    "tests/ai_send_acceptance_harness.js": ("story-dispatch",),
     "browser_extension/chatgpt.js": ("ai-cover", "story-dispatch", "story-image-result"),
     "tests/ai_cover_harness.js": ("ai-cover",),
     "tests/cover_multiple_selection_450.cjs": ("ai-cover",),

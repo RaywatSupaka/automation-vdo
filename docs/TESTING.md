@@ -25,6 +25,7 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 
 `story-dispatch` checks duplicate command protection, exact saved-conversation tab adoption on Resume, ambiguous-tab stop, desktop URL routing and heartbeat dispatch ownership, plus read-only ChatGPT bootstrap tab selection, stale drafts, document replacement, retained-reference reuse for a prepared unsent Story draft across unified composer forms, exact attachment count before Send, and the unchanged Gemini tab route.
 It also checks bounded removal of one exactly named unsent Story reference left in the composer after a failed Send preflight; ownership changes, unrelated drafts and multiple attachments remain blocked.
+The actual Background Send harness also checks up to three five-second read-only readiness rechecks, including transient ambiguous Send controls, one final gesture, and no gesture after the draft changes or ambiguity persists. The Story image result group verifies bounded reason and recheck evidence reaches the local trace without prompt text.
 
 `story-recovery-ui` checks durable saved-scene evidence, bounded trace fallback for a later reference error without a scene number, and the Story recovery timeline shown in the desktop UI. It does not send provider requests or alter saved jobs.
 
