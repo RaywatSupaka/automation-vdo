@@ -52,6 +52,10 @@ When Chrome is already open, desktop focuses its window even if the Extension he
 
 ## AI cover send diagnostics (2026-10-02)
 
+The cover collector reports a bounded heartbeat with the exact request's ownership, loaded image count, Stop visibility and time since answer content changed. A physically dispatched Send with an unknown acceptance remains on that same conversation and passively reads its result. The collector never uses that uncertainty to send another prompt. A loaded, exact owned cover may be saved after 60 seconds of stable display even if ChatGPT leaves Stop mounted; a changed image restarts the stability window. A genuinely active request without a usable cover reaches review after nine minutes, while an idle response still reaches review after six minutes. Existing video and cover receipts remain intact.
+
+For Story checkpoint resume, a previous image request that was proven never sent may leave its named reference thumbnail in the composer after a failed Send preflight. The Extension removes that thumbnail only when the prepared receipt belongs to the exact job/scene, the same conversation has no sent request, the draft is empty or matches the exact wrapped prompt, no response is active, and a single named attachment has one Remove control. It then reattaches the saved checkpoint image. Unknown ownership, multiple attachments or a changed draft remain review cases.
+
 The desktop cover ledger retains bounded Send target movement and trusted event evidence already reported by the Extension, without prompt text, coordinates, URLs or attachment bytes. A cover timeout with an unconfirmed Send and no image collector evidence identifies the Send acceptance stage; an accepted Send with no collector evidence identifies the result reader stage. Neither state proves a saved cover or grants an automatic retry. The existing request, completed video and generated scene images remain intact for explicit review or cover editing. This is a desktop-only diagnostic change; it does not change the Chrome click strategy or activate new Extension code.
 
 ## Story Shorts failure diagnostics (2026-10-01)

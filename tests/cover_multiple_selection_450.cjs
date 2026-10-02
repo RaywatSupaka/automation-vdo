@@ -124,7 +124,7 @@ async function scenario(browser,config,verify){
     await scenario(browser,{duplicate:true},async f=>{eq((await f.state()).candidates,['first','second'],'layers are deduplicated by asset key');const result=await f.run();eq(result.asset,'first');eq(result.elapsed,3500);});
     await scenario(browser,{single:true},async f=>{const result=await f.run();eq(result.asset,'first','legacy one-image cover preserved');eq(result.elapsed,3500);});
     await scenario(browser,{stopUntil:4200},async f=>{const result=await f.run();eq(result.asset,'first');eq(result.elapsed,7700,'idle plus full stability window required');});
-    await scenario(browser,{stopUntil:364700},async f=>{const result=await f.run();eq(result.asset,'first');eq(result.elapsed,368200,'real active generation may exceed six minutes without Stop or timeout');yes((await f.state()).events.some(event=>event.collector_state?.stage==='generating'));});
+    await scenario(browser,{stopUntil:364700},async f=>{const result=await f.run();eq(result.asset,'first');eq(result.elapsed,60200,'an owned decoded cover survives a stale Stop after one minute');yes((await f.state()).events.some(event=>event.collector_state?.stop_visible===true));});
     await scenario(browser,{wrongLatest:true},async f=>{const result=await f.run();eq(result.ok,false);eq(result.elapsed,0);yes(/ยังยืนยันคำขอ/.test(result.error));});
     await scenario(browser,{wrongReference:true},async f=>{const result=await f.run();eq(result.ok,false);eq(result.elapsed,0);yes(/ยังยืนยันคำขอ/.test(result.error));});
     await scenario(browser,{newUserAt:1400},async f=>{const result=await f.run();eq(result.ok,false);yes(/6 นาที/.test(result.error));eq((await f.state()).owns,false,'later user revokes result ownership');});

@@ -440,10 +440,14 @@ class AICovers:
                     or state.get('stage') not in {'request_missing', 'answer_missing', 'generating', 'multiple_images',
                                                   'waiting_image', 'loading_image', 'stabilizing', 'downloading'}
                     or type(state.get('owned')) is not bool
+                    or ('stop_visible' in state and type(state['stop_visible']) is not bool)
+                    or ('stalled_ms' in state and (type(state['stalled_ms']) is not int
+                        or not 0 <= state['stalled_ms'] <= 86_400_000))
                     or any(type(state.get(k)) is not int or not 0 <= state[k] <= 10 for k in ('candidates', 'loaded'))
                     or state['loaded'] > state['candidates']):
                     raise ValueError('สถานะตัวอ่านปกไม่ถูกต้อง')
-                row['collector_state'] = {k:state[k] for k in ('stage', 'owned', 'candidates', 'loaded')}
+                row['collector_state'] = {k:state[k] for k in
+                    ('stage', 'owned', 'candidates', 'loaded', 'stop_visible', 'stalled_ms') if k in state}
             if 'result_proof' in event:
                 proof = event['result_proof']
                 if (not isinstance(proof, dict) or proof.get('request_id') != rid

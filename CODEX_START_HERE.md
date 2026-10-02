@@ -1,5 +1,7 @@
 # SmartFlow AI — Codex Quick Blueprint
 
+Source candidate 0.15.499 on `codex/story-image-heartbeat` adds passive post-video cover liveness and result collection; live app/Chrome remain paired at 498 until safe activation. See `PROGRAM_BLUEPRINT.md` “AI cover send diagnostics” and `PROJECT_STATE.md` top. The new queued Story A9425B stopped before scene-2 Send; its scene-1 checkpoint is preserved.
+
 รุ่น `0.15.497` เป็น candidate แยกสำหรับรับภาพ Story ที่เสร็จแล้วแม้ตัวบ่งชี้ progress ค้าง โดยยังตรวจ Stop/เจ้าของผลและไม่ส่งซ้ำ; โปรแกรมและ Chrome ที่เปิดอยู่ยังใช้ 496 ระหว่างงาน `STORY-20261002-E25264` ทำงาน.
 
 รุ่น `0.15.496` ติดตั้งและเชื่อมต่อใน DEV MODE ใช้กรอบช่องพิมพ์เดียวกันเพื่อตรวจ/แนบรูปอ้างอิง Story และหยุดก่อนส่งถ้าจำนวนรูปไม่ตรง; ดู `PROGRAM_BLUEPRINT.md` หัวข้อ Story image composer scope and attachment count และรายงาน 496. งานจริง CB0614 เสร็จภายใต้ 495 แต่ฉาก 5 นับรูปแนบ 2 ต่อคำขอ 1; ผลจริงของกติกา 496 ยังไม่ยืนยัน.

@@ -59,6 +59,30 @@ async function sendAuditScenario(count, shouldStop) {
   process.stdout.write(`PASS ${count} reference attachment(s) ${shouldStop?'stop':'ready'} before Send\n`);
 }
 
+async function clearUnsentScenario(name,changes,expected) {
+  const state={draft:'',owner:true,request:'request_missing',count:1,file:'smartflow-story-previous-4.jpg',stop:false,...changes};
+  let clicks=0;const preview={};
+  const tile={getAttribute:key=>key==='aria-label'?state.file:'',textContent:'',
+    contains:node=>node===preview};
+  const button={getAttribute:key=>key==='aria-label'?'Remove file':'',closest:()=>tile,
+    click:()=>{clicks++;state.count=0;}};
+  const shell={querySelectorAll:selector=>selector==='button[aria-label]'?[button]:[],contains:()=>true};
+  const editor={closest:()=>shell};const reports=[];
+  const context=vm.createContext({IS_GEMINI:false,activeCoverRequest:null,activeSourceReferenceLimit:3,
+    document:{querySelector:()=>shell},composer:()=>editor,composerText:()=>state.draft,
+    stopButtonVisible:()=>state.stop,visible:()=>true,
+    chatGPTComposerAttachmentState:()=>({count:state.count,busy:false,failed:false,nodes:state.count?[preview]:[]}),
+    sourceAttachmentPreviews:()=>state.count?[preview]:[],
+    chatGPTStoryRequest:()=>({reason:state.request}),
+    SmartFlowSingleAnswer:{wrap:()=> 'wrapped prompt'},
+    report:async(...args)=>reports.push(args),assertNotCancelled:()=>{},sleep:async()=>{}});
+  vm.runInContext(source.slice(shellStart,shellEnd)+source.slice(start,end),context);
+  const cleared=await context.clearOwnedUnsentStoryReference('smartflow-story-previous-4','prompt',()=>state.owner,4);
+  assert.equal(cleared,expected,name);assert.equal(clicks,expected?1:0,name);
+  if(expected)assert.equal(reports[0][0],'recovery_reference_cleared',name);
+  process.stdout.write(`PASS ${name}\n`);
+}
+
 (async()=>{
   await scenario('same prepared scene and exact draft reuse one retained reference',{},true);
   await scenario('same full prompt with ChatGPT newline normalization reuses reference',{draft:'wrapped\n prompt'},true);
@@ -69,6 +93,13 @@ async function sendAuditScenario(count, shouldStop) {
   await scenario('already sent request cannot replay',{request:'request_found'},false);
   await scenario('multiple previews cannot inherit old image',{count:2},false);
   await scenario('upload in progress cannot inherit old image',{busy:true},false);
+  await clearUnsentScenario('owned pre-Send orphan reference is removed before checkpoint reattach',{},true);
+  await clearUnsentScenario('changed owner keeps reference intact',{owner:false},false);
+  await clearUnsentScenario('human draft keeps reference intact',{draft:'human text'},false);
+  await clearUnsentScenario('other filename keeps reference intact',{file:'other.jpg'},false);
+  await clearUnsentScenario('sent request keeps reference intact',{request:'request_found'},false);
+  await clearUnsentScenario('active response keeps reference intact',{stop:true},false);
+  await clearUnsentScenario('multiple attachments keep references intact',{count:2},false);
   await sendAuditScenario(1,false);
   await sendAuditScenario(2,true);
 })().catch(error=>{console.error(error);process.exitCode=1;});
