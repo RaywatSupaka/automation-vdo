@@ -8,11 +8,13 @@ Branch: `feature/webview2-prototype`. This is a separate future prototype. The c
 
 Run `.venv\Scripts\python.exe -m desktop.provider_prototype --smoke` to open and close an offline fixture. Run `--check-provider` to open ChatGPT read-only and close it after page readiness or 30 seconds. Run `--provider chatgpt` for manual inspection in the separate profile; close that window when finished. None of these modes uses a real job.
 
-On 2026-10-02, four focused safety tests passed, the offline native window exposed a composer, Send control, and file input, and the read-only ChatGPT load reached `ready=complete` in the separate profile. That check saw no visible composer, so login/session persistence and provider operations remain unverified. The WebView2 window is a developer lab and is not yet embedded in the customer SmartFlow window.
+The source DEV MODE SmartFlow window has an `AI Chat` sidebar page. `desktop/embedded_provider.py` hosts a raw WebView2 control inside the same WinForms window, aligned to the page content. It uses `profile-embedded-chatgpt` under the ignored build folder and does not inject the SmartFlow JavaScript bridge into the provider. Leaving the page hides the control. The old Setup button that launched a second window was removed. The DEV gate hides this menu in the packaged customer app and ordinary browser; the provider control still does not route Story jobs. The native child-control smoke passed (`same_window=true`, `fixture_loaded=true`, `hidden_on_leave=true`), and the reopened source DEV window visibly rendered logged-out ChatGPT inside the SmartFlow page on 2026-10-02. Login and provider workflow were not tested.
+
+On 2026-10-02, four CLI lab safety tests and four embedded page/native bridge tests passed. The separate CLI read-only ChatGPT check reached `ready=complete`; it did not verify login/session persistence. The embedded page is source DEV only and has not been packaged into the customer SmartFlow executable.
 
 ## Work remaining
 
-1. Verify login/session persistence and page controls in the separate profile.
+1. Verify login/session persistence and page controls in the embedded profile.
 2. Add a host-to-page message contract with job/run/scene ownership and the existing pre-send, receipt, checkpoint, and no-replay rules. Compare its behavior with the current Extension callback path.
 3. Verify file upload, Story prompt entry, stable Send acceptance, image result reading, and download using a disposable test job. Record each outcome and page/operation ID in bounded logs without credentials or full prompt content.
 4. Add a developer-only switch for a single test job after the prototype passes focused tests. Keep production on Chrome until a real end-to-end Story completes and error recovery is verified.

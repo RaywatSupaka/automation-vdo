@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/desktop/facebook_post.css?v=2">
   <link rel="stylesheet" href="/desktop/android_wifi.css?v=1">
   <link rel="stylesheet" href="/desktop/membership.css?v=1">
+  <link rel="stylesheet" href="/desktop/provider_lab.css?v=2">
 </head>
 <body>
   <section class="membership-gate" id="membership-gate" aria-label="เข้าสู่ระบบ SmartFlow AI" hidden>
@@ -53,6 +54,7 @@
         <p class="nav-label">งานและผลงาน</p>
         <button class="nav-item" data-page="creation"><i>☷</i><span>คิวสร้างคลิป</span><b id="nav-creation-count">0</b></button>
         <button class="nav-item" data-page="library"><i>▶</i><span>คลังวิดีโอ</span><b id="nav-library-count">0</b></button>
+        <button class="nav-item hidden" id="ai-chat-nav" data-page="ai-chat"><i>✦</i><span>AI Chat <small>ต้นแบบ DEV</small></span></button>
         <p class="nav-label">ตกแต่งคลิป</p>
         <button class="nav-item" data-page="product-cast"><i>◉</i><span>นายแบบ / นางแบบสินค้า</span></button>
         <button class="nav-item" data-page="intro"><i>▷</i><span>อินโทรคลิป</span></button>
@@ -96,6 +98,10 @@
       </header>
 
       <main class="content">
+        <section class="page" data-view="ai-chat">
+          <section class="ai-chat-heading"><span class="eyebrow">DEV MODE · WEBVIEW2 PROTOTYPE</span><h1>AI Chat</h1><p>ChatGPT ในหน้าต่าง SmartFlow เดิม • ใช้โปรไฟล์แยกจาก Chrome • ยังไม่เชื่อมกับงานสร้างคลิป</p></section>
+          <div id="ai-chat-host" aria-label="พื้นที่ ChatGPT ในโปรแกรม"><span id="ai-chat-status" role="status">กำลังเปิด ChatGPT ภายในโปรแกรม…</span></div>
+        </section>
         <section class="workspace-issues" id="workspace-issues" aria-live="polite" hidden>
           <div><strong id="workspace-issues-summary"></strong><p>ไฟล์งานยังอยู่ โปรแกรมไม่ได้ลบงานที่อ่านไม่ได้ กรุณาเปิดโฟลเดอร์เพื่อตรวจหรือกู้จากสำรอง</p></div>
           <div id="workspace-issue-list" class="workspace-issue-list"></div>
@@ -652,6 +658,7 @@
 <script src="/desktop/flow_settings.js?v=457"></script>
 <script src="/desktop/flow_motion.js?v=279"></script>
 <script src="/desktop/updates.js?v=2"></script>
+<script src="/desktop/provider_lab.js?v=2"></script>
 <link rel="stylesheet" href="/desktop/creator_ux.css?v=1">
 <script src="/desktop/creator_ux.js?v=452"></script>
 <script src="/desktop/ai_cover.js?v=451"></script>

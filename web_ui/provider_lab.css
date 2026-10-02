@@ -1,0 +1,6 @@
+body[data-page="ai-chat"] .content{width:100%;padding:16px 24px 24px}
+.ai-chat-heading{margin-bottom:14px}
+.ai-chat-heading h1{font-size:24px;margin:3px 0}
+.ai-chat-heading p{color:var(--muted);font-size:12px;margin:0}
+#ai-chat-host{position:relative;height:calc(100vh - 192px);min-height:400px;background:#090b13;border:1px solid #303b54;border-radius:14px;overflow:hidden}
+#ai-chat-status{display:block;padding:24px;color:var(--muted)}

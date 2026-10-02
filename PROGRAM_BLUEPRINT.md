@@ -2,7 +2,7 @@
 
 ## Isolated WebView2 provider lab (`feature/webview2-prototype`, 2026-10-02)
 
-`desktop/provider_prototype.py` is a separate developer entry point for a WebView2 provider window with an isolated profile and read-only page probe. It does not enter the SmartFlow Story route, expose a host send API, change the installed Chrome Extension, or touch job receipts. Its JSONL log keeps only coarse page/control signals. The offline native window and a read-only ChatGPT page load were verified; login, upload, provider Send/result and customer UI integration remain future steps. See `docs/plans/webview2-provider-prototype.md`.
+`desktop/provider_prototype.py` remains a separate CLI research entry point with an isolated profile and read-only page probe. The source DEV MODE SmartFlow window now has an `AI Chat` menu/page. `desktop/embedded_provider.py` adds a raw WebView2 child control to that same WinForms window, aligns it with the page host, and hides it on page exit. Its profile is separate from Chrome and the SmartFlow shell. The raw provider control has no pywebview JavaScript bridge, so ChatGPT cannot call `UpdateApi`. The page and bridge are gated to an unfrozen DEV checkout; the packaged customer app continues to use Chrome and its Extension for Story. The embedded page is manual only: it does not enter Story routing, expose provider Send, change receipts, or replace the Extension. Native fixture smoke and live source DEV window showed ChatGPT inside the SmartFlow window; login, provider upload/Send/result and customer package integration are unverified. See `docs/plans/webview2-provider-prototype.md`.
 
 ## Prior-run accepted Story image request (0.15.498 installed, 2026-10-02)
 

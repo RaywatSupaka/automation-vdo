@@ -22,6 +22,31 @@ class UpdateApi:
         self._install_started = False
         self._downloaded = {}
         self._progress = {"busy": False, "message": ""}
+        self._embedded_provider = None
+
+    def provider_lab_available(self):
+        """Keep the provider lab out of packaged/customer WebViews."""
+        from desktop.hybrid import ROOT
+        return (not getattr(sys, "frozen", False)
+                and os.environ.get("SMARTFLOW_DEV_BYPASS_MEMBERSHIP") == "1"
+                and (ROOT / ".git").exists()
+                and (ROOT / ".venv" / "pyvenv.cfg").is_file())
+
+    def provider_lab_show(self, rect):
+        """Display ChatGPT inside the current DEV SmartFlow window."""
+        if not self.provider_lab_available():
+            return {"ok": False, "error": "ต้นแบบ WebView2 ใช้ได้เฉพาะ DEV MODE"}
+        if self._window is None:
+            return {"ok": False, "error": "หน้าต่าง SmartFlow ยังไม่พร้อม"}
+        if self._embedded_provider is None:
+            from desktop.embedded_provider import EmbeddedProvider
+            self._embedded_provider = EmbeddedProvider(self._window)
+        return self._embedded_provider.show(rect)
+
+    def provider_lab_hide(self):
+        if self._embedded_provider is not None:
+            return self._embedded_provider.hide()
+        return {"ok": True}
 
     def update_check(self):
         local = {}

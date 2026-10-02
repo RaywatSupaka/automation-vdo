@@ -57,6 +57,7 @@ const pageMeta = {
   queue: ['SHOPEE • ANDROID', 'โพสนายหน้า Shopee'],
   settings: ['WORKSPACE SETTINGS', 'ตั้งค่างาน'],
   guide: ['SETUP CENTER', 'คู่มือและ Extension'],
+  'ai-chat': ['WEBVIEW2 PROTOTYPE', 'AI Chat'],
   logs: ['LIVE ACTIVITY', 'ระบบและ Log'],
   longvideo: ['LONG VIDEO', 'สร้างคลิปยาว 16:9'],
 };

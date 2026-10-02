@@ -10,9 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 SUITES = {
     "webview2-prototype": {
-        "python": ["test_provider_prototype.py"],
+        "python": ["test_provider_prototype.py", "test_provider_lab_ui.py"],
         "node": [],
-        "syntax": [],
+        "syntax": ["web_ui/provider_lab.js"],
     },
     "ai-cover": {
         "python": ["test_ai_cover.py"],
@@ -85,7 +85,14 @@ SUITES = {
 
 FILE_SUITES = {
     "desktop/provider_prototype.py": ("webview2-prototype",),
+    "desktop/embedded_provider.py": ("webview2-prototype",),
+    "desktop/hybrid.py": ("webview2-prototype",),
+    "desktop/update_api.py": ("extension-update", "webview2-prototype"),
     "tests/test_provider_prototype.py": ("webview2-prototype",),
+    "tests/test_provider_lab_ui.py": ("webview2-prototype",),
+    "web_ui/provider_lab.js": ("webview2-prototype",),
+    "web_ui/provider_lab.css": ("webview2-prototype",),
+    "tools/smoke_provider_lab_ui.py": ("webview2-prototype",),
     "core/ai_cover.py": ("ai-cover",),
     "ui/ai_cover.py": ("ai-cover",),
     "tests/test_ai_cover.py": ("ai-cover",),
@@ -108,13 +115,12 @@ FILE_SUITES = {
     "tests/test_membership.py": ("membership",),
     "tests/membership_ui.cjs": ("membership",),
     "core/extension_updater.py": ("extension-update",),
-    "desktop/update_api.py": ("extension-update",),
     "ui/update_guard.py": ("extension-update",),
     "ui/main_window.py": ("extension-update", "refactor", "story-recovery-ui"),
     "ui/state_rules.py": ("refactor",),
     "web_ui/updates.js": ("extension-update",),
     "web_ui/app.js": ("extension-update", "story-recovery-ui"),
-    "web_ui/index.html": ("extension-update",),
+    "web_ui/index.html": ("extension-update", "webview2-prototype"),
     "web_ui/styles.css": ("story-recovery-ui",),
     "tests/test_story_recovery_summary.py": ("story-recovery-ui",),
     "tests/story_recovery_timeline.cjs": ("story-recovery-ui",),

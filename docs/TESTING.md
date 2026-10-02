@@ -19,7 +19,7 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 
 `refactor` checks extracted UI and bridge helpers, browser module imports, and the paired source preflight without contacting a provider.
 
-`webview2-prototype` checks profile separation and bounded read-only diagnostics. Run `.venv\Scripts\python.exe -m desktop.provider_prototype --smoke` for an offline native WebView2 launch check. `--check-provider` opens a separate ChatGPT profile, observes page readiness only, and closes within 30 seconds; neither check sends a prompt.
+`webview2-prototype` checks profile separation, bounded read-only diagnostics, DEV-only page gating, child-control bounds, and bridge isolation. Run `.venv\Scripts\python.exe -m desktop.provider_prototype --smoke` for the separate offline CLI research window. Run `$env:SMARTFLOW_DEV_BYPASS_MEMBERSHIP='1'; .venv\Scripts\python.exe tools\smoke_provider_lab_ui.py` for an offline native fixture that verifies the provider WebView2 is a child of the same SmartFlow-style window, loads, and hides on page exit. In the source DEV MODE SmartFlow window, use the sidebar `AI Chat` menu for the embedded ChatGPT page. These checks do not send a prompt or exercise a real job.
 
 `story-dispatch` checks duplicate command protection, exact saved-conversation tab adoption on Resume, ambiguous-tab stop, desktop URL routing and heartbeat dispatch ownership, plus read-only ChatGPT bootstrap tab selection, stale drafts, document replacement, retained-reference reuse for a prepared unsent Story draft across unified composer forms, exact attachment count before Send, and the unchanged Gemini tab route.
 
