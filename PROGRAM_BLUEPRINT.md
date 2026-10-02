@@ -1477,7 +1477,7 @@ See `docs/CUSTOMER_INSTALLER.md` for build, release key, installer, data separat
 | Web UI | `web_ui/index.html`, `styles.css`, `app.js` | หน้าหลัก responsive, one-click, คลังวิดีโอ, คู่มือ และ Log |
 | Hidden Engine | `ui/main_window.py` | pipeline, event queue และ workers ที่ทำงานเบื้องหลังโดยไม่แสดงหน้าต่าง Tk |
 | Atomic state | `core/atomic_json.py` | lock ข้าม thread/process, unique temp, flush/fsync, replace retry และ last-known-good backup นอกโฟลเดอร์งาน |
-| Config | `config.json`, `core/config.py` | ค่าที่ไม่ใช่ความลับ บันทึกผ่าน shared Atomic JSON transaction |
+| Config | `config.json`, `core/config.py`, `core/customer_runtime.py` | Source checkout ที่ไม่มี config ใช้ safe defaults ในหน่วยความจำ; การบันทึกค่าครั้งแรกสร้างไฟล์ผ่าน shared Atomic JSON transaction. ไฟล์เดิมและไฟล์เสียหายไม่ถูกแทนที่ด้วย defaults |
 | Local Bridge | `core/local_bridge.py` | HTTP ระหว่างโปรแกรมกับ Chrome Extension |
 | Chrome | `browser_extension/` | Shopee, ChatGPT/Gemini Web และ Google Flow automation |
 

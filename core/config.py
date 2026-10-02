@@ -2,7 +2,7 @@ from pathlib import Path
 
 from core.atomic_json import AtomicJsonFile, runtime_backup_path
 
-from core.customer_runtime import prepare_customer_root, resolve_customer_tools
+from core.customer_runtime import DEFAULTS, prepare_customer_root, resolve_customer_tools
 
 ROOT = prepare_customer_root(Path(__file__).resolve().parents[1])
 
@@ -12,12 +12,18 @@ def _config_store():
     return AtomicJsonFile(path, backup_path=runtime_backup_path(ROOT, path))
 
 
+def _update_config(updater):
+    # A clean source checkout has no user config yet. Create it only on the
+    # first explicit settings save; reads use in-memory defaults.
+    return _config_store().update(updater, default=DEFAULTS)
+
+
 def save_chrome_profile(values):
     def update(config):
         for key in ('chrome_user_data_dir', 'chrome_profile_directory'):
             config[key] = values[key]
         return config
-    _config_store().update(update)
+    _update_config(update)
 
 
 def save_android_selection(serial, identity):
@@ -26,10 +32,16 @@ def save_android_selection(serial, identity):
         config['device_serial'] = str(serial)
         config['android_device_identity'] = str(identity)
         return config
-    _config_store().update(update)
+    _update_config(update)
 
 def load_config():
-    config = resolve_customer_tools(_config_store().read(), Path(__file__).resolve().parents[1])
+    saved = _config_store().read(default={})
+    if not isinstance(saved, dict):
+        raise ValueError("config.json ต้องเป็น JSON object")
+    config = resolve_customer_tools({**DEFAULTS, **saved}, Path(__file__).resolve().parents[1])
+    config.setdefault("video_resolution", "720x1280")
+    config.setdefault("video_fps", 30)
+    config.setdefault("logo_file", str(ROOT / "assets" / "smartflow_logo.png"))
     saved_segment_max = float(config.get("audio_background_segment_max_sec", 12.0))
     config["audio_background_segment_max_sec"] = 12.0 if saved_segment_max < 8 else min(12.0, saved_segment_max)
     # SmartFlow clips always use the stable Voice profile.  Normalize legacy
@@ -133,7 +145,7 @@ def save_voice_settings(values):
         config["voice_speed"] = 1.0
         return config
 
-    _config_store().update(update)
+    _update_config(update)
 
 
 def save_logo_settings(values):
@@ -144,7 +156,7 @@ def save_logo_settings(values):
                 config[key] = values[key]
         return config
 
-    _config_store().update(update)
+    _update_config(update)
 
 
 def save_subtitle_settings(values):
@@ -158,7 +170,7 @@ def save_subtitle_settings(values):
                 config[key] = values[key]
         return config
 
-    _config_store().update(update)
+    _update_config(update)
 
 
 def save_audio_settings(values):
@@ -169,7 +181,7 @@ def save_audio_settings(values):
                 config[key] = values[key]
         return config
 
-    _config_store().update(update)
+    _update_config(update)
 
 
 def save_video_settings(values):
@@ -180,4 +192,4 @@ def save_video_settings(values):
                 config[key] = values[key]
         return config
 
-    _config_store().update(update)
+    _update_config(update)

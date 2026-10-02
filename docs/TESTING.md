@@ -16,10 +16,13 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature test-runner
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature installer
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature webview2-prototype
+.venv\Scripts\python.exe tools\run_focused_tests.py --feature config-defaults
 .venv\Scripts\python.exe tools\run_focused_tests.py --changed
 ```
 
 `refactor` checks extracted UI and bridge helpers, browser module imports, and the paired source preflight without contacting a provider.
+
+`config-defaults` checks a clean source checkout with no `config.json`, the first settings save, preservation of existing values, and refusal to replace a corrupt user config. It does not open the customer UI.
 
 `webview2-prototype` checks profile separation, bounded read-only diagnostics, DEV-only page gating, child-control bounds, and bridge isolation. Run `.venv\Scripts\python.exe -m desktop.provider_prototype --smoke` for the separate offline CLI research window. Run `$env:SMARTFLOW_DEV_BYPASS_MEMBERSHIP='1'; .venv\Scripts\python.exe tools\smoke_provider_lab_ui.py` for an offline native fixture that verifies the provider WebView2 is a child of the same SmartFlow-style window, loads, and hides on page exit. In the source DEV MODE SmartFlow window, use the sidebar `AI Chat` menu for the embedded ChatGPT page. These checks do not send a prompt or exercise a real job.
 

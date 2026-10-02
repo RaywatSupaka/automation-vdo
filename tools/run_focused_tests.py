@@ -9,6 +9,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 SUITES = {
+    "config-defaults": {
+        "python": ["test_config_defaults.py", "test_customer_runtime.py"],
+        "node": [],
+        "syntax": [],
+    },
     "webview2-prototype": {
         "python": ["test_provider_prototype.py", "test_provider_lab_ui.py", "test_webview2_request.py"],
         "node": ["tests/webview2_request_dom.cjs"],
@@ -85,6 +90,10 @@ SUITES = {
 }
 
 FILE_SUITES = {
+    "core/config.py": ("config-defaults",),
+    "core/customer_runtime.py": ("config-defaults",),
+    "tests/test_config_defaults.py": ("config-defaults",),
+    "tests/test_customer_runtime.py": ("config-defaults",),
     "desktop/provider_prototype.py": ("webview2-prototype",),
     "desktop/embedded_provider.py": ("webview2-prototype",),
     "desktop/webview2_request.py": ("webview2-prototype",),
