@@ -1,8 +1,12 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
-## Runtime candidate `0.15.497`: completed Story image with a stale ChatGPT progress marker
+## Runtime candidate `0.15.498`: accepted Story image from an earlier run
 
-The Story result monitor retains exact conversation, request and image ownership. When the current response contains one full-size completed image and its completion controls but a progress marker remains mounted, it observes the same image and marker for at least 60 seconds. If no Stop button is visible, it treats only that stale marker as finished and collects the existing image without a new Send. A visible Stop, changed image or changed marker continues to block collection. Progress reports include the separate Stop and progress-marker counts so a later live run can distinguish the cause. This candidate is source-tested only; the active 0.15.496 job and installed Extension have not been changed.
+When Continue reads an accepted or uncertain image receipt whose run ID differs from the active Story run, an empty response after refreshing the saved conversation is not proof of provider failure. The content script retains the original receipt and conversation and raises `STORY_IMAGE_RECEIPT_REVIEW` before any reminder or new image request. Installed 497 reopened a new tab and sent scene 6 again after exactly this cross-run gap in Story E25264. Source498 has focused tests but is not installed while that Story remains active.
+
+## Runtime installed `0.15.497`: completed Story image with a stale ChatGPT progress marker
+
+The Story result monitor retains exact conversation, request and image ownership. When the current response contains one full-size completed image and its completion controls but a progress marker remains mounted, it observes the same image and marker for at least 60 seconds. If no Stop button is visible, it treats only that stale marker as finished and collects the existing image without a new Send. A visible Stop, changed image or changed marker continues to block collection. Progress reports include the separate Stop and progress-marker counts. Paired 497 main and the original Chrome Extension ID are installed and connected. Scene 6 saved under 497 after a duplicate cross-run Send; final Story output and the exact original scene-5 busy signal remain unverified.
 
 ## เวอร์ชัน Runtime ปัจจุบัน: `0.15.496` — one composer scope and exact reference count
 

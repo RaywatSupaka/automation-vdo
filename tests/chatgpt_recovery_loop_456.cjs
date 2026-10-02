@@ -186,6 +186,18 @@ function mountLateOriginal(f, {foreignOriginal=false, laterUser=false, sourceAss
     equal(row.fresh_restart.phase,'consumed','successor is consumed once');
     scenarios++;
   }
+  {
+    const f=await acceptedReminderFixture();
+    f.f.c.activeRunId='continued-run';
+    await refreshedChild(f);
+    await assert.rejects(f.receipt().restore(),error=>error.code==='STORY_IMAGE_RECEIPT_REVIEW'
+      && error.message.includes('CHATGPT_IMAGE_PRIOR_RUN_PENDING'));checks++;
+    equal(f.messages.filter(row=>row.type==='RESTART_FAILED_STORY_IMAGE').length,0,
+      'an accepted request from a cancelled run never allocates another tab');
+    equal(f.f.db[f.f.key].status,'awaiting_result','prior-run receipt remains available for later result inspection');
+    equal(f.f.sends,1,'Continue does not create another provider image request');
+    scenarios++;
+  }
   for(const invalid of ['foreignOriginal','laterUser','sourceAsset']) {
     const f=await acceptedReminderFixture();
     mountLateOriginal(f,{[invalid]:true});
