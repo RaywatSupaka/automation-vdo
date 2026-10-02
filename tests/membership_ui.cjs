@@ -5,8 +5,8 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
   const browser=await chromium.launch({headless:true});
   try {
     const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-    let allowed=false,code='LOGIN_REQUIRED',posts=0,restoring=false;
-    const state=()=>({ok:true,required:true,desktop:{allowed,code,restoring,message:allowed?'เชื่อมต่อแล้ว':restoring?'กำลังคืนสิทธิ์เดิม':'กรุณากรอก Token',expires_at:2000000000}});
+    let allowed=false,code='LOGIN_REQUIRED',posts=0,logouts=0,restoring=false,devMode=false;
+    const state=()=>({ok:true,required:true,dev_mode:devMode,desktop:{allowed,code,restoring,message:allowed?'เชื่อมต่อแล้ว':restoring?'กำลังคืนสิทธิ์เดิม':'กรุณากรอก Token',expires_at:devMode?null:2000000000}});
     await page.route('**/*',async route=>{
       const url=new URL(route.request().url());
       if(url.pathname==='/api/desktop/media')return route.fulfill({contentType:'image/png',body:fs.readFileSync('assets/smartflow_icon.png')});
@@ -17,7 +17,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
         if(data.token==='fixture-wrong')return route.fulfill({status:403,json:{ok:false,error:'Token ไม่ถูกต้อง'}});
         allowed=true;return route.fulfill({json:state()});
       }
-      if(url.pathname==='/api/membership/desktop/logout'){allowed=false;return route.fulfill({json:state()});}
+      if(url.pathname==='/api/membership/desktop/logout'){logouts++;allowed=false;return route.fulfill({json:state()});}
       if(url.pathname==='/')return route.fulfill({contentType:'text/html',body:html});
       return route.abort();
     });
@@ -53,7 +53,13 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
     await page.evaluate(()=>{window.updateClicks=0;window.addEventListener('smartflow-open-updates',()=>window.updateClicks++);});
     await page.locator('[data-member-update]').click();
     assert.equal(await page.evaluate(()=>window.updateClicks),1);
+    devMode=true;allowed=true;restoring=false;
+    await page.locator('#membership-account').filter({hasText:'DEV MODE'}).waitFor({timeout:6000});
+    assert.equal(await page.locator('#membership-gate').isVisible(),false);
+    await page.setViewportSize({width:1440,height:900});
+    await page.locator('#membership-account').click();
+    assert.equal(logouts,0);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({ok:true,cases:12}));
+    console.log(JSON.stringify({ok:true,cases:15}));
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

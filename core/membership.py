@@ -6,10 +6,13 @@ only. A restart must contact the server, and a kick requires manual login.
 """
 import json
 import math
+import os
 import re
 import secrets
+import sys
 import threading
 import time
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, HTTPRedirectHandler, ProxyHandler, build_opener
 
@@ -334,7 +337,55 @@ class Membership:
         return state
 
 
+class DevelopmentMembership:
+    """Explicit local source-checkout mode with no credential or server access."""
+
+    def start(self):
+        pass
+
+    def close(self):
+        pass
+
+    def allowed(self, scope='desktop', profile_id=''):
+        return scope == 'desktop'
+
+    def require(self, scope='desktop', profile_id=''):
+        if not self.allowed(scope, profile_id):
+            raise MembershipError('EXTENSION_CONNECTION_REQUIRED')
+
+    def status(self, profile_id=''):
+        desktop = {'allowed': True, 'code': '', 'message': 'DEV MODE • ไม่ตรวจ API Token',
+                   'remembered': False, 'restoring': False, 'profile_changed': False,
+                   'expires_at': None, 'lease_seconds': 0}
+        extension = {**desktop, 'allowed': False, 'source': 'desktop', 'contract_version': 1,
+                     'code': 'EXTENSION_CONNECTION_REQUIRED',
+                     'message': MESSAGES['EXTENSION_CONNECTION_REQUIRED']}
+        return {'ok': True, 'required': True, 'dev_mode': True,
+                'desktop': desktop, 'extension': extension}
+
+    def login(self, *args, **kwargs):
+        raise MembershipError('INVALID_REQUEST')
+
+    def logout(self, *args, **kwargs):
+        raise MembershipError('INVALID_REQUEST')
+
+
+def _development_checkout():
+    root = Path(__file__).resolve().parents[1]
+    return (root / '.git').exists() and (root / '.venv' / 'pyvenv.cfg').is_file()
+
+
+def _development_membership_enabled(version):
+    if os.environ.get('SMARTFLOW_DEV_BYPASS_MEMBERSHIP') != '1':
+        return False
+    if getattr(sys, 'frozen', False) or version != 'development':
+        return False
+    return _development_checkout()
+
+
 def production_membership(version):
+    if _development_membership_enabled(version):
+        return DevelopmentMembership()
     from core.secure_store import WindowsCredentialStore
     try:
         stores = {scope: WindowsCredentialStore('SmartFlowAI/Membership/' + scope)
@@ -351,7 +402,7 @@ def production_membership(version):
 # Read/results, cancellation and updates remain accessible. Every other desktop
 # action is guarded, including new actions added later (fail closed by default).
 SAFE_ACTIONS = frozenset({
-    'shutdown', 'prepare_app_update', 'creation_pause', 'story_queue_pause', 'cancel_product', 'cancel_story',
+    'shutdown', 'prepare_app_update', 'reload_extension_after_update', 'creation_pause', 'story_queue_pause', 'cancel_product', 'cancel_story',
     'cancel_presenter', 'shopee_post_pause', 'facebook_planner_pause',
     'shopee_post_status', 'shopee_post_library', 'android_wifi_status', 'facebook_status',
     'product_cast_state', 'intro_status', 'green_status', 'story_native_status', 'story_native_cancel',

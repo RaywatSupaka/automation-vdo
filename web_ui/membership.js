@@ -17,8 +17,8 @@
     document.body.classList.toggle('membership-locked', !allowed);
     form.hidden = !state || Boolean(state.desktop?.restoring);
     if (!busy) message.textContent = state?.desktop?.message || 'กำลังเชื่อมต่อโปรแกรม เพื่อตรวจสิทธิ์ของคุณ…';
-    account.textContent = allowed ? '◉ บัญชี SmartFlow' : '◉ เข้าสู่ระบบ';
-    account.title = allowed && state.desktop.expires_at
+    account.textContent = state?.dev_mode ? '◉ DEV MODE' : allowed ? '◉ บัญชี SmartFlow' : '◉ เข้าสู่ระบบ';
+    account.title = state?.dev_mode ? 'โหมดพัฒนา • ไม่ตรวจ API Token' : allowed && state.desktop.expires_at
       ? `ใช้งานได้ถึง ${new Date(state.desktop.expires_at * 1000).toLocaleString('th-TH')}` : 'เข้าสู่ระบบด้วย Token ที่แอดมินออกให้';
     if (allowed && !wasAllowed) window.dispatchEvent(new Event('smartflow-membership-ready'));
   }
@@ -57,6 +57,7 @@
   panel.querySelector('[data-member-update]').onclick = () => window.dispatchEvent(new Event('smartflow-open-updates'));
   account.onclick = async () => {
     if (!current?.desktop?.allowed) { await status(); return; }
+    if (current.dev_mode) return;
     const expires = new Date(current.desktop.expires_at * 1000).toLocaleString('th-TH');
     if (!window.confirm(`สิทธิ์ใช้งานถึง ${expires}\n\nต้องการออกจากระบบหรือไม่? งานที่ส่งแล้วจะเก็บผลไว้ งานใหม่จะรอเข้าสู่ระบบ`)) return;
     revision++;
