@@ -156,7 +156,7 @@ class CoverQueueGateTests(unittest.TestCase):
         original = AtomicJsonFile.read
         observed = []
         def read(store, *args, **kwargs):
-            if store.path == self.manifest.path:
+            if store.path.samefile(self.manifest.path):
                 observed.append(self.service.store._thread_lock._is_owned())
             return original(store, *args, **kwargs)
         with patch.object(AtomicJsonFile, 'read', read):

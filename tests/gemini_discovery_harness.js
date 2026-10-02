@@ -28,6 +28,6 @@ for (const options of [
   {button: {hidden: true}}, {button: {getAttribute: () => 'true'}},
   {buttons: []}, {cards: [{}, {}]},
 ]) { const f = fixture(options); assert.equal(f.run(), false); assert.equal(f.clicks(), 0); }
-assert(source.includes('dismissGeminiDiscoveryCard();\n      const editor = composer();'));
+assert(/dismissGeminiDiscoveryCard\(\);\r?\n\s+const editor = composer\(\);/.test(source));
 assert(/const sleep = async \(ms\) => \{\r?\n    dismissGeminiDiscoveryCard\(\);/.test(source));
 console.log('Gemini discovery: scoped Later click, once-only latch and 12 negative cases passed');

@@ -1,21 +1,18 @@
 """Package only canonical extension source; refuse to overwrite a different release."""
 import hashlib
 import json
-import re
 import shutil
 import zipfile
 from pathlib import Path
+
+from verify_pair_contract import verify_source_pair
 
 
 def main():
     root = Path(__file__).resolve().parents[1]
     source = root / 'browser_extension'
     release = json.loads((root / 'CURRENT_RELEASE.json').read_text(encoding='utf-8'))
-    version = json.loads((source / 'manifest.json').read_text(encoding='utf-8'))['version']
-    if not re.fullmatch(r'\d+\.\d+\.\d+', version):
-        raise ValueError('Invalid release version')
-    assert release['runtime']['extension_version'] == version
-    assert f'REQUIRED_EXTENSION_VERSION = "{version}"' in (root / 'core/local_bridge.py').read_text(encoding='utf-8')
+    version = verify_source_pair(root)['version']
     folder = root / 'deliverables' / f'SmartFlow_AI_Extension_{version}'
     archive = folder.parent / (folder.name + '.zip')
     assert release['runtime']['install_directory'] == folder.relative_to(root).as_posix()

@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),vm=require('vm');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
-const read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const read=f=>fs.readFileSync(path.join(root,f),'utf8').replace(/\r\n/g,'\n');
 const ai=read('browser_extension/chatgpt.js'),flow=read('browser_extension/flow.js'),bg=read('browser_extension/background.js');
 const part=(s,a,b)=>{const i=s.indexOf(a),j=s.indexOf(b,i+a.length);assert(i>=0&&j>i,a);return s.slice(i,j);};
 let checks=0;const eq=(a,b)=>{assert.deepEqual(a,b);checks++;};

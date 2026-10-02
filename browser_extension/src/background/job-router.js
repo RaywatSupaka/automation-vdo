@@ -1,20 +1,6 @@
 import { ERROR_CODE, SmartFlowBridgeError, serialiseError } from "../core/errors.js";
 import { validateJobCommand } from "../core/message-schema.js";
-
-async function runWithTimeout(operation, milliseconds, action) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => {
-      reject(new SmartFlowBridgeError(ERROR_CODE.TIMEOUT, `${action} timed out`));
-    }, milliseconds);
-  });
-
-  try {
-    return await Promise.race([operation, timeout]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
+import { runWithTimeout } from "../core/timeout.js";
 
 export class JobRouter {
   constructor({ defaultTimeoutMs = 180000, duplicateTtlMs = 10 * 60 * 1000, logger = null } = {}) {
