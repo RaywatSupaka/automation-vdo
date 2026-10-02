@@ -59,7 +59,13 @@ def prepare(owner, payload):
         reason = idle_reason(owner)
         if reason:
             raise ValueError(reason)
-        owner.story_queue.pause('app_update')
+        if payload.get('extension_update') is True:
+            # Keep a user-paused queue's original reason intact. A running queue
+            # stays paused after the Extension reload until the user resumes it.
+            if not owner.story_queue.snapshot().get('paused'):
+                owner.story_queue.pause('extension_update')
+        else:
+            owner.story_queue.pause('app_update')
         owner._app_update_nonce = secrets.token_hex(16)
         owner._app_update_pending = True
         return {'ok': True, 'nonce': owner._app_update_nonce}

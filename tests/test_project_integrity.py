@@ -50,8 +50,8 @@ class ProjectIntegrityTests(unittest.TestCase):
 
     def test_tools_extension_and_logo_exist(self):
         config = load_config()
-        self.assertEqual(config["ai_provider"], "chatgpt_plugin")
-        self.assertFalse(config["use_openai_api"])
+        self.assertEqual(config.get("ai_provider", "chatgpt_plugin"), "chatgpt_plugin")
+        self.assertFalse(config.get("use_openai_api", False))
         self.assertNotIn("openai_api_key", config)
         self.assertTrue(Path(config["adb_path"]).is_file())
         self.assertTrue(Path(config["scrcpy_path"]).is_file())
@@ -1219,13 +1219,15 @@ class ProjectIntegrityTests(unittest.TestCase):
         self.assertIn('run_id: String(pkg?.run_id || "")', flow)
         self.assertIn("run_id: activeRunId", chatgpt)
 
-    def test_extension_version_mismatch_pauses_once_and_never_self_reloads(self):
+    def test_extension_version_mismatch_pauses_without_an_explicit_reload_request(self):
         background = (ROOT / "browser_extension" / "background.js").read_text(encoding="utf-8")
         heartbeat = background.split("async function heartbeat()", 1)[1].split("async function acknowledge", 1)[0]
         tick = background.split("async function extensionTick()", 1)[1].split("chrome.runtime.onMessage", 1)[0]
         self.assertIn("smartpostExtensionUpdateRequired", heartbeat)
         self.assertIn("return { updateRequired: true", heartbeat)
-        self.assertNotIn("chrome.runtime.reload", heartbeat)
+        self.assertIn("const reload=payload.extension_reload_request", heartbeat)
+        self.assertIn("reload.target_version===payload.extension_version_required", heartbeat)
+        self.assertIn("chrome.runtime.reload()", heartbeat)
         self.assertIn("if (extensionTickPromise) return extensionTickPromise", tick)
         self.assertIn("if (heartbeatState?.updateRequired) return", tick)
 

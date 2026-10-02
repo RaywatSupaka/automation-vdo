@@ -65,6 +65,14 @@ class UpdateBarrierTests(unittest.TestCase):
         owner.story_queue.pause.assert_called_once()
         with self.assertRaises(ValueError): prepare(owner, {'cancel': True, 'nonce': reply['nonce']})
 
+    def test_extension_update_preserves_existing_user_pause(self):
+        owner = self.owner()
+        owner.story_queue.snapshot = Mock(return_value={'paused': True})
+        reply = prepare(owner, {'extension_update': True})
+        self.assertTrue(reply['ok'])
+        owner.story_queue.pause.assert_not_called()
+        self.assertTrue(prepare(owner, {'cancel': True, 'nonce': reply['nonce']})['cancelled'])
+
     def test_direct_live_routes_block_after_barrier_but_reads_and_pause_remain(self):
         route = actual_method('_desktop_action_request')
         owner = self.owner()

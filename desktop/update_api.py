@@ -9,6 +9,7 @@ import threading
 from pathlib import Path
 from urllib.request import Request, urlopen
 from core.app_updates import MANIFEST_URL, RESOURCE_ROOT, download, safe_url, verify_release, version
+from core.extension_updater import installed_extension_id, install_archive, verify_bundled_package
 
 
 class UpdateApi:
@@ -63,14 +64,87 @@ class UpdateApi:
             self._progress = {"busy": True, "message": "กำลังดาวน์โหลด", "percent": 0}
             download(asset, target, lambda count, total: self._progress.update(percent=round(count * 100 / total)))
             self._downloaded[kind] = target
-            if kind == "extension":
-                subprocess.Popen(["explorer.exe", "/select,", str(target)])
-            return {"ok": True, "path": str(target), "message": "ดาวน์โหลดแล้ว • ยังต้องเปลี่ยนไฟล์และ Reload Extension" if kind == "extension" else "ดาวน์โหลดแพตช์แล้ว"}
+            return {"ok": True, "path": str(target), "message": "ดาวน์โหลด Extension แล้ว" if kind == "extension" else "ดาวน์โหลดแพตช์แล้ว"}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
         finally:
             self._progress["busy"] = False
             self._lock.release()
+
+    def update_install_extension(self):
+        """Apply a signed ZIP to the same unpacked path and request one reload."""
+        if not self._install_lock.acquire(blocking=False):
+            return {"ok": False, "error": "กำลังติดตั้งอัปเดตอื่นอยู่"}
+        nonce = ""
+        outcome = {"ok": False, "error": "ยังไม่ได้อัปเดต Extension"}
+        try:
+            if not getattr(sys, "frozen", False) or not self._envelope or "extension" not in self._downloaded:
+                raise ValueError("ฟีเจอร์นี้ใช้กับชุดติดตั้งที่ดาวน์โหลด Extension แล้ว")
+            release = verify_release(self._envelope)
+            asset = release.get("extension") or {}
+            archive = self._downloaded["extension"]
+            with archive.open("rb") as stream:
+                digest = hashlib.file_digest(stream, "sha256").hexdigest()
+            if archive.stat().st_size != asset.get("size") or digest != asset.get("sha256"):
+                raise ValueError("ไฟล์ Extension ที่ดาวน์โหลดไม่ตรงกับรุ่นเผยแพร่")
+            health = self._read_local("/health")
+            target_version = str(release["extension_version"])
+            if target_version != health.get("extension_version_required"):
+                raise ValueError("ต้องอัปเดตโปรแกรมให้รองรับ Extension รุ่นนี้ก่อน")
+            verify_bundled_package(archive, RESOURCE_ROOT / "browser_extension")
+            folder = Path(os.environ["LOCALAPPDATA"]) / "SmartFlowAI/data/browser_extension"
+            config_file = folder.parent / "config.json"
+            config = json.loads(config_file.read_text(encoding="utf-8")) if config_file.is_file() else {}
+            chrome_root = Path(config.get("chrome_user_data_dir") or Path.home() / "AppData/Local/Google/Chrome/User Data")
+            client_id = installed_extension_id(folder, chrome_root, str(config.get("chrome_profile_directory") or ""))
+            status = self._read_local("/api/extension/status")
+            clients = [client for client in status.get("clients", []) if client.get("client_id") == client_id]
+            if not clients:
+                raise ValueError("Extension ตัวเดิมยังไม่เชื่อมต่อ • เปิด Chrome โปรไฟล์เดิมแล้วลองอีกครั้ง")
+            if any(client.get("version") == target_version for client in clients):
+                outcome = {"ok": True, "message": "Extension ที่เชื่อมต่ออยู่เป็นรุ่นนี้แล้ว", "reload_requested": False,
+                           "version": target_version}
+                return outcome
+            barrier = self._update_barrier({"extension_update": True})
+            if not barrier.get("ok") or not barrier.get("nonce"):
+                raise ValueError(barrier.get("error") or "ยังมีงานอยู่ กรุณารอให้จบก่อนอัปเดต")
+            nonce = str(barrier["nonce"])
+            backup = install_archive(archive, folder, target_version)
+            try:
+                requested = self._desktop_update_action("reload_extension_after_update", {
+                    "nonce": nonce, "client_id": client_id, "target_version": target_version})
+                if not requested.get("ok"):
+                    raise ValueError(requested.get("error") or "Extension ยังไม่รับคำสั่ง Reload")
+                message = "อัปเดตไฟล์แล้ว • กำลังให้ Extension โหลดใหม่ โปรดรอตรวจการเชื่อมต่อ คิวงานยังพักไว้"
+                reload_requested = True
+            except Exception:
+                message = "อัปเดตไฟล์แล้ว • Extension รุ่นเดิมยังไม่รองรับปุ่มนี้ กรุณากด Reload ที่ตัวเดิมใน Chrome อีกหนึ่งครั้ง คิวงานยังพักไว้"
+                reload_requested = False
+            outcome = {"ok": True, "message": message, "reload_requested": reload_requested,
+                       "version": target_version, "backup": str(backup)}
+        except Exception as exc:
+            outcome = {"ok": False, "error": str(exc)}
+        finally:
+            if nonce:
+                try:
+                    released = self._update_barrier({"cancel": True, "nonce": nonce})
+                    if not released.get("ok"):
+                        raise ValueError("ไม่ได้รับการยืนยันว่าปลดสถานะอัปเดตแล้ว")
+                except Exception:
+                    outcome = {"ok": False, "error": "ปลดสถานะอัปเดตไม่สำเร็จ • กรุณาเปิดโปรแกรมใหม่ก่อนเริ่มงาน"}
+            self._install_lock.release()
+        return outcome
+
+    def _read_local(self, path):
+        with urlopen(self._host.base_url + path, timeout=8) as response:
+            return json.load(response)
+
+    def _desktop_update_action(self, action, payload):
+        request = Request(self._host.base_url + "/api/desktop/action",
+                          data=json.dumps({"action": action, "payload": payload}).encode(),
+                          headers={"Content-Type": "application/json"})
+        with urlopen(request, timeout=12) as response:
+            return json.load(response)
 
     def update_install(self):
         if not self._install_lock.acquire(blocking=False):
@@ -83,9 +157,7 @@ class UpdateApi:
             self._install_lock.release()
 
     def _update_barrier(self, payload):
-        request = Request(self._host.base_url + "/api/desktop/action", data=json.dumps({"action": "prepare_app_update", "payload": payload}).encode(), headers={"Content-Type": "application/json"})
-        with urlopen(request, timeout=12) as response:
-            return json.load(response)
+        return self._desktop_update_action("prepare_app_update", payload)
 
     def _install_once(self):
         if not getattr(sys, "frozen", False) or "patch" not in self._downloaded or not self._envelope:
