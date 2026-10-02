@@ -1,5 +1,23 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
+## Candidate `0.15.507`: guarded reference reattach
+
+The 506 live trace showed `attachment_count_changed` before Send. A visibly empty and file-input-empty composer may continue to the existing saved-checkpoint attachment path. Multiple, busy, failed or hidden references still block Send; the upload path verifies the reattached scene before submission.
+
+## Candidate `0.15.506`: replay preflight diagnostics
+
+If the explicit replay preflight changes, log a non-content reason, request state and attachment count before stopping. The live 505 attempt failed before Send; 506 preserves that stop and makes the failing condition inspectable.
+
+## Candidate `0.15.505`: owner-authorized Story image replay
+
+## Candidate `0.15.504`: prior-run Story image draft watchdog
+
+Result-only Resume now bounds an unchanged prior-run `dispatching` receipt when the request is absent but the exact prompt still occupies the composer. Three read-only observations over at least 15 seconds raise `STORY_IMAGE_RECEIPT_REVIEW` with `PRIOR_RUN_UNCONFIRMED_DRAFT_PRESENT`. The monitor does not clear the draft, refresh the tab or replay Send. The 503 acceptance-path guard remains.
+
+## Candidate `0.15.503`: uncertain Story image Send watchdog
+
+When a trusted ChatGPT Send gesture has no matching user turn after the acceptance minute and the exact owned prompt remains in the composer, perform three read-only checks five seconds apart. A persistent missing request becomes an explicit `STORY_IMAGE_RECEIPT_REVIEW` with `SEND_UNCONFIRMED_DRAFT_PRESENT`, preserving the pending receipt, image reference and draft. Never infer that an uncertain Send can be replayed. The background heartbeat remains a connection/status signal; it does not prove provider acceptance. Activation is pending while the installed 502 Story runs.
+
 ## Runtime installed `0.15.498`: accepted Story image from an earlier run
 
 When Continue reads an accepted or uncertain image receipt whose run ID differs from the active Story run, an empty response after refreshing the saved conversation is not proof of provider failure. The content script retains the original receipt and conversation and raises `STORY_IMAGE_RECEIPT_REVIEW` before any reminder or new image request. Installed 497 reopened a new tab and sent scene 6 again after exactly this cross-run gap in Story E25264. Paired 498 is installed with the original Extension ID after the Story became idle. The guard has focused tests but no live provider output yet.
@@ -1083,3 +1101,4 @@ Meta's completed image-not-viable or post-follow-up no-video result enters deskt
 
 After the desktop image ACK, finishScene explicitly reports the saved image while waiting for video/voice handoff. A rejected gate preserves its original error prefix and states that the image must not be regenerated. No Send/retry budget or next-scene barrier changes. Paired desktop correction preserves approved expressive turns. See docs/reports/editorial-handoff-471.md and logic-version-map-471.md; user owns activation. Historical versions/headings below are not today's authority. Old Meta Vibes removal does not describe the current Meta AI video adapter. Keep proven single-flight/receipt behavior; do not transplant obsolete selectors from a historical success.
 
+An explicit per-job authorization allows one scene 2 retry after a prior-run uncertain Send. The content script checks the original receipt and unchanged ChatGPT draft/reference over three samples, archives the old receipt with an ACK, then creates a new prepared receipt carrying the one-time token. Later resumes read the new receipt and cannot prepare another replay from the same authorization.

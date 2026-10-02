@@ -331,6 +331,36 @@ class StoryManager:
                 raise ValueError("Story manifest ว่างเปล่าหรือเสียหาย")
             return value
 
+    def authorize_uncertain_image_replay(self, job_id, scene_index, expected_revision):
+        """Record one owner-approved replay; the browser still checks the live receipt and page."""
+        if type(scene_index) is not int or scene_index < 2 or type(expected_revision) is not int:
+            raise ValueError('ระบุฉากและ revision ล่าสุดก่อนอนุญาตส่งใหม่')
+        folder = self._folder(job_id)
+        store = self._manifest_store(folder / 'job.json')
+        with self._manifest_lock, store.locked():
+            job = store.read_unlocked()
+            if int(job.get('revision') or 0) != expected_revision or job.get('status') != 'error':
+                raise ValueError('สถานะงานเปลี่ยนแล้ว ไม่อนุญาตส่งใหม่')
+            if 'CHATGPT_IMAGE_PRIOR_RUN_UNCONFIRMED_DRAFT_PRESENT' not in str(job.get('last_error') or ''):
+                raise ValueError('สาเหตุที่หยุดไม่ตรงกับร่างคำขอที่ยังไม่ยืนยัน')
+            if job.get('image_ai_provider') != 'chatgpt' or job.get('manual_image_replay'):
+                raise ValueError('งานนี้ไม่มีสิทธิ์ส่งฉากซ้ำอีก')
+            if scene_index > int(job.get('scene_count') or 0):
+                raise ValueError('ลำดับฉากไม่ถูกต้อง')
+            if not (folder / 'generated' / f'scene_{scene_index-1:02d}.png').is_file() or any(
+                (folder / 'generated' / f'scene_{scene_index:02d}{suffix}').is_file()
+                for suffix in self.IMAGE_EXTENSIONS
+            ):
+                raise ValueError('ภาพ checkpoint ของฉากก่อนหน้าหรือฉากนี้เปลี่ยนแล้ว')
+            job['manual_image_replay'] = {
+                'version': 1, 'scene_index': scene_index, 'token': str(uuid.uuid4()),
+                'authorized_at': datetime.now().isoformat(timespec='seconds'), 'max_sends': 1,
+            }
+            job['revision'] = expected_revision + 1
+            job['updated_at'] = datetime.now().isoformat(timespec='seconds')
+            store.write_unlocked(job)
+            return job['manual_image_replay']
+
     def set_video_generation_mode(self, job_id, provider, expected_revision):
         """Change this saved job's video route while retaining every scene file and receipt."""
         provider = str(provider or '').strip().lower()

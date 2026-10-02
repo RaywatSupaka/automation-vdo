@@ -9,7 +9,7 @@
   // so the old DOM shell can survive an Extension reload and make the repaired
   // script believe the same-version helper is already current. Keep a separate
   // build id so a repaired helper always replaces the stale in-page worker.
-  const helperBuild = "flow-0.15.502-20261002.1";
+  const helperBuild = "flow-0.15.507-20261002.1";
   const existingHost = document.getElementById("smartpost-flow-helper-host");
   if (window.__smartPostFlowHelperLoaded
       && existingHost?.dataset?.helperBuild === helperBuild) {

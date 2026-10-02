@@ -1749,6 +1749,30 @@
       await sleep(250);
     }
     if(storySend){
+      // A trusted gesture can be dispatched without the page accepting it.
+      // The result monitor cannot refresh while an owned draft/attachment is
+      // still in the composer; otherwise it can wait forever on request_missing.
+      // Recheck read-only three times, then surface the uncertain Send while
+      // preserving its receipt and draft. A delayed accepted turn still wins.
+      const unsentDraft=()=>activeJobId===sendIdentity.job && activeRunId===sendIdentity.run
+        && storyRequestReason==='request_missing' && !storyOwner && !stopButtonVisible()
+        && String(composerText(composer())||'').trim().replace(/\s+/g,' ')===expectedPrompt;
+      if(storySend.onAcceptanceTimeout && unsentDraft()){
+        let unchanged=true;
+        for(let recheck=0;recheck<3;recheck++){
+          await sleep(5000);
+          assertNotCancelled();
+          submissionProof();
+          if(!unsentDraft()){unchanged=false;break;}
+        }
+        if(unchanged){
+          await report('image_send_stalled',`ฉาก ${storySend.scene_index} • คำขอยังอยู่ในช่องพิมพ์หลังคลิกส่ง • หยุดรอเพื่อตรวจงานเดิม`,
+            storySend.completedCount||0,{scene_index:storySend.scene_index,request_reason:storyRequestReason,
+              draft_still_present:true,send_phase:'dispatching',detail:sendDiagnostics});
+          throw storyImageRecoveryError('STORY_IMAGE_RECEIPT_REVIEW',storySend.scene_index,
+            'CHATGPT_IMAGE_RESULT_SEND_UNCONFIRMED_DRAFT_PRESENT • กดส่งแล้วแต่ไม่พบคำขอในแชตหลังตรวจซ้ำ 3 ครั้ง • เก็บร่างและรูปแนบเดิม');
+        }
+      }
       if(storySend.onAcceptanceTimeout){
         await report('recovering_result',`ฉาก ${storySend.scene_index} • กำลังตรวจผลเดิมก่อนรีเฟรช`,storySend.completedCount||0,
           {scene_index:storySend.scene_index,result_reason:storyRequestReason,recovery_phase:'checking',
@@ -4220,7 +4244,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     let refreshInFlight=false,refreshRejects=0,refreshNextAt=0,refreshOutcome='not_attempted',refreshReason='none';
     let refreshCheckedAt=-5000;
     let refreshedReceipt=null,postReadySince=null,postReadySignature='',postReadySamples=0;
-    let monitoredAttempt=null;
+    let monitoredAttempt=null,priorDraftSince=null,priorDraftSamples=0;
     const startedAt=Date.now();
     let activeSince=null,activeSamples=0,loopOwnerNonce='',loopChild=null;
     const validReasons=['waiting_response','no_image','image_loading','image_ready'];
@@ -4301,6 +4325,25 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       else {activeSince=null;activeSamples=0;}
       const valid=Boolean(observation.request.frame && validReasons.includes(observation.state.reason));
       const missing=observation.state.reason==='request_missing' && observation.missingRequestOwned===true;
+      // A resumed run may inherit a dispatching receipt from the cancelled
+      // run. The page cannot be refreshed while its exact draft is present,
+      // so result-only recovery must not keep waiting without a deadline.
+      const priorDraft=postRefreshRedo && missing && !observation.busy
+        && refreshedReceipt?.run_id && refreshedReceipt.run_id!==activeRunId
+        && refreshedReceipt.send_phase==='dispatching'
+        && String(composerText(composer())||'').trim().replace(/\s+/g,' ')
+          ===String(prompt||'').trim().replace(/\s+/g,' ');
+      if(priorDraft){
+        if(priorDraftSince===null)priorDraftSince=now;
+        priorDraftSamples++;
+        if(now-priorDraftSince>=15000 && priorDraftSamples>=3){
+          await report('image_send_stalled',`ฉาก ${sceneIndex} • ร่างคำขอเดิมยังอยู่หลังทำต่อ • หยุดเพื่อตรวจหลักฐาน`,completedCount,
+            {scene_index:sceneIndex,result_reason:observation.state.reason,draft_still_present:true,
+              prior_run_id:refreshedReceipt.run_id,stable_samples:priorDraftSamples});
+          throw storyImageRecoveryError('STORY_IMAGE_RECEIPT_REVIEW',sceneIndex,
+            'CHATGPT_IMAGE_PRIOR_RUN_UNCONFIRMED_DRAFT_PRESENT • ร่างคำขอเดิมยังอยู่หลังทำต่อ • เก็บหลักฐาน ไม่ส่งซ้ำ');
+        }
+      }else{priorDraftSince=null;priorDraftSamples=0;}
       if(!valid && !(missing && observation.busy)){
         if(invalidSince===null)invalidSince=now;
         // Give an accepted same-chat DOM gap its guarded reload opportunity
@@ -4945,6 +4988,51 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
           return null;
         }
         if (!matches(owned)) throw fail("หลักฐานภาพไม่ตรงงาน ฉาก หรือคำสั่งภาพปัจจุบัน");
+        const manualReplay=pkg.job?.manual_image_replay;
+        if(provider==='chatgpt' && manualReplay?.version===1 && manualReplay.scene_index===index
+            && manualReplay.max_sends===1 && /^[0-9a-f-]{36}$/i.test(manualReplay.token||'')
+            && owned.status==='awaiting_result' && owned.send_phase==='dispatching'
+            && !owned.image_url && !owned.manual_replay_token && owned.run_id!==activeRunId
+            && owned.result_proof?.prompt && owned.result_proof?.conversation_url===location.href.split(/[?#]/)[0]
+            && owned.previous_scene_reference_index===index-1) {
+          // Explicit owner authority permits ONE new Send for this exact scene.
+          // Observe the old request before archiving; a late user turn wins.
+          const original={...owned},archive=key+':manual-replay:'+manualReplay.token;
+          if((await chrome.storage.local.get(archive))[archive])throw fail('หลักฐานอนุญาตส่งใหม่ถูกใช้แล้ว');
+          const normalize=value=>String(value||'').trim().replace(/\s+/g,' ');
+          for(let sample=0;sample<3;sample++){
+            assertNotCancelled();
+            const latest=await read(),files=chatGPTComposerAttachmentState();
+            const hiddenFiles=[...document.querySelectorAll('input[type="file"]')]
+              .reduce((count,input)=>count+Number(input.files?.length||0),0);
+            const requestReason=chatGPTStoryRequest(original.result_proof.prompt,original.result_proof).reason;
+            const reason=!sameStoryImageReceipt(latest,original)?'receipt_changed'
+              :stopButtonVisible()?'response_active'
+              :location.href.split(/[?#]/)[0]!==original.result_proof.conversation_url?'conversation_changed'
+              :requestReason!=='request_missing'?requestReason
+              :normalize(composerText(composer()))!==normalize(original.result_proof.prompt)?'draft_changed'
+              :files.count>1?'attachment_count_changed'
+              :files.count===0 && hiddenFiles?'hidden_attachment_present'
+              :files.busy?'attachment_busy':files.failed?'attachment_failed':'';
+            if(reason){
+              await report('manual_image_replay_review',`ฉาก ${index} • หลักฐานก่อนส่งใหม่เปลี่ยน (${reason})`,completedCount,
+                {scene_index:index,replay_review_reason:reason,replay_sample:sample+1,
+                  attachment_count:files.count,request_reason:requestReason});
+              throw fail(`หลักฐานก่อนส่งใหม่เปลี่ยน (${reason}; visible=${files.count}) • ไม่ส่งใหม่`);
+            }
+            if(sample<2)await sleep(5000);
+          }
+          await chrome.storage.local.set({[archive]:original});
+          if(!sameStoryImageReceipt((await chrome.storage.local.get(archive))[archive],original))
+            throw fail('เก็บหลักฐานคำขอเดิมก่อนส่งใหม่ไม่สำเร็จ');
+          await write({...owned,run_id:activeRunId,created_at:Date.now(),send_phase:'prepared',send_nonce:'',
+            prepared_conversation:location.href.split(/[?#]/)[0],result_proof:null,response_excerpt:'',
+            resume_image_prompt:original.result_proof.prompt,manual_replay_token:manualReplay.token,
+            manual_replay_archive:archive,retained_reference_prepared:true});
+          await report('manual_image_replay_prepared',`ฉาก ${index} • ใช้สิทธิ์ส่งใหม่หนึ่งครั้งหลังเก็บหลักฐานคำขอเดิม`,completedCount,
+            {scene_index:index,recovery_kind:'owner_authorized',prior_run_id:original.run_id});
+          return null;
+        }
         const freshStep=pkg.conversation_fresh_step;
         if(provider==='chatgpt' && freshStep?.stage==='image' && freshStep.index===index) {
           if(owned.conversation_restart?.token!==freshStep.token) {
@@ -5252,6 +5340,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
           ...(owned?.previous_scene_reference_index?{previous_scene_reference_index:owned.previous_scene_reference_index}:{}),
           ...(retainedReferencePrepared?{retained_reference_prepared:true}:{}),
           ...(owned?.standalone_scene_attempted?{standalone_scene_attempted:true}:{}),
+          ...(owned?.manual_replay_token?{manual_replay_token:owned.manual_replay_token,
+            manual_replay_archive:owned.manual_replay_archive}:{}),
           service_retry_count: Number(owned?.service_retry_count || 0),
           resume_image_prompt: String(owned?.resume_image_prompt || ''),
           repair_prompt: String(owned?.repair_prompt || ''),

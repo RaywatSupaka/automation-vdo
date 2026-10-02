@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SmartFlow AI",
-  "version": "0.15.502",
+  "version": "0.15.507",
   "description": "ผู้ช่วยเบราว์เซอร์ SmartFlow AI สำหรับ Shopee, ChatGPT/Gemini Web, Google Flow และ Meta AI Video (ทดลอง)",
   "icons": {
     "16": "icons/icon16.png",

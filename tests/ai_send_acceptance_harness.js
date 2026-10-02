@@ -174,8 +174,9 @@ function fixture(options = {}) {
     },
     assertNotCancelled: () => { if (cancelled) { const error = new Error("Cancelled"); error.name = "AbortError"; throw error; } },
     report: async (step, message, count, extra) => reports.push({ step, message, count, ...extra }),
-    sleep: async () => {
+    sleep: async (ms) => {
       state.sleeps++;
+      (state.sleepDelays ||= []).push(ms);
       if (state.sleeps === options.acceptAfterSleeps) accept();
       if (state.sleeps === options.cancelAfterSleeps) cancelled = true;
     },
@@ -194,11 +195,17 @@ function fixture(options = {}) {
     frontend.composerText=editor=>frontend.SmartFlowSingleAnswer.canonical(editor?.innerText || '');
   }
   vm.runInContext(section(options.contentSource || content, "async function sendAndVerify(", "async function ensureAiWebModel("), frontend);
+  if (options.storySend) {
+    frontend.createStoryImageWaitMonitor=()=>({observe:async()=>({})});
+    frontend.storyImageRecoveryError=(code,index,message)=>Object.assign(new Error(message),{code,index});
+  }
   return {
     run: () => {
       if(frontend.composerText(state.editor)===prompt)
         state.editor.innerText=frontend.SmartFlowSingleAnswer.wrap(prompt);
-      return frontend.sendAndVerify(button, originalEditor, 1, "existing-user-turn", 1);
+      return frontend.sendAndVerify(button, originalEditor, 1, "existing-user-turn", 1,
+        false, options.storySend ? {scene_index:2,completedCount:1,postRefreshRedo:true,
+          onAcceptanceTimeout:async()=>{throw Error('unbounded result monitor entered');}} : null);
     },
     state, originalEditor, commands, reports, responses, frontend, backend, page, accept, storage, claim, sends: () => sends,
     checkSingleDispatch() {
@@ -303,6 +310,23 @@ async function tests() {
     });
     assert.equal(f.state.sleeps, 240);
     assert(!f.reports.some((report) => report.step === "ai_send_accepted"));
+    f.checkSingleDispatch();
+  }
+  {
+    const f=fixture({storyClaim:true,storySend:true,noCapturedEvents:true});
+    await assert.rejects(f.run(),error=>error.code==='STORY_IMAGE_RECEIPT_REVIEW'
+      && error.message.includes('SEND_UNCONFIRMED_DRAFT_PRESENT'));
+    assert.equal(f.state.sleepDelays.filter(ms=>ms===5000).length,3,
+      'uncertain Story Send checks the owned draft three more times');
+    assert(f.reports.some(row=>row.step==='image_send_stalled'));
+    assert(!f.reports.some(row=>row.step==='ai_send_accepted'));
+    f.checkSingleDispatch();
+  }
+  {
+    const f=fixture({storyClaim:true,storySend:true,noCapturedEvents:true,acceptAfterSleeps:241});
+    await assert.rejects(f.run(),/unbounded result monitor entered/);
+    assert(!f.reports.some(row=>row.step==='image_send_stalled'),
+      'a late owned user turn keeps result-only recovery available');
     f.checkSingleDispatch();
   }
   f = fixture({ acceptImmediately: true });

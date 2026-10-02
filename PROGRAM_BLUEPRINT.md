@@ -1,5 +1,15 @@
 # SmartFlow AI — Program Blueprint
 
+## Owner-authorized uncertain Story image replay / 0.15.505–507
+
+## Prior-run Story image draft watchdog / 0.15.504
+
+Checkpoint Resume may enter result-only recovery with a `dispatching` image receipt from a previous run. When the owned ChatGPT request is missing, the exact original prompt remains in the composer, and no response is active, the monitor now makes three read-only observations spanning at least 15 seconds. If unchanged, it reports `image_send_stalled` and raises `STORY_IMAGE_RECEIPT_REVIEW` with `PRIOR_RUN_UNCONFIRMED_DRAFT_PRESENT`. The receipt, source image and saved scenes remain; no refresh or Send is attempted. A late matching request or image remains eligible for the existing result-only path. This fixes the separate Resume route found when the 503 candidate was activated and Story 55A401 was retried from scene 1.
+
+## Uncertain Story image Send watchdog / 0.15.503
+
+The Extension bridge heartbeat reports connection and job status, but it cannot prove that ChatGPT accepted a clicked Send. In installed 502, Story 55A401 scene 2 showed a dispatched gesture, an unchanged prompt with a reference image in the composer, no matching user turn, and `request_missing` for several minutes. The result monitor could not safely reload an occupied composer and kept waiting. After the existing one-minute Send acceptance window, 503 checks the same draft and exact job/run three more times at five-second intervals. If the draft and missing request remain unchanged with no active response, it reports `image_send_stalled` and raises `STORY_IMAGE_RECEIPT_REVIEW` with `SEND_UNCONFIRMED_DRAFT_PRESENT`. This preserves the receipt, draft, attachment and saved scenes and pauses the queue without another Send. If a matching user turn appears during the checks, result-only recovery continues. Focused fixtures are not evidence that the running 502 content script has changed; activate only after the active job is idle.
+
 ## ChatGPT ambiguous Send recheck / 0.15.502
 
 Version 501 saved scene 3 after one accepted Send but scene 4 stopped before a press with the generic unready message and without a delayed-recheck suffix. The exact Background reason was lost by the Story error wrapper; the code path suggests `send_target_ambiguous`. Version 502 adds that transient ambiguity to the same three read-only checks at five-second intervals. It never chooses among two live buttons or presses until one exact composer-owned target remains; changed draft, owner or cancellation still stops. Both successful Send diagnostics and prepress error reports keep only bounded reason enums and the recheck count, with no prompt or browser secret. Focused fixtures cover late uniqueness, persistent ambiguity with zero presses, and safe trace transport. Connected 502 saved scene 4 after one accepted Send and advanced to scene 5 without exercising the delayed path. An existing active tab may retain the prior content script until its next safe reload; the Background retry logic is active, and the tab must not be reloaded mid-job.
@@ -2689,3 +2699,8 @@ Runtime Extension 0.15.473 — isolated candidate; canonical/installed status is
 - Worker รุ่นเก่าที่ไม่มี protocol ต้องให้ผู้ใช้กด Reload ที่ตัวเดิมหนึ่งครั้ง การติดตั้งครั้งแรกยังทำผ่าน Chrome คิวงานยังพักไว้จนผู้ใช้สั่งทำงานต่อ การยืนยันผลดูรุ่นที่ heartbeat กลับมาจริง
 - ฟีเจอร์อัปเดตอัตโนมัติไม่มีทางเข้าจาก UI และยังไม่เคยยืนยันการติดตั้ง/Reload Chrome ที่ใช้งานจริง
 
+The desktop can record an explicit one-time authorization for a failed ChatGPT Story scene only when the 504 prior-run draft review is the saved error, the prior scene image exists, and the target scene image does not. The Extension binds that authorization to the exact job and scene receipt. It rechecks the unchanged draft, one reference attachment, missing user request, same conversation and absence of an active response three times at five-second intervals. It archives the prior receipt before preparing a new Send and carries the authorization token into the new receipt so a later Resume cannot use it again. If any evidence changes, stop for review and retain the original receipt.
+
+Version 506 records the exact preflight reason and attachment count without logging the prompt, image content or other sensitive data. A failed preflight consumes no replay token and sends nothing.
+
+Version 507 allows a missing visible reference when the file input also holds no selected file; the normal previous-scene checkpoint upload and verification path must reattach saved scene 1 before Send. Multiple, busy, failed or hidden attachments still stop for review.

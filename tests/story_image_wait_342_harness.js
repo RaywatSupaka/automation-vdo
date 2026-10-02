@@ -5,7 +5,7 @@ const adapterSource=source.slice(source.indexOf('  function chatGPTConversationF
 const monitorSource=source.slice(source.indexOf('  function createStoryImageWaitMonitor('),source.indexOf('  async function recoverOwnedStoryImage('));
 const recoverSource=source.slice(source.indexOf('  async function recoverOwnedStoryImage('),source.indexOf('  function createStoryImageReceipt('));
 const noResultSource=source.slice(source.indexOf('  function storyImageNoResultReady('),source.indexOf('  async function waitStoryImageServiceRetry('));
-function fixture(){
+function fixture({postRefreshRedo=false}={}){
   const userFrame=index=>({getAttribute:name=>name==='data-testid'?`conversation-turn-${index}`:null,
     querySelector:selector=>selector==='[data-message-author-role="user"]'?{}:null});
   const frame=userFrame(1),frames=[frame];
@@ -19,13 +19,13 @@ function fixture(){
     document:{querySelectorAll:selector=>selector==='[data-testid^="conversation-turn-"]'?frames:[]},
     chatGPTComposerAttachmentState:()=>({count:0,busy:false,failed:false}),
     assertNotCancelled:()=>{if(c.cancelRequested)throw Error('cancelled');},
-    storyImageWaitObservation:()=>observed,
+    storyImageWaitObservation:()=>observed,storyImageLoopOwnerNonce:()=>'',
     storyImageRecoveryError:(code,index,message)=>Object.assign(Error(message),{code}),
     report:async(...args)=>events.push(args),
     chrome:{storage:{local:{get:async()=>({'smartpostStoryGeneratedImage:chatgpt:STORY-TEST:12':receipt})}},
       runtime:{sendMessage:async message=>{messages.push(message);return {ok:false,refresh_scheduled:false};}}}
   });
-  vm.runInContext(adapterSource+monitorSource+'; monitor=createStoryImageWaitMonitor("prompt",{},12,11);',c);
+  vm.runInContext(adapterSource+monitorSource+`; monitor=createStoryImageWaitMonitor("prompt",{},12,11,${postRefreshRedo});`,c);
   return {c,receipt,messages,events,newUser:()=>frames.push(userFrame(frames.length+1)),
     set:(ms,next)=>{time=ms;if(next)observed={...observed,...next};},tick:()=>c.monitor.observe()};
 }
@@ -103,6 +103,14 @@ function recoveryFixture({text='',busy=false,controls=true,loading=false,onSleep
   await assert.rejects(broken(f),error=>error.code==='STORY_IMAGE_REFRESH_SCHEDULED');assert.equal(typeof f.c.storyImageRefreshGuard,'function','guard retained during handoff');
   f=fixture();f.set(0,{request:{},state:{reason:'request_missing',images:[]}});await f.tick();f.set(30000);
   await assert.rejects(f.tick(),error=>error.code==='STORY_IMAGE_RECEIPT_REVIEW');assert.equal(f.messages.length,0,'missing owner never reloads');
+  f=fixture({postRefreshRedo:true});f.receipt.run_id='RUN-PRIOR';f.receipt.send_phase='dispatching';
+  f.c.composerText=()=> 'prompt';
+  f.set(0,{request:{},state:{reason:'request_missing',images:[]},missingRequestOwned:true});await f.tick();
+  f.set(5000);await f.tick();f.set(15000);
+  await assert.rejects(f.tick(),error=>error.code==='STORY_IMAGE_RECEIPT_REVIEW'
+    && /PRIOR_RUN_UNCONFIRMED_DRAFT_PRESENT/.test(error.message));
+  assert.equal(f.messages.length,0,'resumed uncertain draft never refreshes or sends');
+  assert(f.events.some(args=>args[0]==='image_send_stalled'),'resumed wait reports an exact terminal reason');
   f=fixture();f.c.cancelRequested=true;await assert.rejects(f.tick(),/cancelled/);
   for(const text of ['Something went wrong while generating your image.', 'I cannot create that image.']){
     const resumed=recoveryFixture({text});

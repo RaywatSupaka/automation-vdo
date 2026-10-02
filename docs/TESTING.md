@@ -1,5 +1,7 @@
 # Focused development checks
 
+For owner-authorized uncertain Story image replay, run `py -3 tools/run_focused_tests.py --feature story-image-result`. The selector includes the job authorization and receipt transition fixtures; it does not send to ChatGPT.
+
 Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 
 ```powershell
@@ -30,6 +32,8 @@ The actual Background Send harness also checks up to three five-second read-only
 `story-recovery-ui` checks durable saved-scene evidence, bounded trace fallback for a later reference error without a scene number, and the Story recovery timeline shown in the desktop UI. It does not send provider requests or alter saved jobs.
 
 `story-image-result` checks owned ChatGPT image result collection when a stale progress marker remains after the completed image, while a real Stop button still blocks collection. It also checks that Continue never restarts an accepted prior-run image request after an empty post-refresh response. These fixtures make no provider request.
+
+The same focused group runs `story_image_wait_342_harness.js` for an uncertain prior-run draft on checkpoint Resume: three read-only observations end in review without refresh or another Send.
 
 `membership` checks the development token gate and membership backend plus JavaScript syntax. The optional real HTML login check needs Playwright and its Chromium browser: `node tests/membership_ui.cjs`.
 
