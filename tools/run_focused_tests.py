@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 SUITES = {
     "webview2-prototype": {
-        "python": ["test_provider_prototype.py", "test_provider_lab_ui.py"],
-        "node": [],
+        "python": ["test_provider_prototype.py", "test_provider_lab_ui.py", "test_webview2_request.py"],
+        "node": ["tests/webview2_request_dom.cjs"],
         "syntax": ["web_ui/provider_lab.js"],
     },
     "ai-cover": {
@@ -86,13 +86,17 @@ SUITES = {
 FILE_SUITES = {
     "desktop/provider_prototype.py": ("webview2-prototype",),
     "desktop/embedded_provider.py": ("webview2-prototype",),
+    "desktop/webview2_request.py": ("webview2-prototype",),
     "desktop/hybrid.py": ("webview2-prototype",),
     "desktop/update_api.py": ("extension-update", "webview2-prototype"),
     "tests/test_provider_prototype.py": ("webview2-prototype",),
     "tests/test_provider_lab_ui.py": ("webview2-prototype",),
+    "tests/test_webview2_request.py": ("webview2-prototype",),
+    "tests/webview2_request_dom.cjs": ("webview2-prototype",),
     "web_ui/provider_lab.js": ("webview2-prototype",),
     "web_ui/provider_lab.css": ("webview2-prototype",),
     "tools/smoke_provider_lab_ui.py": ("webview2-prototype",),
+    "tools/smoke_webview2_live_text.py": ("webview2-prototype",),
     "core/ai_cover.py": ("ai-cover",),
     "ui/ai_cover.py": ("ai-cover",),
     "tests/test_ai_cover.py": ("ai-cover",),

@@ -100,6 +100,12 @@
       <main class="content">
         <section class="page" data-view="ai-chat">
           <section class="ai-chat-heading"><span class="eyebrow">DEV MODE · WEBVIEW2 PROTOTYPE</span><h1>AI Chat</h1><p>ChatGPT ในหน้าต่าง SmartFlow เดิม • ใช้โปรไฟล์แยกจาก Chrome • ยังไม่เชื่อมกับงานสร้างคลิป</p></section>
+          <section class="ai-chat-test" aria-label="ทดลองคำขอ AI Chat หนึ่งครั้ง">
+            <label for="ai-chat-test-prompt">ทดลองส่งคำขอข้อความหนึ่งครั้ง</label>
+            <textarea id="ai-chat-test-prompt" rows="2" maxlength="12000" placeholder="พิมพ์คำขอทดสอบสั้น ๆ หลังเข้าสู่ระบบ ChatGPT ในหน้านี้"></textarea>
+            <div class="button-row"><button class="button secondary" id="ai-chat-test-probe" type="button">ตรวจหน้า ChatGPT</button><button class="button primary" id="ai-chat-test-send" type="button">ส่งคำขอทดสอบ</button><span id="ai-chat-test-status" role="status" aria-live="polite">งานสร้างคลิปจริงยังใช้ Chrome Extension</span></div>
+            <pre id="ai-chat-test-answer" hidden></pre>
+          </section>
           <div id="ai-chat-host" aria-label="พื้นที่ ChatGPT ในโปรแกรม"><span id="ai-chat-status" role="status">กำลังเปิด ChatGPT ภายในโปรแกรม…</span></div>
         </section>
         <section class="workspace-issues" id="workspace-issues" aria-live="polite" hidden>

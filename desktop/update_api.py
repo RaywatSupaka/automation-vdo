@@ -23,6 +23,10 @@ class UpdateApi:
         self._downloaded = {}
         self._progress = {"busy": False, "message": ""}
         self._embedded_provider = None
+        self._provider_test_runner = None
+        self._provider_test_thread = None
+        self._provider_test_lock = threading.Lock()
+        self._provider_test_error = ""
 
     def provider_lab_available(self):
         """Keep the provider lab out of packaged/customer WebViews."""
@@ -47,6 +51,60 @@ class UpdateApi:
         if self._embedded_provider is not None:
             return self._embedded_provider.hide()
         return {"ok": True}
+
+    def provider_lab_probe(self):
+        if not self.provider_lab_available() or self._embedded_provider is None:
+            return {"ok": False, "reason": "เปิดหน้า AI Chat ใน DEV MODE ก่อน"}
+        try:
+            from desktop.webview2_request import OneShotRunner, RequestJournal
+            return {"ok": True, **OneShotRunner(self._embedded_provider, RequestJournal()).probe()}
+        except Exception:
+            return {"ok": False, "reason": "หน้า AI Chat ยังไม่พร้อม"}
+
+    def provider_lab_start_test(self, prompt):
+        """Start one DEV text request; an unknown Send is never retried."""
+        if not self.provider_lab_available() or self._embedded_provider is None:
+            return {"ok": False, "error": "เปิดหน้า AI Chat ใน DEV MODE ก่อน"}
+        if not isinstance(prompt, str) or not 3 <= len(prompt.strip()) <= 12000:
+            return {"ok": False, "error": "Prompt ต้องมี 3–12,000 ตัวอักษร"}
+        from desktop.webview2_request import OneShotRunner, RequestJournal
+        with self._provider_test_lock:
+            if self._provider_test_thread and self._provider_test_thread.is_alive():
+                return {"ok": False, "error": "คำขอเดิมยังทำงานอยู่"}
+            journal = RequestJournal()
+            if journal.read().get("phase") not in {None, "completed", "failed_before_send"}:
+                return {"ok": False, "error": "คำขอเดิมยังไม่ยืนยันผล • ตรวจแชตเดิมก่อน"}
+            runner = OneShotRunner(self._embedded_provider, journal)
+            self._provider_test_runner = runner
+            self._provider_test_error = ""
+
+            def run():
+                try:
+                    runner.run(prompt)
+                except ValueError as exc:
+                    self._provider_test_error = str(exc)[:160]
+                except Exception:
+                    self._provider_test_error = "ตรวจคำขอใน AI Chat ไม่สำเร็จ • ยังไม่ส่งซ้ำ"
+
+            self._provider_test_thread = threading.Thread(target=run, name="webview2-dev-request", daemon=True)
+            self._provider_test_thread.start()
+        return {"ok": True, "message": "เริ่มตรวจและส่งคำขอหนึ่งครั้ง"}
+
+    def provider_lab_test_status(self):
+        if not self.provider_lab_available():
+            return {"ok": False}
+        from desktop.webview2_request import RequestJournal
+        row = RequestJournal().read()
+        allowed = ("request_id", "job_id", "run_id", "scene_index", "phase", "reason",
+                   "created_at", "updated_at", "answer_length", "observed_url_kind",
+                   "observed_user_count", "observed_assistant_count", "observed_user_matches",
+                   "observed_busy", "observed_draft_length")
+        result = {key: row[key] for key in allowed if key in row}
+        result.update(ok=True, running=bool(self._provider_test_thread and self._provider_test_thread.is_alive()),
+                      error=self._provider_test_error)
+        if row.get("phase") == "completed" and self._provider_test_runner:
+            result["answer"] = self._provider_test_runner.answer
+        return result
 
     def update_check(self):
         local = {}

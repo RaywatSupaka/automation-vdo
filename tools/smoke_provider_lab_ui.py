@@ -31,7 +31,7 @@ def main():
                                    js_api=api, width=900, height=520)
     api._window = window
     outcome = {"ok": False, "same_window": False, "hidden_on_leave": False,
-               "fixture_loaded": False}
+               "fixture_loaded": False, "isolated_script": False}
 
     def check():
         try:
@@ -51,10 +51,21 @@ def main():
                     outcome["fixture_loaded"] = True
                     break
                 time.sleep(0.2)
+            if outcome["fixture_loaded"]:
+                deadline = time.monotonic() + 10
+                while time.monotonic() < deadline:
+                    try:
+                        outcome["isolated_script"] = json.loads(api._embedded_provider.evaluate(
+                            "document.title")) == "Embedded provider fixture"
+                        if outcome["isolated_script"]:
+                            break
+                    except RuntimeError:
+                        pass
+                    time.sleep(0.2)
             api.provider_lab_hide()
             outcome["hidden_on_leave"] = not control.Visible
             outcome["ok"] = all(outcome[key] for key in
-                                 ("same_window", "fixture_loaded", "hidden_on_leave"))
+                                 ("same_window", "fixture_loaded", "isolated_script", "hidden_on_leave"))
         except Exception as exc:
             outcome["error_type"] = type(exc).__name__
             outcome["error"] = str(exc)[:180]

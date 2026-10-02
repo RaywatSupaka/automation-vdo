@@ -92,3 +92,20 @@ class EmbeddedProvider:
         except Exception:
             pass
         return {"ok": True}
+
+    def evaluate(self, script, timeout_ms=10000):
+        """Run a script only in the isolated provider control, never the shell."""
+        form = getattr(self.window, "native", None)
+        if form is None or form.IsDisposed or self.control is None or self.control.IsDisposed:
+            raise RuntimeError("provider_not_open")
+        from System import Func, Object
+
+        def begin():
+            if self.control.CoreWebView2 is None:
+                raise RuntimeError("provider_not_ready")
+            return self.control.CoreWebView2.ExecuteScriptAsync(script)
+
+        task = form.Invoke(Func[Object](begin))
+        if not task.Wait(timeout_ms):
+            raise TimeoutError("provider_script_timeout")
+        return task.Result
