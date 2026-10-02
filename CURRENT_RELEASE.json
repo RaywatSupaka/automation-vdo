@@ -1,13 +1,14 @@
 {
   "story_image_stale_progress_497": {
-    "status": "isolated_candidate_live_activation_pending",
+    "status": "paired_installed_connected_story_recovery_in_progress",
     "paired_extension_version": "0.15.497",
     "desktop_launcher_version": "0.15.497.0",
     "scope": "Collect one exact owned, full-size completed Story image after a stable stale progress marker without Stop; report separate Stop and marker evidence",
     "main_candidate_sha256": "51BD04CBD86D8CFF641A0DAD973D8A4385499CCA8CDEE7D9EE71B692CE2EB4CF",
-    "extension_zip_sha256": "457BC1EB2BE3967FEBE15CEBD0A25E4DAC218E93C3F5E44660F84A4C0CC0DA4E",
-    "installed_activation_verified": false,
+    "extension_zip_sha256": "E1CE02419D37694B82014BFABA34B9D18A473580B8803CBFC9AA717B4F53465D",
+    "installed_activation_verified": true,
     "provider_output_verified": false,
+    "live_run_observation": "After owner-approved cancellation, Story E25264 saved scene 5, paired 497 main and original Chrome Extension ID connected, then the same job resumed from scene 6 in its saved conversation. At latest read the 497 trace reports result-only recovery with no repeated provider Send; scene 6 and full Story output remain unverified.",
     "full_suite": "not run; focused Story image result, dispatch, and release contracts only"
   },
   "story_reference_scope_496": {
