@@ -1035,7 +1035,46 @@
       && chatGPTStoryRequest(wrapped).reason === 'request_missing');
   }
 
-  async function attachSourceImages(urls, completedCount = 0, strictReference = "", retainedReference = null) {
+  async function clearOwnedUnsentStoryReference(referenceName, expectedPrompt, ownsPreparation, completedCount) {
+    if(IS_GEMINI || !referenceName || !ownsPreparation?.() || stopButtonVisible())return false;
+    const editor=composer(),shell=chatGPTComposerShell(editor),attachment=shell&&chatGPTComposerAttachmentState(shell);
+    if(!editor || !shell || !attachment || attachment.count!==1 || attachment.busy || attachment.failed)return false;
+    const wrapped=globalThis.SmartFlowSingleAnswer?.wrap?.(expectedPrompt);
+    const normalize=value=>String(value||'').trim().replace(/\s+/g,' ');
+    const draft=normalize(composerText(editor));
+    if(draft && (!wrapped || draft!==normalize(wrapped)))return false;
+    if(wrapped && chatGPTStoryRequest(wrapped).reason!=='request_missing')return false;
+    const name=new RegExp(`^${referenceName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\.(?:png|jpe?g|webp)$`,'i');
+    const labels=node=>[node?.getAttribute?.('aria-label'),node?.getAttribute?.('title'),node?.textContent]
+      .filter(Boolean).map(value=>String(value).trim());
+    const buttons=[...shell.querySelectorAll('button[aria-label]')].filter(button=>visible(button)
+      && /remove (?:file|attachment)|ลบ(?:ไฟล์|รูป)/i.test(button.getAttribute('aria-label')||''))
+      .filter(button=>{
+        const tile=button.closest('[role="group"],[data-testid*="attachment"],[data-testid*="file-thumbnail"]')||button.parentElement;
+        return tile && tile!==shell && labels(tile).some(label=>name.test(label))
+          && attachment.nodes.some(node=>tile.contains(node)||node===tile);
+      });
+    if(buttons.length!==1)return false;
+    assertNotCancelled();
+    if(!ownsPreparation() || composer()!==editor || chatGPTComposerShell(editor)!==shell
+        || stopButtonVisible() || normalize(composerText(editor))!==draft)return false;
+    buttons[0].click();
+    for(let attempt=0;attempt<20;attempt++){
+      await sleep(250);
+      assertNotCancelled();
+      if(!ownsPreparation() || composer()!==editor || chatGPTComposerShell(editor)!==shell
+          || stopButtonVisible() || normalize(composerText(editor))!==draft)return false;
+      const current=chatGPTComposerAttachmentState(shell);
+      if(!current.busy && !current.failed && current.count===0){
+        await report('recovery_reference_cleared','ล้างรูปอ้างอิงฉากเดิมที่ยังไม่ส่งแล้ว • กำลังแนบจาก checkpoint',completedCount);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async function attachSourceImages(urls, completedCount = 0, strictReference = "", retainedReference = null,
+      preparedStoryOwner = null, expectedPrompt = "") {
     if (!urls?.length) throw new Error("Job นี้ไม่มีรูปสินค้าต้นฉบับ");
     const expectedCount = Math.min(activeCoverRequest ? 3 : activeSourceReferenceLimit, urls.length);
     const referenceShell = () => IS_GEMINI
@@ -1050,9 +1089,12 @@
         await report('recovery_reference_reused', 'ยืนยันรูปอ้างอิงและคำสั่งที่เตรียมไว้แล้ว • ใช้คำขอเดิมต่อ', completedCount);
         return;
       }
-      const error = new Error("AI_IMAGE_REFERENCE_UNCONFIRMED • มีรูปค้างในช่องข้อความที่ยังยืนยันเจ้าของไม่ได้ • ยังไม่ส่งคำขอ");
-      error.code = "AI_IMAGE_REFERENCE_UNCONFIRMED";
-      throw error;
+      const cleared=await clearOwnedUnsentStoryReference(strictReference,expectedPrompt,preparedStoryOwner,completedCount);
+      if(!cleared || localPreviews().length){
+        const error = new Error("AI_IMAGE_REFERENCE_UNCONFIRMED • มีรูปค้างในช่องข้อความที่ยังยืนยันเจ้าของไม่ได้ • ยังไม่ส่งคำขอ");
+        error.code = "AI_IMAGE_REFERENCE_UNCONFIRMED";
+        throw error;
+      }
     }
     const coverOwner=activeCoverRequest ? {request:activeCoverRequest,shell:referenceShell(),draft:composerText(),
       users:userTurns().length,signature:lastUserTurnSignature()} : null;
@@ -5938,7 +5980,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     const beforeUserSignature = lastUserTurnSignature();
     if (imageUrls.length) {
       await attachSourceImages(imageUrls, completedCount, strictReference,
-        hasRetainedReference ? retainedReference : null);
+        hasRetainedReference ? retainedReference : null,
+        storyContext?.ownsRetainedReference, text);
       editor = await waitForComposer();
     }
     // Capture the baseline only after reference uploads are visible. Otherwise
@@ -7755,8 +7798,18 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     await coverEvent({phase:'running',send_state:'unconfirmed',message:'กำลังส่งคำขอปก • ตรวจผลคำขอนี้ต่อ'});
     if(attempt && !coverRetryChainSnapshot(request,true))
       throw Error('เจ้าของข้อความปกเปลี่ยนระหว่างเตรียมส่ง • เก็บใบรับเดิม');
-    if(IS_GEMINI)await sendGeminiImageAndVerify(stable.button,stable.editor,users,signature,answers,attempt+1,0);
-    else await sendCoverAndVerify(request,stable,users,signature,answers,coverPrompt);
+    try {
+      if(IS_GEMINI)await sendGeminiImageAndVerify(stable.button,stable.editor,users,signature,answers,attempt+1,0);
+      else await sendCoverAndVerify(request,stable,users,signature,answers,coverPrompt);
+    } catch(error) {
+      // A physical Send with an unknown ACK is still owned by this request.
+      // Keep reading the same conversation; no new prompt or tab is allowed.
+      const diagnostics=error.sendDiagnostics||{};
+      if(error.code!=='AI_SEND_DISPATCHED_UNCONFIRMED'
+          || !(error.submissionDispatched===true || ['pressed','released','release_uncertain'].includes(diagnostics.gesture_phase)))throw error;
+      await coverEvent({phase:'running',send_state:'unconfirmed',send_diagnostics:diagnostics,
+        message:'ส่งคำขอปกแล้ว แต่ยังไม่ยืนยันการรับ • เฝ้าดูคำตอบเดิมโดยไม่ส่งซ้ำ'});
+    }
     if(attempt){
       const reference_chain=coverRetryChainSnapshot(request);
       if(!reference_chain)throw Error('ยังยืนยันเจ้าของข้อความลองปกใหม่ไม่ได้ • เก็บคำขอเดิม ไม่ส่งเพิ่ม');
@@ -7764,7 +7817,9 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       request.reference_chain=reference_chain;
     }
     }
-    let activity=Date.now(),lastReport=0,lastSignature='',imageSince=0,imageURL='',textSince=0,lastText='';
+    let activity=Date.now(),lastContentChange=activity,waitStarted=activity;
+    let lastReport=0,lastSignature='',imageSince=0,imageURL='',textSince=0,lastText='';
+    let acceptedReported=false,lastStopVisible=false;
     while(true){
       assertNotCancelled();
       const owns=motionRequestIsLatestUser(coverPrompt)
@@ -7794,22 +7849,31 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         await sleep(700);continue;
       }
       if(retryWaiting && (analysisResponseStopButton() || text!==retryReply || images.length))retryWaiting=false;
+      if(owns && !acceptedReported){
+        acceptedReported=true;
+        await coverEvent({phase:'running',send_state:'accepted',message:'พบคำขอปกในแชตเดิม • กำลังเก็บผลโดยไม่ส่งซ้ำ'});
+      }
       const progress=JSON.stringify([text,candidates.map(i=>[coverImageKey(i),i.complete,i.naturalWidth,i.naturalHeight])]);
-      if(progress!==lastSignature){lastSignature=progress;activity=Date.now();}
-      if(analysisResponseStopButton())activity=Date.now();
-      const collector_state={stage:!owns?'request_missing':!turn?'answer_missing':analysisResponseStopButton()?'generating':
+      if(progress!==lastSignature){lastSignature=progress;activity=Date.now();lastContentChange=activity;}
+      const stopVisible=!!analysisResponseStopButton();
+      if(stopVisible)activity=Date.now();
+      if(stopVisible!==lastStopVisible){imageSince=Date.now();lastStopVisible=stopVisible;}
+      const collector_state={stage:!owns?'request_missing':!turn?'answer_missing':stopVisible?'generating':
         !candidates.length?'waiting_image':!images.length?'loading_image':'stabilizing',
-        owned:owns,candidates:Math.min(10,candidates.length),loaded:Math.min(10,images.length)};
+        owned:owns,candidates:Math.min(10,candidates.length),loaded:Math.min(10,images.length),
+        stop_visible:stopVisible,stalled_ms:Math.max(0,Date.now()-lastContentChange)};
       if(Date.now()-lastReport>10000){lastReport=Date.now();await coverEvent({phase:'running',
         message:images.length>1?'พบปกหลายภาพ • เลือกหนึ่งภาพที่โหลดพร้อมแล้วเพื่อบันทึก':images.length===1?'พบภาพปกแล้ว • กำลังยืนยันผลก่อนดาวน์โหลด':'AI กำลังสร้างปก • รอผลเดิม ไม่สร้างคลิปซ้ำ',
         active:Date.now()-activity<15000,collector_state});}
-      if(images.length && !analysisResponseStopButton()){
+      if(images.length){
         // The user authorizes choosing any usable cover. Keep the selected key
         // stable if another option finishes loading or DOM ordering changes.
+        // A stale Stop control can remain after a complete owned image. Keep
+        // observing for a minute before accepting that already loaded asset.
         const selected=images.find(image=>coverImageKey(image)===imageURL)||images[0];
         const url=coverImageKey(selected);
         if(url!==imageURL){imageURL=url;imageSince=Date.now();}
-        else if(Date.now()-imageSince>=3500)return selected;
+        else if(Date.now()-imageSince>=(stopVisible?60000:3500))return selected;
       }else {imageURL='';imageSince=0;}
       if(text!==lastText){lastText=text;textSince=Date.now();}
       if(owns && text && !retryWaiting && !analysisResponseStopButton() && !candidates.length && Date.now()-textSince>8000){
@@ -7817,6 +7881,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         error.confirmedServiceFailure=confirmedStoryImageServiceError(text) && !storyImageRefusal(text);
         throw error;
       }
+      if(Date.now()-waitStarted>540000)throw Error('ปกรอนานเกิน 9 นาที เก็บคำขอเดิมไว้เพื่อดึงผล ไม่ส่งซ้ำ');
       if(Date.now()-activity>360000)throw Error('ปกไม่มีความคืบหน้า 6 นาที เก็บคำขอเดิมไว้');
       await sleep(700);
     }

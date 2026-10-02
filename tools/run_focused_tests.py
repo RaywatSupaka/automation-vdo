@@ -16,8 +16,8 @@ SUITES = {
     },
     "ai-cover": {
         "python": ["test_ai_cover.py"],
-        "node": [],
-        "syntax": [],
+        "node": ["tests/cover_multiple_selection_450.cjs"],
+        "syntax": ["browser_extension/chatgpt.js"],
     },
     "story-prompt": {
         "python": ["test_story_prompt_safety.py"],
@@ -109,7 +109,9 @@ FILE_SUITES = {
     "tests/test_story_duplicate_dispatch.py": ("story-dispatch",),
     "tests/story_bootstrap_tab_guard.cjs": ("story-dispatch",),
     "tests/story_retained_reference_resume.cjs": ("story-dispatch",),
-    "browser_extension/chatgpt.js": ("story-dispatch", "story-image-result"),
+    "browser_extension/chatgpt.js": ("ai-cover", "story-dispatch", "story-image-result"),
+    "tests/ai_cover_harness.js": ("ai-cover",),
+    "tests/cover_multiple_selection_450.cjs": ("ai-cover",),
     "tests/chatgpt_semantic_turns_435.cjs": ("story-image-result",),
     "tests/chatgpt_recovery_loop_456.cjs": ("story-image-result",),
     "RUN_DEV.bat": ("membership",),

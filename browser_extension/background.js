@@ -534,7 +534,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.498-20261002.1";
+const FLOW_HELPER_BUILD = "flow-0.15.499-20261002.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";

@@ -56,6 +56,16 @@ function setup(options={}){
     assert.equal(f.events.at(-1).phase,'ready');assert.equal(f.c.activeCoverRequest,null);cases++;
   }
   const slow=setup({readyAt:450000});await slow.run();assert.equal(slow.events.at(-1).phase,'ready');assert.equal(slow.sends(),1);cases++;
+  const uncertainSend=setup();const acceptedSend=uncertainSend.c.sendCoverAndVerify;
+  uncertainSend.c.sendCoverAndVerify=async(...args)=>{
+    await acceptedSend(...args);
+    throw Object.assign(Error('acceptance acknowledgement lost'),{code:'AI_SEND_DISPATCHED_UNCONFIRMED',
+      submissionDispatched:true,sendDiagnostics:{gesture_phase:'released',release_on_send_target:true}});
+  };
+  await uncertainSend.run();assert.equal(uncertainSend.sends(),1,'uncertain cover Send is never replayed');
+  assert.equal(uncertainSend.events.at(-1).phase,'ready','late owned cover image is saved after an uncertain Send');
+  assert(uncertainSend.events.some(event=>event.send_state==='unconfirmed'));
+  assert(uncertainSend.events.some(event=>event.send_state==='accepted'));cases++;
   const loading=setup({loadedAt:25000,text:'You could try:'});await loading.run();assert.equal(loading.events.at(-1).phase,'ready');assert(loading.clock()>=28500);
   for(const collectOnly of [false,true]){
     const multiple=setup({secondImage:true,collectOnly,text:'You could try:'});await multiple.run();

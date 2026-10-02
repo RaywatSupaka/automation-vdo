@@ -62,14 +62,17 @@ class AICoverTests(unittest.TestCase):
 
     def test_collector_diagnostics_are_bounded_not_completion(self):
         rid=self.claim()
-        state=dict(stage='stabilizing',owned=True,candidates=1,loaded=1,url='omit',prompt='omit')
+        state=dict(stage='stabilizing',owned=True,candidates=1,loaded=1,
+                   stop_visible=True,stalled_ms=60000,url='omit',prompt='omit')
         self.service.event(rid,dict(phase='running',collector_state=state))
         saved=self.service.get(rid)['collector_state']
-        self.assertEqual(saved,dict(stage='stabilizing',owned=True,candidates=1,loaded=1))
+        self.assertEqual(saved,dict(stage='stabilizing',owned=True,candidates=1,loaded=1,
+                                    stop_visible=True,stalled_ms=60000))
         self.assertEqual(self.manifest.read()['ai_cover_state']['collector_state'],saved)
         self.assertFalse(self.service.completion(self.job)['ready'])
         for bad in ({**state,'stage':'unknown'}, {**state,'candidates':True}, {**state,'loaded':11},
-                    {**state,'loaded':2}, {**state,'owned':'yes'}):
+                    {**state,'loaded':2}, {**state,'owned':'yes'},
+                    {**state,'stop_visible':'yes'}, {**state,'stalled_ms':-1}):
             with self.assertRaises(ValueError):self.service.event(rid,dict(phase='running',collector_state=bad))
 
     def test_worker_timeout_reports_last_collector_stage_keeps_video(self):
@@ -376,7 +379,7 @@ class AICoverTests(unittest.TestCase):
         from core.cancellable_process import hidden_process_kwargs
         result=subprocess.run(['node',str(Path(__file__).with_name('ai_cover_harness.js'))],capture_output=True,text=True,timeout=20,**hidden_process_kwargs())
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
-        self.assertEqual(json.loads(result.stdout),{'ok':True,'cases':10})
+        self.assertEqual(json.loads(result.stdout),{'ok':True,'cases':11})
 
     def test_cover_result_observed_dom(self):
         from core.cancellable_process import hidden_process_kwargs
