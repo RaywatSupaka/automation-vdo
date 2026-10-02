@@ -1,5 +1,65 @@
 # SmartFlow AI — Program Blueprint
 
+## Story image composer scope and attachment count (0.15.496, 2026-10-02)
+
+The ChatGPT retained-reference check, attachment counter and uploader now resolve the same composer shell, including the unified composer form when the editor is not nested in a form. A prepared unsent Story image can reuse its one named previous-scene attachment without another upload. Before any Story reference-image Send, the audit requires exactly the requested attachment count and no busy or failed upload; excess references stop before Send with a logged context conflict. The 495 live run produced a ready ten-scene Story and local video, but scene 5 had two attachment nodes for one source and therefore does not prove correct reuse. Paired 496 is installed and connected; this specific branch is not yet live-proven.
+
+## ChatGPT composer whitespace in retained Story requests (0.15.495, 2026-10-02)
+
+ChatGPT may render line breaks in an unsent image prompt as spaces. The retained-reference guard compares the entire wrapped prompt and live composer after collapsing whitespace, rather than raw character equality. It still requires the prepared unsent receipt, current run, same conversation, exactly one attachment bearing the generated previous-scene filename, no busy upload and no matching sent request. A changed non-whitespace character still stops before Send. The 494 live scene-5 stop was before Send and preserved images 1–4. Version 495 is paired and connected in DEV; live provider output remains unverified.
+
+## Prepared Story image attachment recovery (0.15.494, 2026-10-02)
+
+The Extension keeps a prepared receipt for an image request that failed before Send. On Resume it may use the same retained previous-scene attachment in the same ChatGPT conversation after checking the receipt, exact filename marker, one composer attachment, exact wrapped prompt and absence of a matching sent user turn. It then continues the existing request without a second upload. Any ownership or page-state mismatch remains a protected stop; an accepted or uncertain Send is never replayed. The paired 494 DEV desktop and original Chrome Extension ID are connected; the next actual Story Resume remains the live behavior check.
+
+## Story recovery status in the desktop UI (2026-10-02)
+
+The Story Shorts recovery cards use `core/story_recovery_summary.py` and saved local scene files to show confirmed analysis, each saved image scene, the exact failed image scene, and later pending scenes separately. A job-level error no longer colors the whole card red. The last error is expandable; a `CHATGPT_IMAGE_RESULT_SEND_NOT_STARTED` scene is labeled as not sent, not as an image-generation failure. The summary is read-only and does not retry, clear, or change job checkpoints. `STORY-20261002-CB0614` has analysis ready and local images 1–2; its scene-3 pre-send check failed after an earlier prompt-ready observation. Three older Story jobs have no saved image checkpoints. A WebView2 provider prototype is planned in `docs/plans/webview2-provider-prototype.md`; branch `feature/webview2-prototype` has been created but no prototype code has been added.
+
+For a later image-reference error without a scene number in `last_error`, the summary reads a bounded tail of the same job's trace and identifies the latest failed image attempt. It does not infer success from the trace and suppresses a failure once a later image checkpoint is saved. This source change needs an idle desktop restart before the already-open window displays it.
+
+## Story resume tab and dispatch ownership (0.15.493, 2026-10-02)
+
+When a Story resumes with a pending saved ChatGPT request, the desktop opens the exact saved conversation URL if Chrome is absent. The Extension reuses the one tab with that exact URL when the stored tab ID is stale, creates one only if absent, and stops before Start if multiple exact tabs make ownership ambiguous. The desktop records that a resume command was already queued across Extension heartbeat gaps; reconnect does not dispatch it a second time. An unconfirmed old image attachment stops automatic recovery before a fresh-tab retry. Saved analysis, images and uncertain provider Sends remain protected. Focused fixture evidence is distinct from live provider output.
+
+## Automatic Story bootstrap draft recovery (0.15.492, 2026-10-02)
+
+Fresh ChatGPT Story dispatch may encounter an older plain-text draft even in a newly created root tab. The Extension owns that new tab before any provider Start, clears only its text-only composer with document-ID fencing, verifies it stays empty after hydration, and then starts once. A changed adopted tab is left intact and replaced by one owned tab. Two bounded clear attempts cover a draft restored immediately after the first clear. No conversation, attachment, active response, prior send, or resume is cleared or replayed. On an unsafe or unready page, dispatch stops before Send with a logged reason. Installed pairing and live provider output are separate checks.
+
+## Story bootstrap review (0.15.491 installed bridge verified, 2026-10-02)
+
+The actual 490 run `STORY-20261002-895662` stopped before Send at 4% with `AI_WEB_WAIT_REVIEW`; the old cover draft remained visible in ChatGPT. The 490 trace did not distinguish a restored draft in a new tab from a draft hydrated late in an existing tab. For new Story analysis, Extension491 excludes previously owned automation tabs, confirms the same empty document twice after a bounded wait, and waits briefly for a late composer. A failed final check displays a review notice in Chrome and reports only a bounded cause and tab ID. It preserves drafts and sends nothing on failure. The DEV app and original Chrome Extension ID now report 0.15.491 and compatible; a real 491 Story has not yet been run.
+
+## Story bootstrap tab guard (0.15.490 source candidate, 2026-10-02)
+
+New ChatGPT Story analysis checks the exact root document before adopting an existing tab. It leaves tabs with drafts, attachments, conversations, or active responses untouched and opens one new tab if no clean root exists. A second check before content-script injection stops with `AI_WEB_WAIT_REVIEW` if that document changed. This prevents the old cover draft from being mistaken for a new Story composer. Saved Story/cover tabs, resumes, and provider Send receipts are not cleared or replayed. Desktop and Extension are now connected at `0.15.490`; a real new Story has not yet been run to verify provider behavior.
+
+## Future idea: startup Chrome tab (2026-10-02)
+
+Owner preference to revisit: the tab opened when SmartFlow starts could show SmartFlow's local web page (`/desktop/`) instead of `about:blank`. This is a note for future design, not an approved runtime change. Today `_start_browser_connection()` opens `about:blank` when Chrome is closed so the installed Extension can connect. Any later implementation should preserve the active browser profile, Extension connection, user tabs and drafts, and avoid adding a second SmartFlow tab when one is already open.
+
+## Story Chrome tab and draft guard (2026-10-02)
+
+When Chrome is already open, desktop focuses its window even if the Extension heartbeat has not connected yet; launching the provider URL in that gap created another tab. A new Story analysis preflight with `draft_changed` and no dispatched Send stops for review of the existing ChatGPT draft instead of automatically recovering into another tab. The original tab and draft remain untouched. Source activation requires restarting the SmartFlow developer app after active work ends.
+
+## AI cover send diagnostics (2026-10-02)
+
+The desktop cover ledger retains bounded Send target movement and trusted event evidence already reported by the Extension, without prompt text, coordinates, URLs or attachment bytes. A cover timeout with an unconfirmed Send and no image collector evidence identifies the Send acceptance stage; an accepted Send with no collector evidence identifies the result reader stage. Neither state proves a saved cover or grants an automatic retry. The existing request, completed video and generated scene images remain intact for explicit review or cover editing. This is a desktop-only diagnostic change; it does not change the Chrome click strategy or activate new Extension code.
+
+## Story Shorts failure diagnostics (2026-10-01)
+
+The existing Chrome Extension flow remains in use. New Story analysis prompts preserve user-specified ages but do not invent a child's numeric age or replace a requested fruit, animal, or object character with a human child. A confirmed ChatGPT image `policy_refusal` followed by a failed helper step is surfaced as `STORY_IMAGE_REFUSED`; the provider's generic refusal is not treated as proof of a specific forbidden subject. The desktop error report includes the job-owned Extension event timeline, the exact image prompt stored before Send with its acceptance status, and the saved analysis request marked as source material. It never automatically resends an accepted image request after a refusal. The durable source timeline remains at `workspace/stories/<job_id>/logs/extension_trace.jsonl`.
+
+Story dispatch ownership: `LocalBridge.queue_extension_command` reuses an existing `open_story_chatgpt` command for the same Story Job and AI run while that command is pending, delivered, or ACKed as completed. ACK means the Extension accepted the command, not that ChatGPT analysis is finished. A late heartbeat or browser-launch recovery therefore cannot enqueue another master analysis in a second tab for the same run. After an engine restart, if the durable trace shows a ChatGPT request accepted but no analysis checkpoint, a fresh master request is blocked with `AI_WEB_WAIT_REVIEW`; the desktop keeps the AI tab open for review rather than closing it on this terminal. A new explicit run ID is distinct only when no accepted unsaved request exists. These guards do not repair jobs that already received duplicate requests before activation; preserve their tabs and receipts for review.
+
+## Runtime Extension 0.15.487 — integrated low-impact refactor pair
+
+This pair retains the same Desktop, local bridge and Extension runtime interfaces as486. Pure Story mode, credit state and video render settings decisions live in `ui/state_rules.py`; bounded browser evidence filtering lives in `core/bridge_diagnostics.py` behind the existing `LocalBridge` method names. `core/bridge_types.py` records static message shapes. `tools/verify_pair_contract.py` checks source version and Flow helper parity before packaging. MAIN487.0 and Extension487 source/package were integrated after a guarded cold handoff; Chrome activation and provider output remain unverified. Full suite is non-green. See `docs/reports/refactor-low-impact-487-20261001.md`.
+
+## Local development membership mode
+
+`RUN_DEV.bat` sets `SMARTFLOW_DEV_BYPASS_MEMBERSHIP=1` only for its child process. `production_membership` uses an in-memory development member only when the release is `development`, Python is not frozen, and the source checkout contains `.git` plus `.venv/pyvenv.cfg`. The UI labels this state `DEV MODE`; no membership token, vault credential, or membership server request is used. Normal `RUN.bat`, the customer release, and frozen builds keep the desktop membership check. This mode does not change Extension version matching, browser capability checks, job ownership, Send receipts, or provider login requirements.
+
 ## Runtime Extension 0.15.486 — canonical MAIN486.0/Extension486 Send-only pair
 
 15-targetcoldhandoff verified app0/Chrome0/8765closed,10694protectedstate/oldartifacthashesunchanged. Original466 workflow plus scopedSendfixes; no477–483 runtime/UI imported. Content/background share uniquecomposer-ownedSend/submit selection and one trustedpress/passiveacceptance; boundedimage-tool/prepressreason survivesStory/bridge trace.485heldimmutable for versiontagmismatch;486synchronizesmetadata only beyond tested485runtime. Originalfull2785 NON-GREEN retained, exact5rechecks pass; installedactivation/provideroutput still unverified. No app launch, Setup,credits or oldjobResume. See docs/reports/chatgpt-submit-contract-486-20261001.md. Preserve all chronology below.
@@ -2556,13 +2616,12 @@ Delta 2026-09-05 / 0.15.243:
 
 ## 13. Definition of Done
 
-- โค้ด compile/syntax ผ่าน
-- targeted และ full tests ผ่าน
-- โปรแกรม/Extension version ตรงและ online
-- งานจริงมี provenance ถูกต้อง
-- Media QA ตรวจหลายเวลา ไม่ใช่ดูเฉพาะเฟรมแรก
-- ไม่ใช้หรือเปิดเผย credential
-- ผลลัพธ์มีลิงก์ไฟล์จริงและระบุข้อที่ยังรออย่างตรงไปตรงมา
+- พฤติกรรมที่ขอและ safeguard ที่เกี่ยวข้องครบ โค้ด compile/syntax ผ่าน
+- focused tests ของฟีเจอร์และ contract ที่กระทบผ่าน (ดู `docs/TESTING.md`); full suite ใช้ตอนส่งมอบ release, เปลี่ยนหลายระบบ หรือผู้ใช้สั่ง
+- ถ้าแก้คู่รุ่นหรือแพ็กส่งมอบ ให้ตรวจ desktop/Extension version ตรงกัน; การเชื่อมต่อใน Chrome ต้องรายงานตามหลักฐานที่ตรวจจริง
+- ถ้าแก้งานสร้างสื่อ ให้ตรวจ provenance ของงานจริงและ Media QA ตามขอบเขตที่เปลี่ยน
+- ไม่ใช้หรือเปิดเผย credential และรักษางาน/คิว/ไฟล์ของผู้ใช้
+- รายงานคำสั่งทดสอบ ผลลัพธ์ ข้อจำกัด และสิ่งที่ยังไม่ได้ตรวจอย่างตรงไปตรงมา
 
 ## 14. Popup Log สำหรับงานเว็บที่กู้ต่อไม่ได้ (อัปเดต 2026-09-03)
 
@@ -2595,4 +2654,14 @@ For the exact observed completed infrastructure sentence, ignore only that sente
 See docs/reports/editorial-handoff-471.md and logic-version-map-471.md. Approved expressive dialogue must remain byte-faithful through prepare_scene_pipeline and apply_ai_result. Legacy render normalization must not mutate approved source turns. Check both manifest and checkpoint, then assert before durable save. Exact pre-471 normal/0.35 metadata corruption may be restored from the matching approved checkpoint at an authorized write boundary only; changed speakers/text/options remain rejected. Reads never migrate jobs. Retain saved images and per-scene barriers. Real2994AFcopy replay passes offline; no live Final or activation claimed.12filesintegrated,919tested file parity,canonical5pass; no whole-project rollback.
 
 Runtime Extension 0.15.473 — isolated candidate; canonical/installed status is recorded in docs/reports/fresh-provider-recovery-473.md, not implied by this version header.
+
+## Extension update source (UI entry removed)
+
+- Setup Center และหน้าต่างเวอร์ชันใช้สำหรับดูรุ่นและเปิดหน้าจัดการ Extension ใน Chrome ปุ่ม `อัปเดต Extension` แบบกดครั้งเดียวถูกนำออกจาก UI
+- โค้ด update API ใน source ยังตรวจ release manifest ที่ลงลายเซ็น, ZIP, SHA-256 และขนาดไฟล์ หากนำฟีเจอร์กลับมาใช้งานในอนาคตต้องตรวจเงื่อนไขและเปิดใช้อย่างชัดเจน
+- ZIP ต้องมีไฟล์ตรงกับ `browser_extension` ที่มากับโปรแกรมรุ่นนี้ทุกไฟล์ และ Chrome ต้องเปิด Extension ตัวเดิมจากโฟลเดอร์ถาวรในโปรไฟล์ที่เลือก; ไม่ย้าย ID หรือเขียนทับแพ็กเกจรุ่นเก่า
+- Native update API ขอ update barrier เพื่อตรวจว่างานหยุดแล้วและพักคิว จากนั้นสลับโฟลเดอร์ถาวรโดยเก็บของเดิมเป็น backup; ถ้าการสลับล้มเหลวให้คืนโฟลเดอร์เดิม
+- Bridge ส่ง `extension_reload_request` ให้ worker ที่ยืนยัน origin/ID และประกาศ `extension_update_protocol: 1` เพียงครั้งเดียวหลังวางไฟล์สำเร็จ; version mismatch โดยลำพังไม่สั่ง reload เพื่อเลี่ยง loop
+- Worker รุ่นเก่าที่ไม่มี protocol ต้องให้ผู้ใช้กด Reload ที่ตัวเดิมหนึ่งครั้ง การติดตั้งครั้งแรกยังทำผ่าน Chrome คิวงานยังพักไว้จนผู้ใช้สั่งทำงานต่อ การยืนยันผลดูรุ่นที่ heartbeat กลับมาจริง
+- ฟีเจอร์อัปเดตอัตโนมัติไม่มีทางเข้าจาก UI และยังไม่เคยยืนยันการติดตั้ง/Reload Chrome ที่ใช้งานจริง
 

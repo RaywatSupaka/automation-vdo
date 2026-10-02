@@ -1,5 +1,39 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
+## เวอร์ชัน Runtime ปัจจุบัน: `0.15.496` — one composer scope and exact reference count
+
+The 495 live Story completed all ten images and its local video, but the resumed scene-5 request counted two composer attachments for one expected reference before Send. The retained-reference preflight and upload path used different composer-shell fallbacks when the editor lacked a closest form. Version 496 uses the same shell resolver for attachment detection, retained-reference proof and upload. A Story reference-image request now stops before Send if the composer attachment count is not exactly the expected source count or upload is busy/failed. The paired DEV desktop and original Chrome Extension ID connected at 496; this new guard has focused fixtures but no live provider request yet.
+
+## เวอร์ชันก่อนหน้า: `0.15.495` — Story retained-reference whitespace proof
+
+The 494 live resume stopped again at scene 5 before Send: the saved prompt and live composer were the same full text after whitespace normalization, but ChatGPT rendered some line breaks as spaces (2175 versus 2169 characters). Version 495 uses full normalized text equality for the retained-reference proof, retaining receipt ownership, exact reference filename, one attachment, same conversation and no sent request checks. The paired DEV desktop and original Chrome Extension ID connected at 495. A provider Send/result from this exact path remains unverified.
+
+## เวอร์ชันก่อนหน้า: `0.15.494` — Story retained-reference resume
+
+When resuming a prepared Story image request, the content script may reuse one retained previous-scene attachment only if its receipt is still prepared and unsent for the same job, run, scene and conversation, the attachment displays the exact generated reference filename, the composer contains the exact wrapped prompt, and no matching user request or active response exists. It does not upload a second copy. Changed drafts, extra attachments, busy uploads, sent requests, or uncertain receipts still stop before Send. Focused source fixtures pass; the original Chrome Extension ID and restarted DEV desktop are connected at 0.15.494. A real provider result for this path remains unverified.
+
+## เวอร์ชันก่อนหน้า: `0.15.493` — Story resume single-tab guard
+
+On Story resume, a stale stored tab ID now resolves to exactly one already-open saved conversation tab before creating a replacement. Multiple exact matches stop before Start. Desktop pairing and the original Chrome Extension ID connected at 0.15.493 in DEV MODE. A live Continue stopped at an old unconfirmed scene-3 attachment before Send; successful provider output remains unverified. Version 0.15.492 was the previously installed Story bootstrap release.
+
+For a new ChatGPT Story only, a root tab adopted while empty but changed before Start is left intact; Background opens one owned root tab. If ChatGPT restores old plain text in this newly created tab, Background clears only that tab's composer, then verifies the same document is empty and stable before a single Start. It may repeat the clear once if the draft hydrates again. Conversation, attachment, active response, login, or uninspectable documents are never cleared. Existing Story resumes, accepted/uncertain sends, old tabs and Gemini routing remain unchanged. See `docs/reports/story-bootstrap-auto-clear-492-20261002.md`.
+
+The DEV app and original Chrome Extension ID are connected at 0.15.492. A new live Story/provider output has not yet tested the clear path.
+
+## เวอร์ชัน Runtime ปัจจุบัน: `0.15.491` — Story bootstrap review, installed bridge verified
+
+The installed 490 guard stopped an actual Story before Send but did not identify the exact preflight cause or show a notice in Chrome. New Story starts now skip tab IDs previously owned by automation, require a stable empty document after a short hydration delay, and wait briefly when the composer has not mounted. If the final probe fails, Background shows a visible review notice on that ChatGPT tab and records only the tab ID and bounded reason (`draft_present`, `composer_not_ready`, etc.). It never copies draft text, clears the draft, or retries a provider Send. The old Story remains in error for explicit review. Gemini selection and owned resume remain unchanged.
+
+The DEV app was restarted through its original entry point and the existing Chrome Extension ID reconnected as 0.15.491 through the update barrier. A real new Story/provider output has not yet been tested.
+
+## เวอร์ชัน Runtime ปัจจุบัน: `0.15.490` — Story bootstrap tab guard, installed bridge verified
+
+For a new ChatGPT Story request, Background inspects each complete root tab without changing it. It reuses only a document with one empty composer, no attachment, conversation or active response. If none qualifies, it opens one new root tab and checks that document again before loading the Story content script or issuing Start. A draft that appears between selection and Start causes `AI_WEB_WAIT_REVIEW`; the draft is preserved and no provider request is sent. Resume and owned result reading continue to use their recorded tab; Gemini routing is unchanged. The installed Extension reconnected as 0.15.490 with its original ID; actual provider output remains untested.
+
+## เวอร์ชัน Runtime ปัจจุบัน: `0.15.487` — canonical pair, Chrome activation pending
+
+Moved the existing JobRouter timeout helper to `src/core/timeout.js` and imported it from the router. Legacy `background.js` and `chatgpt.js` logic is unchanged apart from the required version/helper tags. MAIN487.0 and the 41-file Extension487 package were built together and integrated after a guarded cold handoff. Installed Chrome/version/path/provider acceptance have not been verified. Full suite remains non-green; see the 487 report.
+
 ## เวอร์ชัน Runtime ปัจจุบัน: `0.15.486` — canonical composer-owned Send/submit contract from466
 
 Content/background resolve the same unique ready nativeform-ownedSend/submit target; disable/Stop/delete/feedback/unknownlabel/ambiguity veto.484prepress center/scroll/interior hit-tested fallback remains before the only trustedpress; no Enter/syntheticSend/postpressretry. Typed image-tool/subreason persists withoutprompts; image-toolgate/recoveryunchanged.485immutableheld for Flowhelpertagmismatch,486tag-only correction. PairedMAIN486.0 is canonical after15-targetcoldhandoff,10694protectedhashesunchanged. Native19/145checks and exact5reconciliation pass; original485fullNON-GREEN retained, installed486/providerSend unverified. No Setup/credits/oldresume. See docs/reports/chatgpt-submit-contract-486-20261001.md. Older entries below are chronology.

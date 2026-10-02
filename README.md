@@ -8,7 +8,7 @@
 
 สำหรับพัฒนา ใช้ Python3.11 กับ `requirements.txt`; `RUN.bat` ใช้ตัว resolver เดียวกับ launcher. การบิลด์ EXE ใช้ `launcher/SmartFlowLauncher.cs` และไอคอน `assets/smartflow_icon.ico`; การแพ็กเอ็กเทนชั่นใช้ `tools/package_current_extension.py`. ต้องตรวจรุ่นโปรแกรม/เอ็กเทนชั่นคู่กันก่อนเปิดใช้. ผลทดสอบบนเครื่องพัฒนาไม่ใช่คำรับรอง clean-machine/installed-provider E2E.
 
-รุ่น Runtime ล่าสุด **0.15.399 Candidate**: ตรวจความปลอดภัยการอ่านผลภาพ/วิดีโอและรีเฟรชก่อนเตรียมตัวติดตั้ง **0.3.0-beta.9** ตามคำขอผู้ใช้ ป้องกันรีเฟรชระหว่างสร้างหรือหลังยกเลิกงาน โดยรักษาภาพ คลิป และคำขอเดิม ไม่ส่งสร้างซ้ำ ดู `docs/reports/program-extension-audit-399/README.md` และ `CURRENT_RELEASE.json` สำหรับผลตรวจล่าสุด ขณะเตรียมรุ่นนี้ยังรอ full suite, build, clean-machine และ installed E2E; ไม่ใช่การยืนยันพร้อมแจกจาก fixture เพียงอย่างเดียว
+สถานะรุ่นล่าสุดให้ดู `CURRENT_RELEASE.json` และ `PROJECT_STATE.md` ก่อนเสมอ ซอร์สสาขา `dev` ปัจจุบันเป็นคู่รุ่น `0.15.496`; การเปิดใช้ Extension รุ่นนี้ใน Chrome ยืนยันแล้ว แต่ผลจากผู้ให้บริการจริงสำหรับตัวตรวจรูปอ้างอิงรุ่นนี้ยังไม่ได้ยืนยัน การทดสอบซอร์สไม่เท่ากับการส่งมอบรุ่นติดตั้ง
 
 ### ผู้บรรยายในคลิปสินค้าและ Story Shorts
 
@@ -22,16 +22,17 @@
 
 - ผู้ใช้ทั่วไป: `SmartFlow AI.exe`
 - นักพัฒนา: `RUN.bat`
+- นักพัฒนาที่ต้องการทดสอบ UI โดยยังไม่มี Token: `RUN_DEV.bat` เปิดการข้ามตรวจสมาชิกเฉพาะ source checkout ที่มี `.git` และ `.venv` เท่านั้น ต้องเลือกใช้ไฟล์นี้เอง; `RUN.bat` และ EXE ปกติยังตรวจ Token
 - ทั้งสองทางต้องเปิด Hybrid UI เดียวกัน ไม่มี Legacy UI fallback
 - ทั้งสองทางใช้ `launcher/resolve_python.ps1` หา Python แหล่งเดียวกัน เพื่อไม่ให้ EXE กับ RUN เปิดคนละ Runtime
 
 ## Extension ที่ต้องติดตั้ง
 
-Runtime Candidate สำหรับติดตั้งทดสอบคือ `0.15.399` รายละเอียดและสถานะแพ็กเกจอยู่ใน `CURRENT_RELEASE.json` และ `docs/reports/program-extension-audit-399/README.md`
+ตรวจรุ่นที่อนุมัติให้ติดตั้งจาก `CURRENT_RELEASE.json` ก่อนทุกครั้ง และเทียบกับรุ่นที่โปรแกรมต้องการกับรุ่นที่ Chrome เชื่อมต่อจริง
 
-โฟลเดอร์ถาวรสำหรับการติดตั้งใหม่ในเครื่องพัฒนา: `browser_extension` ส่วน `deliverables/SmartFlow_AI_Extension_0.15.399` เป็นแพ็กเกจออกรุ่นที่ไม่แก้ทับหลังสร้าง ไม่ใช่คำสั่งให้ย้าย Extension ที่ติดตั้งอยู่แล้วทุกครั้ง
+โฟลเดอร์ซอร์สสำหรับพัฒนาคือ `browser_extension` ส่วนแพ็กเกจใน `deliverables/` เป็นผลลัพธ์ออกรุ่นที่ไม่แก้ทับหลังสร้าง โฟลเดอร์ที่ Chrome ติดตั้งอยู่แล้วต้องตรวจ path จริงก่อนอัปเดต
 
-เมื่อติดตั้งใหม่ ให้เปิด `chrome://extensions` → เปิด Developer mode → Load unpacked → เลือกโฟลเดอร์ถาวรตามคู่มือ โปรแกรมและ Chrome ต้องแสดงรุ่นเดียวกัน การอัปเดตตัวเดิมต้องรักษา profile/ID/โฟลเดอร์ที่โหลดและข้อมูลคำขอ ห้ามถอนติดตั้งหรือล้าง storage เพื่อแก้บั๊ก รีโหลดหรือเปิดโปรแกรมใหม่เฉพาะเมื่อไม่มีงานกำลังทำอยู่
+เมื่อติดตั้งใหม่ ให้เปิด `chrome://extensions` → เปิด Developer mode → Load unpacked → เลือกโฟลเดอร์ถาวรตามคู่มือ โปรแกรมและ Chrome ต้องแสดงรุ่นเดียวกัน เมื่อต้องอัปเดต ให้ตรวจ path และโปรไฟล์ที่ติดตั้งจริง อัปเดตไฟล์ในโฟลเดอร์เดิม แล้วกด Reload ที่ Extension ตัวเดิมใน Chrome จากนั้นตรวจรุ่นที่เชื่อมต่อกลับมา การอัปเดตต้องรักษา profile/ID/โฟลเดอร์ที่โหลดและข้อมูลคำขอ ห้ามถอนติดตั้งหรือล้าง storage เพื่อแก้บั๊ก
 
 `0.15.112` เป็น Golden สำหรับอ้างอิงพฤติกรรม Google Flow และ `0.15.216` เป็น Modern E2E ที่พิสูจน์แล้ว ทั้งสองไม่ใช่ตัวติดตั้งปัจจุบัน ดูรายละเอียดที่ `PROJECT_STATE.md` และ `CURRENT_RELEASE.json`
 
@@ -44,6 +45,8 @@ Runtime Candidate สำหรับติดตั้งทดสอบคื�
 5. งาน Extension ให้อ่าน `EXTENSION_BLUEPRINT.md` ก่อน Source
 
 Source Extension มีเพียง `browser_extension/` ห้ามแก้จากแพ็กใน `deliverables/`, `archives/` หรือ `backups/`
+
+งานฟีเจอร์ใหม่ให้เริ่มบน branch `codex/<ชื่อฟีเจอร์>` จาก `dev` เมื่อ working tree ว่าง; งานที่เริ่มอยู่แล้วให้ทำต่อบน branch เดิม กติกาปัจจุบันอยู่ใน `AGENTS.md` และคำสั่งทดสอบเฉพาะฟีเจอร์อยู่ใน `docs/TESTING.md` เช่น `.venv\Scripts\python.exe tools\run_focused_tests.py --feature extension-update` CI เลือกชุดทดสอบจากไฟล์ที่เปลี่ยน และแจ้งเมื่อฟีเจอร์ใหม่ยังไม่มี mapping
 
 ## โฟลว์หลัก
 
