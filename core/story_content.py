@@ -10,7 +10,10 @@ STORY_VISUAL_DEPICTION_INSTRUCTION = (
     "NON-GRAPHIC VISUAL DEPICTION: Preserve the requested cast, names, ages, identities, "
     "visual style, setting and established story facts. For a violent story event, depict "
     "the tension immediately before it or a non-graphic aftermath without showing strikes, "
-    "blood, wounds or visible injury. Keep the event in the narration where appropriate; "
+    "blood, wounds or visible injury. Depict children only in ordinary, age-appropriate, "
+    "fully clothed, non-sexual scenes. A fruit, animal or object requested as a cartoon "
+    "character must stay that kind of character; do not turn it into a human child. "
+    "Keep the event in the narration where appropriate; "
     "do not rewrite the plot or substitute characters. This is visual framing guidance, "
     "not a guarantee that the image provider will accept the request."
 )

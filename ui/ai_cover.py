@@ -77,13 +77,21 @@ def finish_ai_cover(app, job_id, cancel_event, progress):
                 progress('วิดีโอเสร็จแล้ว • รอปกจาก AI Web • ' + (row.get('message') or 'กำลังเตรียมปก'))
             if time.monotonic() > deadline:
                 state = row.get('collector_state') or {}
-                stage = {'request_missing':'ยังจับคู่คำขอปกไม่ได้', 'answer_missing':'ยังไม่พบกรอบคำตอบ',
-                         'generating':'เว็บยังแสดงกำลังสร้างในรายงานล่าสุด', 'multiple_images':'พบภาพมากกว่าหนึ่งผล',
-                         'waiting_image':'ยังไม่พบภาพในคำตอบ', 'loading_image':'พบภาพแต่ยังโหลดไม่ครบ',
-                         'stabilizing':'พบภาพแล้วแต่ยังไม่ยืนยันผล', 'downloading':'พบภาพแล้วแต่ยังบันทึกไฟล์ไม่สำเร็จ'}.get(
-                             state.get('stage'), 'ยังไม่มีข้อมูลจากตัวอ่านภาพ')
+                if not state and row.get('send_state') == 'unconfirmed':
+                    stage = 'ยังยืนยันไม่ได้ว่า ChatGPT รับคำสั่งสร้างปก • ตรวจร่างในแท็บเดิมก่อนสั่งสร้างใหม่'
+                    next_step = 'เก็บวิดีโอและคำขอเดิมไว้ • ไม่ส่งปกซ้ำอัตโนมัติ'
+                elif not state and row.get('send_state') == 'accepted':
+                    stage = 'ChatGPT รับคำสั่งแล้ว แต่ตัวอ่านภาพยังไม่รายงานผล • ตรวจคำตอบเดิมก่อนสั่งสร้างใหม่'
+                    next_step = 'เก็บวิดีโอและคำขอเดิมไว้ • ใช้ดึงผลปกเดิมจากเว็บได้โดยไม่สร้างซ้ำ'
+                else:
+                    stage = {'request_missing':'ยังจับคู่คำขอปกไม่ได้', 'answer_missing':'ยังไม่พบกรอบคำตอบ',
+                             'generating':'เว็บยังแสดงกำลังสร้างในรายงานล่าสุด', 'multiple_images':'พบภาพมากกว่าหนึ่งผล',
+                             'waiting_image':'ยังไม่พบภาพในคำตอบ', 'loading_image':'พบภาพแต่ยังโหลดไม่ครบ',
+                             'stabilizing':'พบภาพแล้วแต่ยังไม่ยืนยันผล', 'downloading':'พบภาพแล้วแต่ยังบันทึกไฟล์ไม่สำเร็จ'}.get(
+                                 state.get('stage'), 'ยังไม่มีข้อมูลจากตัวอ่านภาพ')
+                    next_step = 'เก็บวิดีโอและคำขอเดิมไว้ ใช้ดึงปกเดิมจากเว็บได้โดยไม่สร้างซ้ำ'
                 service.event(rid, {'phase':'needs_review','message':
-                    'ขาดความคืบหน้าปก • '+stage+' • เก็บวิดีโอและคำขอเดิมไว้ ใช้ดึงปกเดิมจากเว็บได้โดยไม่สร้างซ้ำ'})
+                    'ขาดความคืบหน้าปก • '+stage+' • '+next_step})
                 return
             cancel_event.wait(1)
     except Exception as exc:

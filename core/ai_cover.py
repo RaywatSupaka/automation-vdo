@@ -299,10 +299,34 @@ class AICovers:
                     raise ValueError('หลักฐานการส่งปกไม่ถูกต้อง')
                 previous_detail = row.get('send_diagnostics') or {}
                 row['send_diagnostics'] = {**previous_detail, **{k:v for k,v in detail.items()
-                    if k in {'dispatch_completed','trusted_click_seen','release_on_send_target','target_stable_before_press'}
+                    if k in {'dispatch_completed','trusted_click_seen','release_on_send_target',
+                             'target_stable_before_press','target_changed'}
                     and type(v) is bool}}
                 if detail.get('gesture_phase') in {'not_started','pressed','released','release_uncertain'}:
                     row['send_diagnostics']['gesture_phase'] = detail['gesture_phase']
+                if detail.get('send_target_strategy') in {'center','viewport_scroll','interior_point'}:
+                    row['send_diagnostics']['send_target_strategy'] = detail['send_target_strategy']
+                for key in ('target_node_changes_prepress','target_geometry_changes_prepress',
+                            'target_node_changes_during_gesture','target_geometry_changes_during_gesture'):
+                    value = detail.get(key)
+                    if type(value) is int and 0 <= value <= 1000:
+                        row['send_diagnostics'][key] = value
+                if isinstance(detail.get('click_events'), list):
+                    events = []
+                    for item in detail['click_events'][-10:]:
+                        if not isinstance(item, dict) or item.get('type') not in {
+                                'pointerdown','mousedown','pointerup','mouseup','click'}:
+                            continue
+                        event = {'type':item['type']}
+                        for key in ('trusted','on_target'):
+                            if type(item.get(key)) is bool:
+                                event[key] = item[key]
+                        if type(item.get('elapsed_ms')) is int and 0 <= item['elapsed_ms'] <= 60000:
+                            event['elapsed_ms'] = item['elapsed_ms']
+                        if item.get('phase') in {'pressed','released'}:
+                            event['phase'] = item['phase']
+                        events.append(event)
+                    row['send_diagnostics']['click_events'] = events
                 # Later observations cannot erase evidence of a physical Send.
                 for key in ('dispatch_completed', 'trusted_click_seen', 'release_on_send_target'):
                     if previous_detail.get(key) is True:

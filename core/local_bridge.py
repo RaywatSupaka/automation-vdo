@@ -12,10 +12,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse, unquote
 from core.product_image_recovery import ProductImageRecovery
+from core.bridge_diagnostics import safe_ai_send_diagnostics, safe_ai_image_observation
 
 
 class LocalBridge:
-    REQUIRED_EXTENSION_VERSION = "0.15.486"
+    REQUIRED_EXTENSION_VERSION = "0.15.496"
     COMMAND_LEASE_SECONDS = 180
     FLOW_RUN_ACTIONS = {
         "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow",
@@ -72,6 +73,7 @@ class LocalBridge:
         self._flow_diagnostic_lock = threading.Lock()
         self._extension_trace_lock = threading.Lock()
         self._extension_clients = {}
+        self._extension_reload_requests = {}
         self._extension_commands = []
         self._extension_runs = {}
         self._extension_trace = []
@@ -137,155 +139,11 @@ class LocalBridge:
 
     @staticmethod
     def _safe_ai_send_diagnostics(payload):
-        """Keep bounded send evidence, never prompt text or arbitrary browser detail."""
-        detail = payload.get("detail")
-        sources = (detail if isinstance(detail, dict) else {}, payload)
-        result = {}
-        enums = {
-            "request_reason": {"request_missing", "request_ambiguous", "conversation_changed",
-                               "request_owner_changed", "request_changed", "owned_request",
-                               "first_conversation_bound", "request_remounted"},
-            "send_method": {
-                "trusted_ai_send", "single_trusted_ai_send", "single_trusted_ai_send_unconfirmed",
-            },
-            "submission_proof": {
-                "stop_button", "new_user_turn", "user_signature_changed",
-                "new_assistant_turn", "composer_cleared", "owned_story_user_turn", "owned_motion_user_turn",
-                "owned_chatgpt_user_turn", "owned_gemini_user_turn",
-            },
-            "gesture_phase": {
-                "not_started", "pressed", "released", "release_uncertain",
-            },
-            "send_target_strategy": {
-                "center", "viewport_scroll", "interior_point",
-            },
-            "tool_reason": {
-                "composer_not_ready", "opener_missing", "opener_disabled", "menu_missing",
-                "option_detached", "chip_unconfirmed", "response_active", "owner_changed",
-                "draft_changed", "menu_ambiguous",
-            },
-            "preflight_reason": {
-                "cancelled", "job_changed", "run_changed", "prompt_changed",
-                "image_retry_guard", "text_guard_changed", "text_guard_unavailable",
-                "readiness_unconfirmed", "response_active", "gemini_image_preflight",
-                "draft_mismatch", "send_not_ready", "capture_missing", "target_changed",
-                "readiness_changed", "target_blocked", "rejected_before_press",
-                "chatgpt_image_tool", "send_target_ambiguous", "composer_form_changed",
-            },
-        }
-        click_types = {"pointerdown", "mousedown", "pointerup", "mouseup", "click"}
-        for source in sources:
-            turn_id = source.get('request_turn_id')
-            if isinstance(turn_id, str) and re.fullmatch(
-                r'(?:conversation-turn-\d{1,8}|fallback-turn-\d{1,8}:\d{1,8}:user)', turn_id
-            ):
-                result['request_turn_id'] = turn_id
-            message_id = source.get('request_message_id')
-            if isinstance(message_id, str) and re.fullmatch(r'[A-Za-z0-9_-]{1,100}', message_id):
-                result['request_message_id'] = message_id
-            for key, allowed in enums.items():
-                value = source.get(key)
-                if isinstance(value, str) and value in allowed:
-                    result[key] = value
-            for key in (
-                "dispatch_completed", "trusted_click_seen", "draft_still_present",
-                "target_changed", "release_on_send_target", "target_stable_before_press",
-                "claim_match", "accepted", "request_owner_found", "request_matches",
-            ):
-                if type(source.get(key)) is bool:
-                    result[key] = source[key]
-            length = source.get("prompt_length")
-            if type(length) is int and 0 <= length <= 1_000_000:
-                result["prompt_length"] = length
-            for key in ("request_hash", "draft_hash"):
-                value = source.get(key)
-                if isinstance(value, str) and re.fullmatch(r"[0-9a-f]{1,8}", value):
-                    result[key] = value
-            wait_ms = source.get("request_recovery_wait_ms")
-            if type(wait_ms) is int and 0 <= wait_ms <= 360_000:
-                result["request_recovery_wait_ms"] = wait_ms
-            for key in (
-                "target_node_changes_prepress", "target_geometry_changes_prepress",
-                "target_node_changes_during_gesture", "target_geometry_changes_during_gesture",
-            ):
-                value = source.get(key)
-                if type(value) is int and 0 <= value <= 1000:
-                    result[key] = value
-            allowed_fields = {
-                "job", "run", "url", "prompt", "userCount", "userSignature",
-                "assistantCount", "assistantSignature", "imageSignature", "sourceSignature",
-                "send_not_ready", "response_active", "upload_busy", "image_expanded",
-            }
-            for key in ("changed_fields", "wait_changed_fields"):
-                changed = source.get(key)
-                if isinstance(changed, list):
-                    result[key] = list(dict.fromkeys(
-                        item for item in changed[:32] if isinstance(item, str) and item in allowed_fields
-                    ))
-            events = source.get("click_events")
-            if isinstance(events, list):
-                result["click_events"] = []
-                for event in events[-10:]:
-                    if not (isinstance(event, dict)
-                            and isinstance(event.get("type"), str) and event["type"] in click_types
-                            and type(event.get("trusted")) is bool):
-                        continue
-                    safe_event = {"type": event["type"], "trusted": event["trusted"]}
-                    if type(event.get("on_target")) is bool:
-                        safe_event["on_target"] = event["on_target"]
-                    elapsed = event.get("elapsed_ms")
-                    if type(elapsed) is int and 0 <= elapsed <= 60_000:
-                        safe_event["elapsed_ms"] = elapsed
-                    if isinstance(event.get("phase"), str) and event["phase"] in {"pressed", "released"}:
-                        safe_event["phase"] = event["phase"]
-                    result["click_events"].append(safe_event)
-        return result
+        return safe_ai_send_diagnostics(payload)
 
     @staticmethod
     def _safe_ai_image_observation(payload):
-        """Keep bounded image wait/reload facts; exclude provider text and prompts."""
-        if payload.get("step") not in {"waiting_for_image", "recovering_result", "story_image_result_review",
-                                       "image_refresh_check", "image_restart_pending", "image_restart_started",
-                                       "image_result_verified"}:
-            return {}
-        result = {}
-        for key, lower, upper in (("scene_index", 1, 50), ("candidate_count", 0, 20),
-                                  ("refresh_attempts", 0, 3), ("refreshed_check_ms", 0, 3_600_000),
-                                  ("stable_samples", 0, 100_000)):
-            value = payload.get(key)
-            if type(value) is int and lower <= value <= upper:
-                result[key] = value
-        enums = {
-            "result_reason": {"waiting_response", "no_image", "image_loading", "image_ready",
-                              "request_missing", "request_ambiguous", "wrong_conversation",
-                              "request_not_latest", "conversation_pending", "multiple_images", "generating"},
-            "refresh_outcome": {"not_attempted", "requested", "scheduled", "rejected_preclaim",
-                                "rejected_unconfirmed", "ack_unknown", "receipt_unverified", "retry_exhausted"},
-            "refresh_reason": {"none", "live_guard_changed", "owner_changed", "budget_used",
-                               "refresh_in_progress", "invalid_proof", "claim_uncertain",
-                               "controller_error", "transport_unknown"},
-            "recovery_kind": {"missing_after_refresh", "unusable_after_refresh"},
-            "recovery_phase": {"refresh_requested", "checking", "missing", "unusable",
-                               "successor_claimed", "successor_created", "successor_resumed", "result_found"},
-        }
-        for key, allowed in enums.items():
-            value = payload.get(key)
-            if isinstance(value, str) and value in allowed:
-                result[key] = value
-        if type(payload.get("response_active")) is bool:
-            result["response_active"] = payload["response_active"]
-        signature = payload.get("response_signature")
-        if isinstance(signature, str) and re.fullmatch(r"[0-9a-f]{1,16}", signature):
-            result["response_signature"] = signature
-        # These identify an attempt without copying the full prompt-bearing receipt identity.
-        nonce = payload.get("send_nonce")
-        if isinstance(nonce, str) and re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", nonce):
-            result["send_nonce"] = nonce
-        identifiers = LocalBridge._safe_ai_send_diagnostics(payload)
-        for key in ("request_message_id", "request_turn_id"):
-            if key in identifiers:
-                result[key] = identifiers[key]
-        return result
+        return safe_ai_image_observation(payload)
 
     @staticmethod
     def validate_flow_attachment_failure(body):
@@ -458,6 +316,22 @@ class LocalBridge:
         elif item["action"] == "image_prompt_ready":
             raise ValueError("Story image request job invalid")
         return dict(item)
+
+    def request_extension_reload(self, client_id, target_version):
+        """Ask one authenticated, recently seen worker to reload once."""
+        with self._extension_lock:
+            client = self._extension_clients.get(client_id) or {}
+            if (client.get("origin") != f"chrome-extension://{client_id}"
+                    or time.time() - client.get("last_seen_epoch", 0) > 70
+                    or target_version != self.REQUIRED_EXTENSION_VERSION):
+                raise ValueError("Extension ตัวเดิมยังไม่เชื่อมต่อ • โหลดซ้ำจาก Chrome ด้วยตนเองหนึ่งครั้ง")
+            if client.get("extension_update_protocol") != 1:
+                raise ValueError("Extension รุ่นที่ติดตั้งยังไม่รองรับปุ่ม Reload • กด Reload ใน Chrome อีกหนึ่งครั้ง")
+            self._extension_reload_requests[client_id] = {
+                "target_version": target_version,
+                "nonce": secrets.token_hex(16),
+                "expires_at": time.time() + 90,
+            }
 
     def extension_status(self):
         now = time.time()
@@ -928,6 +802,39 @@ class LocalBridge:
                 raise ValueError("เก็บจุดทำต่อได้เฉพาะคำสั่งหยุดคลิปผู้บรรยาย")
             command["preserve_checkpoint"] = True
         with self._extension_lock:
+            if action == "open_story_chatgpt" and job_id.startswith("STORY-"):
+                # The desktop may observe a missing/late heartbeat while the
+                # first worker is still running. Reuse its command even after
+                # its ACK: ACK only means the worker accepted the command,
+                # not that analysis or image generation has finished.
+                existing = next((row for row in reversed(self._extension_commands)
+                                 if row.get("action") == action
+                                 and row.get("job_id") == job_id
+                                 and row.get("run_id") == resolved_run_id
+                                 and row.get("status") in {"pending", "delivered", "completed"}), None)
+                if existing:
+                    return dict(existing)
+                # An engine restart loses the in-memory command list, while
+                # the accepted ChatGPT turn remains on disk. Never start a
+                # fresh master analysis around that uncertain result.
+                if re.fullmatch(r"STORY-[A-Za-z0-9_-]+", job_id):
+                    folder = Path(self.stories.root) / job_id
+                    if not (folder / "prompts" / "ai_analysis_checkpoint.json").is_file():
+                        trace_path = folder / "logs" / "extension_trace.jsonl"
+                        try:
+                            with trace_path.open("r", encoding="utf-8") as handle:
+                                accepted_before_checkpoint = any(
+                                    (row.get("action") == "ai_send_accepted"
+                                     and row.get("service") == "chatgpt")
+                                    for line in handle if line.strip()
+                                    for row in (json.loads(line),) if isinstance(row, dict)
+                                )
+                        except FileNotFoundError:
+                            accepted_before_checkpoint = False
+                        except (OSError, ValueError, UnicodeError):
+                            raise ValueError("AI_WEB_WAIT_REVIEW • อ่านหลักฐานคำขอเดิมไม่ได้ • เก็บแท็บไว้และไม่ส่งซ้ำ")
+                        if accepted_before_checkpoint:
+                            raise ValueError("AI_WEB_WAIT_REVIEW • เว็บรับคำขอวิเคราะห์เดิมแล้ว แต่ยังไม่มี Checkpoint • เก็บแท็บไว้และไม่เปิดแชตใหม่")
             if action == 'close_automation_browser' and shot_index:
                 command['cleanup_shot_index'] = shot_index
                 command['cleanup_runs'] = [resolved_run_id]
@@ -1738,6 +1645,7 @@ class LocalBridge:
                             "last_seen_epoch": time.time(),
                             "profile_id": str(body.get('profile_id') or '')[:48],
                             "speech_retry_protocol": 1 if body.get('speech_retry_protocol') == 1 else 0,
+                            "extension_update_protocol": 1 if body.get('extension_update_protocol') == 1 else 0,
                             "origin": origin,
                         }
                         with bridge._extension_lock:
@@ -1746,12 +1654,18 @@ class LocalBridge:
                             previous = bridge._extension_clients.get(client_id) or {}
                             client.update({key: value for key, value in previous.items() if key.startswith("flow_") or key.startswith("ai_")})
                             bridge._extension_clients[client_id] = client
+                            reload_request = bridge._extension_reload_requests.pop(client_id, None)
+                            if (reload_request and (reload_request["expires_at"] < time.time()
+                                    or client["version"] == reload_request["target_version"])):
+                                reload_request = None
                         self._send({
                             "ok": True,
                             "connected": True,
                             "extension_version_required": bridge.REQUIRED_EXTENSION_VERSION,
                             "reload_required": client["version"] != bridge.REQUIRED_EXTENSION_VERSION,
                             "extension_token": capability,
+                            "extension_reload_request": ({"target_version": reload_request["target_version"],
+                                "nonce": reload_request["nonce"]} if reload_request else None),
                         })
                     elif path == "/api/extension/disconnect":
                         client_id = str(body.get("client_id") or "")[:200]

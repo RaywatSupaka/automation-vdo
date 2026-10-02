@@ -79,11 +79,123 @@ function inspectEmptyCoverPreparation() {
     && (button.getAttribute('data-testid')==='stop-button'
       || ['aria-label','title'].some(name=>/^(?:stop(?: generating| response| streaming)?|หยุด(?:สร้าง|การสร้าง|คำตอบ|สตรีม)?)$/i
         .test(String(button.getAttribute(name)||'').trim().replace(/\s+/g,' ')))));
-  return {empty:location.hostname==='chatgpt.com' && location.pathname==='/' && !!form
-    && !String(editor.innerText||editor.textContent||editor.value||'').trim()
-    && !document.querySelector('[data-message-author-role="user"],[data-message-author-role="assistant"],[data-testid^="conversation-turn-"],[data-chatgpt-search-unit-key],[data-chatgpt-search-message-ids]')
-    && !stop && !form.querySelector('img,[aria-busy="true"],[role="progressbar"]')
-    && ![...document.querySelectorAll('input[type="file"]')].some(input=>input.files?.length)};
+  const root=location.hostname==='chatgpt.com' && location.pathname==='/';
+  const draft=!!form && !!String(editor.innerText||editor.textContent||editor.value||'').trim();
+  const conversation=!!document.querySelector('[data-message-author-role="user"],[data-message-author-role="assistant"],[data-testid^="conversation-turn-"],[data-chatgpt-search-unit-key],[data-chatgpt-search-message-ids]');
+  const attachment=!!form?.querySelector('img,[aria-busy="true"],[role="progressbar"]')
+    || [...document.querySelectorAll('input[type="file"]')].some(input=>input.files?.length);
+  const reason=!root?'other_page':!form?'composer_not_ready':draft?'draft_present'
+    :conversation?'conversation_present':stop?'response_active':attachment?'attachment_present':'ready';
+  return {empty:reason==='ready',reason};
+}
+// Read only: a new Story may adopt a root tab only when its exact document has
+// no draft, attachment, conversation or active response. Keep user tabs intact.
+async function inspectChatGPTRootDocument(tabId) {
+  try {
+    const rows=await chrome.scripting.executeScript({
+      target:{tabId,frameIds:[0]},func:inspectEmptyCoverPreparation
+    });
+    const top=rows?.find(row=>row.frameId===0)||rows?.[0];
+    return {documentId:String(top?.documentId||''),empty:top?.result?.empty===true,
+      reason:String(top?.result?.reason||'probe_failed')};
+  } catch { return {documentId:'',empty:false,reason:'probe_failed'}; }
+}
+async function cleanChatGPTRootDocument(tabId) {
+  const proof=await inspectChatGPTRootDocument(tabId);
+  return proof.empty ? proof.documentId : '';
+}
+async function waitForCleanChatGPTRoot(tabId,expectedDocumentId='') {
+  let proof={documentId:'',empty:false,reason:'probe_failed'};
+  for(let attempt=0;attempt<12;attempt++) {
+    proof=await inspectChatGPTRootDocument(tabId);
+    if(expectedDocumentId && proof.documentId && proof.documentId!==expectedDocumentId)
+      return {...proof,empty:false,reason:'document_changed'};
+    if(proof.empty && proof.documentId) {
+      // ChatGPT can hydrate an older draft after the document reports loaded.
+      await new Promise(resolve=>setTimeout(resolve,600));
+      const stable=await inspectChatGPTRootDocument(tabId);
+      if(stable.empty && stable.documentId===proof.documentId
+          && (!expectedDocumentId || stable.documentId===expectedDocumentId))return stable;
+      proof={...stable,empty:false,reason:stable.documentId!==proof.documentId?'document_changed':stable.reason};
+    }
+    if(!['composer_not_ready','probe_failed'].includes(proof.reason))break;
+    await new Promise(resolve=>setTimeout(resolve,500));
+  }
+  return proof;
+}
+// Only called for the new tab created for this exact, unsent Story bootstrap.
+// A draft restored into that tab is disposable; never edit an adopted tab or a
+// conversation, attachment, or active response.
+function clearOwnedChatGPTBootstrapDraft() {
+  const shown=el=>!!el && el.isConnected && el.getClientRects().length>0;
+  if(location.hostname!=='chatgpt.com' || location.pathname!=='/')return {cleared:false,reason:'other_page'};
+  const editors=[...document.querySelectorAll('#prompt-textarea,[contenteditable="true"][role="textbox"]')].filter(shown);
+  const editor=editors.length===1?editors[0]:null,form=editor?.closest('form');
+  if(!form)return {cleared:false,reason:'composer_not_ready'};
+  if(document.querySelector('[data-message-author-role="user"],[data-message-author-role="assistant"],[data-testid^="conversation-turn-"]'))
+    return {cleared:false,reason:'conversation_present'};
+  if(form.querySelector('img,[aria-busy="true"],[role="progressbar"]')
+      || [...document.querySelectorAll('input[type="file"]')].some(input=>input.files?.length))
+    return {cleared:false,reason:'attachment_present'};
+  if([...document.querySelectorAll('button')].some(button=>shown(button)
+      && button.getAttribute('data-testid')==='stop-button'))return {cleared:false,reason:'response_active'};
+  const read=()=>String(editor.innerText||editor.textContent||editor.value||'').trim();
+  if(!read())return {cleared:true,reason:'already_empty'};
+  editor.focus();
+  if(editor.isContentEditable){
+    const selection=getSelection(),range=document.createRange();
+    range.selectNodeContents(editor);selection.removeAllRanges();selection.addRange(range);
+    document.execCommand('delete',false);
+  }else if(editor instanceof HTMLTextAreaElement){
+    const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')?.set;
+    if(!setter)return {cleared:false,reason:'unsupported_editor'};
+    setter.call(editor,'');
+    editor.dispatchEvent(new Event('input',{bubbles:true}));
+  }else return {cleared:false,reason:'unsupported_editor'};
+  return {cleared:!read(),reason:read()?'draft_still_present':'cleared'};
+}
+async function clearOwnedChatGPTRootDraft(tabId,documentId) {
+  if(!documentId)return {cleared:false,reason:'document_unverified'};
+  try {
+    const rows=await chrome.scripting.executeScript({target:{tabId,documentIds:[documentId]},
+      func:clearOwnedChatGPTBootstrapDraft});
+    const result=rows?.find(row=>row.documentId===documentId)?.result;
+    return result?.cleared===true?result:{cleared:false,reason:String(result?.reason||'clear_failed')};
+  }catch {return {cleared:false,reason:'clear_failed'};}
+}
+async function showStoryBootstrapReview(tabId,message) {
+  try {
+    await chrome.scripting.executeScript({target:{tabId,frameIds:[0]},args:[message],func:(notice)=>{
+      if(location.hostname!=='chatgpt.com' || !document.documentElement)return;
+      let box=document.getElementById('smartflow-story-bootstrap-review');
+      if(!box){
+        box=document.createElement('div');box.id='smartflow-story-bootstrap-review';
+        box.setAttribute('role','alert');
+        Object.assign(box.style,{position:'fixed',right:'18px',bottom:'18px',zIndex:'2147483647',
+          maxWidth:'420px',padding:'14px 18px',borderRadius:'14px',background:'#142033',color:'#fff',
+          border:'1px solid #f2b357',boxShadow:'0 12px 38px rgba(0,0,0,.4)',
+          font:'600 14px/1.55 system-ui',pointerEvents:'auto'});
+        document.documentElement.appendChild(box);
+      }
+      box.textContent=`SmartFlow • ${notice}`;
+    }});
+  } catch { /* A closed or navigating tab still leaves the desktop error visible. */ }
+}
+async function findCleanAIWebBootstrapTab(provider,tabs) {
+  const target=AI_WEB[provider];
+  const root=String(target.url||'').replace(/[?#].*$/,'').replace(/\/$/,'');
+  const rootTabs=tabs.filter(tab=>String(tab?.url||'').replace(/[?#].*$/,'').replace(/\/$/,'')===root && tab?.id);
+  if(provider!=='chatgpt') {
+    const tab=rootTabs.at(-1);
+    return tab?{tab,documentId:''}:null;
+  }
+  const previouslyOwned=new Set(await rememberedAutomationTabIds());
+  for(const tab of rootTabs.reverse()) {
+    if(tab.status!=='complete' || previouslyOwned.has(tab.id))continue;
+    const documentId=await cleanChatGPTRootDocument(tab.id);
+    if(documentId)return {tab,documentId};
+  }
+  return null;
 }
 async function restartCoverPreparation(message,sender) {
   return withCoverOwner(message.request_id,async()=>{
@@ -422,7 +534,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.486-20261001.1";
+const FLOW_HELPER_BUILD = "flow-0.15.496-20261002.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";
@@ -3130,6 +3242,8 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
   const tabKey = `smartpostAIWebTab:${provider}:${jobId}`;
   const legacyKey = `smartpostChatGPTTab:${jobId}`;
   let tabId = null;
+  let bootstrapDocumentId='';
+  let ownedFreshChatGPTRoot=false;
   let resumeDocumentId=String(resultDocumentId||'');
   let resumeReceiptVerifier=null,resumeReceiptKey='',resumeDocumentFence=null;
   let resumeHandoffCheckpoint=null;
@@ -3299,6 +3413,7 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
     }
   }
   if (resume?.required) reuseAnalysis = true;
+  const freshChatGPTRoot=provider==='chatgpt' && (!reuseAnalysis || forceFreshTab);
   const resumeUrl = String(resume?.conversation_url || '');
   if (resume?.required && (forceFreshTab || resume.provider !== provider ||
       !(provider === 'gemini' ? /^https:\/\/gemini\.google\.com\/app\/[a-f0-9]{16}$/i
@@ -3340,10 +3455,17 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
       // Layer-2 recovery can reopen the provider while preserving the saved
       // analysis and disk checkpoints.  A closed tab must not discard a Job.
       if (resume?.required) {
-        const reopened = await chrome.tabs.create({ url: resumeUrl, active: true });
-        tabId = reopened.id;
+        // The desktop may already have opened this exact saved conversation.
+        // Reuse it instead of making a second copy. Never select a different
+        // ChatGPT conversation or guess between two matching tabs.
+        const matches = (await chrome.tabs.query({})).filter(item =>
+          String(item?.url || '').split(/[?#]/)[0].replace(/\/$/, '') === resumeUrl);
+        if (matches.length > 1) throw new Error('AI_WEB_RESUME_REVIEW • พบแชตเดิมหลายแท็บ ยืนยันแท็บงานไม่ได้ • ไม่ส่งซ้ำ');
+        const owned = matches[0] || await chrome.tabs.create({ url: resumeUrl, active: true });
+        tabId = owned.id;
+        if (matches.length) await chrome.tabs.update(tabId, { active: true });
         await rememberAutomationTabs(tabId);
-        await focusOpenedBrowserTab(reopened);
+        await focusOpenedBrowserTab(owned);
       } else tabId = await openAIWebTab(provider);
     } else {
       tabId = tab.id;
@@ -3352,23 +3474,19 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
       // pending image intact. Never reload or adopt the user's newest chat.
     }
   } else {
-    // Desktop opens the provider URL to bring Chrome back before the MV3
-    // worker receives this command.  Reuse that fresh root tab instead of
-    // opening a second ChatGPT/Gemini tab which would be untracked and remain
-    // visible after the job finishes.
+    // Desktop may have opened a root tab to bring Chrome back. Adopt only a
+    // clean ChatGPT document; an older cover draft belongs to the user.
     const bootstrapTabs = await chrome.tabs.query({ url: target.matches });
-    const bootstrap = bootstrapTabs.filter((tab) => {
-      const url = String(tab?.url || "").replace(/[?#].*$/, "").replace(/\/$/, "");
-      const root = String(target.url || "").replace(/[?#].*$/, "").replace(/\/$/, "");
-      return url === root;
-    }).at(-1);
-    if (bootstrap?.id) {
-      tabId = bootstrap.id;
+    const bootstrap = await findCleanAIWebBootstrapTab(provider,bootstrapTabs);
+    if (bootstrap?.tab?.id) {
+      tabId = bootstrap.tab.id;
+      bootstrapDocumentId=bootstrap.documentId;
       await chrome.tabs.update(tabId, { active: true });
-      await focusOpenedBrowserTab(bootstrap);
+      await focusOpenedBrowserTab(bootstrap.tab);
       await rememberAutomationTabs(tabId);
     } else {
       tabId = await openAIWebTab(provider);
+      ownedFreshChatGPTRoot=provider==='chatgpt';
     }
   }
   while(true) {
@@ -3402,6 +3520,36 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
       throw error;
     }
     throw new Error(`${target.name} เปิดไปหน้าอื่น (${loadedUrl || "ไม่ทราบ URL"})`);
+  }
+  if(freshChatGPTRoot) {
+    let proof=await waitForCleanChatGPTRoot(tabId,bootstrapDocumentId);
+    if(!proof.empty && !ownedFreshChatGPTRoot) {
+      // The adopted root changed after selection. Leave it untouched and
+      // continue in one newly owned tab; no Start has been issued yet.
+      tabId=await openAIWebTab(provider);
+      bootstrapDocumentId='';ownedFreshChatGPTRoot=true;
+      continue;
+    }
+    for(let clearAttempt=0; !proof.empty && ownedFreshChatGPTRoot
+        && proof.reason==='draft_present' && clearAttempt<2; clearAttempt++) {
+      const cleared=await clearOwnedChatGPTRootDraft(tabId,proof.documentId);
+      proof=cleared.cleared
+        ? await waitForCleanChatGPTRoot(tabId,proof.documentId)
+        : {...proof,reason:cleared.reason};
+      if(!cleared.cleared)break;
+    }
+    if(!proof.empty) {
+      const notice=proof.reason==='draft_present'
+        ? 'ระบบล้างร่างที่ค้างในแท็บงานใหม่ไม่สำเร็จ • ยังไม่ส่งคำขอ'
+        : proof.reason==='composer_not_ready' || proof.reason==='probe_failed'
+          ? 'หน้า ChatGPT ยังไม่พร้อมหลังรอโหลด • ยังไม่ส่งคำขอ'
+          : 'หน้า ChatGPT มีงานหรือหน้าเปลี่ยนไป • ยังไม่ส่งคำขอ';
+      await showStoryBootstrapReview(tabId,notice);
+      const error=Error(`AI_WEB_WAIT_REVIEW • ${notice} • ยังไม่ส่งคำขอ`);
+      error.code='AI_WEB_WAIT_REVIEW';error.tabId=tabId;
+      error.bootstrapReason=proof.reason;error.service='chatgpt';
+      throw error;
+    }
   }
   const tabValues = { [`smartpostAIWebTab:${provider}:${jobId}`]: tabId };
   if (provider === "chatgpt") tabValues[`smartpostChatGPTTab:${jobId}`] = tabId;
@@ -4667,7 +4815,7 @@ async function sendHeartbeat() {
       signal: controller.signal,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ client_id: CLIENT_ID, version: VERSION, browser: "Google Chrome", page,
-        profile_id: await membershipProfile(), speech_retry_protocol: 1 })
+        profile_id: await membershipProfile(), speech_retry_protocol: 1, extension_update_protocol: 1 })
     });
     const payload = await response.json();
     if (!response.ok || !payload.ok) {
@@ -4680,12 +4828,21 @@ async function sendHeartbeat() {
     if (!BRIDGE_TOKEN) throw new Error("Local Bridge session token missing");
     await connectionDiagnostic(payload,true);
     diagnosticPublished=true;
+    const reload=payload.extension_reload_request;
+    if(reload && /^[a-f0-9]{32}$/.test(String(reload.nonce||''))
+        && reload.target_version===payload.extension_version_required && reload.target_version!==VERSION){
+      const key='smartflowExtensionReloadNonce';
+      const previous=(await chrome.storage.local.get(key))[key];
+      if(previous!==reload.nonce){
+        await chrome.storage.local.set({[key]:reload.nonce});
+        chrome.runtime.reload();
+        return {updateRequired:true,requiredVersion:reload.target_version};
+      }
+    }
     if (payload.reload_required && payload.extension_version_required && payload.extension_version_required !== VERSION) {
-      // Self-reloading cannot install a newer unpacked source. If Chrome points
-      // at an old folder it just restarts this same worker every five seconds,
-      // interrupts commands and looks like the Extension is flashing/reloading.
-      // Pause command polling and show the exact mismatch until the user reloads
-      // the unpacked Extension once from chrome://extensions.
+      // A version mismatch alone never triggers reload: an old unpacked folder
+      // would otherwise restart this worker repeatedly and interrupt commands.
+      // Only the desktop's one-time request after staging verified files may reload.
       await chrome.storage.local.set({
         smartpostReloadReason: `ต้องอัปเดต Extension ${VERSION} → ${payload.extension_version_required}`,
         smartpostExtensionUpdateRequired: {
@@ -4782,6 +4939,12 @@ async function reportAICommandFailure(command, error) {
       jobId: command.job_id, provider: command.provider, message, actionKind, service,
       runId: command.run_id
     });
+    if(error?.code==='AI_WEB_WAIT_REVIEW' && error?.tabId) {
+      await reportExtensionTrace({service:'chatgpt',action:'story_bootstrap_review',
+        jobId:command.job_id,runId:command.run_id,tabId:error.tabId,level:'warning',
+        message:'Story หยุดก่อนส่งคำขอ • ตรวจแท็บ ChatGPT',
+        detail:{reason:String(error.bootstrapReason||'unknown')}});
+    }
     if (userActionRequired) {
       await rememberPendingWebAction({
         scope: "chatgpt", jobId: command.job_id, provider: command.provider,

@@ -20,6 +20,7 @@ from ctypes import wintypes
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
 from PIL import Image, ImageDraw, ImageFont, ImageTk
+from ui.state_rules import credit_state, story_video_mode_key, video_render_settings
 
 from core.adb_manager import AdbManager
 from core.ai_web_models import AI_WEB_MODEL_OPTIONS, ai_web_model_label, normalize_ai_web_model
@@ -61,6 +62,8 @@ from core.story_pipeline import (
     STORY_AUTO_RECOVERY_LIMIT,
     STORY_STAGES,
     browser_progress,
+    story_existing_draft_notice,
+    story_image_refusal_notice,
     story_provider_failover_action,
     story_recovery_action,
 )
@@ -1259,7 +1262,20 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         compatible = next((item for item in clients if str(item.get("version") or "") == self.bridge.REQUIRED_EXTENSION_VERSION), None)
         return extension, compatible
 
-    def _launch_story_browser(self, job_id, provider="", reason="Chrome หรือ Extension ยังไม่ออนไลน์"):
+    def _story_browser_target_url(self, job_id, provider, action):
+        """Open the exact saved conversation when recovery requires its old turn."""
+        if action == "resume_chatgpt":
+            from core.ai_web_resume import ai_web_resume_target, conversation_url
+            job = self.stories.get(job_id)
+            target = ai_web_resume_target(self.stories.root / job_id, job) or {}
+            if target.get("required"):
+                saved_url = conversation_url(target.get("conversation_url"), provider)
+                if target.get("provider") != provider or not saved_url:
+                    raise ValueError("AI_WEB_RESUME_REVIEW • ไม่พบ URL แชตเดิมที่ยืนยันได้ • ไม่เปิดแท็บใหม่หรือส่งซ้ำ")
+                return saved_url
+        return self._ai_web_url(provider)
+
+    def _launch_story_browser(self, job_id, provider="", reason="Chrome หรือ Extension ยังไม่ออนไลน์", command_queued=False, action=""):
         """Open the provider once, then wait for Extension instead of spawning tabs."""
         if self._story_pipeline_job_id != job_id:
             return False
@@ -1268,9 +1284,14 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         except Exception:
             return False
         provider = str(provider or job.get("image_ai_provider") or "chatgpt").strip().lower()
-        resume_action = "resume_chatgpt" if job.get("ai_status") == "ready" or job.get("generated_images") or job.get("partial_generated_images") else "open_story_chatgpt"
         launches = getattr(self, "_story_browser_launches", {})
         state = dict(launches.get(job_id) or {})
+        resume_action = action or state.get("action") or ("resume_chatgpt" if job.get("ai_status") == "ready" or job.get("generated_images") or job.get("partial_generated_images") else "open_story_chatgpt")
+        try:
+            browser_url = self._story_browser_target_url(job_id, provider, resume_action)
+        except ValueError as exc:
+            self.events.put(("story_error", {"job_id": job_id, "cancel_event": self._story_cancel_event, "value": str(exc)}))
+            return False
         now = time.monotonic()
         if state.get("opened_once"):
             if (
@@ -1283,7 +1304,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
                 state["relaunch_count"] = int(state.get("relaunch_count") or 0) + 1
                 launches[job_id] = state
                 self._story_browser_launches = launches
-                self._activate_or_launch_chrome(self._ai_web_url(provider))
+                self._activate_or_launch_chrome(browser_url)
                 self._update_story_progress({
                     "percent": 3,
                     "stage": "chatgpt",
@@ -1307,7 +1328,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
                     "detail": "ระบบจะไม่เปิดแท็บซ้ำ และจะส่ง Job ต่อทันทีเมื่อ Extension พร้อม",
                 })
             return False
-        self._activate_or_launch_chrome(self._ai_web_url(provider))
+        self._activate_or_launch_chrome(browser_url)
         state.update({
             "provider": provider,
             "action": resume_action,
@@ -1316,7 +1337,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             "waiting_notice_at": now,
             "relaunch_count": 0,
             "online_since": 0.0,
-            "resume_sent": False,
+            "resume_sent": bool(command_queued),
         })
         launches[job_id] = state
         self._story_browser_launches = launches
@@ -1359,7 +1380,11 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             return
         payload = browser_progress(client, job_id, story_job.get("scene_count", 1)) if client else None
         if payload:
-            getattr(self, "_story_browser_launches", {}).pop(job_id, None)
+            # Keep dispatch ownership through heartbeat gaps. Dropping this
+            # marker made the monitor queue a second Resume after a reconnect.
+            state = getattr(self, "_story_browser_launches", {}).get(job_id)
+            if state:
+                state["resume_sent"] = True
             if payload.get("step") == "user_action_required":
                 provider = locked_provider
                 action_kind = str((client or {}).get("ai_action_kind") or "verification_required")
@@ -1632,6 +1657,8 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         manual_flow_resume = request_scene_repair_resume(self.stories.root / job_id, job) if job.get('video_generation_mode') == 'google_flow' and not planned_video(job) else None
         self.stories.reset_recovery_attempts(job_id)
         self._story_pipeline_job_id = job_id
+        self._story_browser_launches = getattr(self, "_story_browser_launches", {})
+        self._story_browser_launches.pop(job_id, None)
         self._story_cancel_event = threading.Event()
         self.story_job_id.set(job_id)
         self.stories.mark_running(job_id, "voice" if ai_ready else "chatgpt")
@@ -1680,8 +1707,9 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             resume_action = failover_action or ("resume_chatgpt" if analysis_ready or job.get("ai_status") == "ready" or job.get("generated_images") or job.get("partial_generated_images") else "open_story_chatgpt")
             self.bridge.clear_ai_progress(job_id)
             self.bridge.queue_extension_command(resume_action, job_id)
+            self._story_browser_launches[job_id] = {"resume_sent": True}
             if not compatible or not self._chrome_window_available():
-                self._launch_story_browser(job_id, job.get("image_ai_provider"), "กำลังเปิด Chrome เพื่อทำต่อจาก Checkpoint")
+                self._launch_story_browser(job_id, job.get("image_ai_provider"), "กำลังเปิด Chrome เพื่อทำต่อจาก Checkpoint", command_queued=True, action=resume_action)
             else:
                 self._activate_or_launch_chrome(self._ai_web_url(job.get("image_ai_provider")))
         except Exception as exc:
@@ -1728,6 +1756,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         if any(code in str(error_message or "") for code in (
             "STORY_FLOW_DUPLICATE_POLICY_EVENT", "FLOW_REPAIR_REVIEW", "FLOW_SEND_REVIEW",
             "FLOW_POLICY_BLOCKED", "FLOW_FACE_POLICY_BLOCKED", "FLOW_ATTACHMENT_UNCONFIRMED",
+            "AI_IMAGE_REFERENCE_UNCONFIRMED", "AI_WEB_RESUME_REVIEW",
         )):
             # The exact terminal event was already handled. Automatic recovery
             # would reopen Flow and physically submit the same scene again.
@@ -1777,14 +1806,18 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         self._write_console(f"{job_id} • AUTO RECOVERY {attempt}/{STORY_AUTO_RECOVERY_LIMIT} • {detail}", "log")
         resume_action = action
         if action == "resume_chatgpt":
+            from core.ai_web_resume import ai_web_resume_target
+            resume_target = ai_web_resume_target(self.stories.root / job_id, recovered) or {}
+            must_read_old_chat = bool(resume_target.get("required"))
             if not has_ai_checkpoint:
                 resume_action = "open_story_chatgpt"
-            elif attempt >= 2:
+            elif attempt >= 2 and not must_read_old_chat:
                 resume_action = "restart_chatgpt_images"
         provider_hint = str(recovered.get("image_ai_provider") or "chatgpt").strip().lower()
         provider_name = "Gemini Web" if provider_hint == "gemini" else "ChatGPT Web"
         if action == "resume_chatgpt" and attempt >= 2:
-            resume_action = "restart_chatgpt_images" if has_ai_checkpoint else "open_story_chatgpt"
+            if not has_ai_checkpoint:
+                resume_action = "open_story_chatgpt"
             retry_detail = "ใช้ Analysis และ Checkpoint เดิม" if has_ai_checkpoint else "วิเคราะห์บทใหม่ใน Job เดิม เพราะยังไม่มี Checkpoint"
             self._story_progress_detail.set(f"{detail} • Retry บน {provider_name} เดิมและ{retry_detail}")
         recovery_event = self._story_cancel_event
@@ -1826,9 +1859,11 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             # the same stale error before the retry can start.
             self.bridge.clear_ai_progress(job_id)
             self.bridge.queue_extension_command(action, job_id, provider_hint=provider_hint)
+            self._story_browser_launches = getattr(self, "_story_browser_launches", {})
+            self._story_browser_launches[job_id] = {"resume_sent": True}
             _extension, compatible = self._compatible_extension()
             if not compatible or not self._chrome_window_available():
-                self._launch_story_browser(job_id, active_provider, "Chrome ปิดระหว่างการกู้คืน")
+                self._launch_story_browser(job_id, active_provider, "Chrome ปิดระหว่างการกู้คืน", command_queued=True, action=action)
             else:
                 self._activate_or_launch_chrome(self._ai_web_url(active_provider))
             self._story_monitor_after = self.root.after(700, lambda: self._monitor_story_browser_progress(job_id))
@@ -2031,10 +2066,12 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             self._update_story_progress({"percent": 2, "stage": "chatgpt", "message": "ตรวจข้อมูลเรียบร้อย กำลังสั่ง Chrome Extension", "detail": f"{provider_name} • {model_name} • เตรียมสร้างภาพ {job['scene_count']} ฉาก"})
             self._activate_or_launch_chrome(self._ai_web_url(provider))
             self.bridge.queue_extension_command("open_story_chatgpt", job["id"])
+            self._story_browser_launches = getattr(self, "_story_browser_launches", {})
+            self._story_browser_launches[job["id"]] = {"resume_sent": True}
             if compatible:
                 self._update_story_progress({"percent": 4, "stage": "chatgpt", "message": f"ส่งงานไปยัง {provider_name} แล้ว", "detail": "กำลังรอหน้าเว็บวิเคราะห์บทและเริ่มสร้างภาพ"})
             else:
-                self._launch_story_browser(job["id"], provider, "Chrome ยังไม่เปิด • โปรแกรมกำลังเปิดให้เอง")
+                self._launch_story_browser(job["id"], provider, "Chrome ยังไม่เปิด • โปรแกรมกำลังเปิดให้เอง", command_queued=True, action="open_story_chatgpt")
             self.story_status.set(f"{job['id']} • ส่งให้ {provider_name} แล้ว • รอ {job['scene_count']} ภาพ")
             self.status.set(f"เปิด {provider_name} ใน Google Chrome แล้ว")
             self._write_console(f"{job['id']} • STORY • ส่งเข้า {provider_name}", "success")
@@ -4368,11 +4405,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
 
     @staticmethod
     def _story_video_mode_key(selected_label="", context=None):
-        """Resolve the visible Story/Drama video choice without hidden overrides."""
-        requested = str((context or {}).get("video_generation_mode") or "").strip().lower()
-        if requested in {"image_motion", "google_flow", "meta_ai"}:
-            return requested
-        return STORY_VIDEO_MODES.get(str(selected_label or ""), "image_motion")
+        return story_video_mode_key(selected_label, context, STORY_VIDEO_MODES)
 
     def _ai_web_model_key(self, provider=""):
         provider = str(provider or self._image_provider_key()).strip().lower()
@@ -4404,21 +4437,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         return "Meta AI (ทดลอง)" if provider == 'meta_ai' else "Google Flow"
 
     def _video_render_settings(self):
-        resolution = str(self.cfg.get("video_resolution", "720x1280"))
-        if resolution not in set(VIDEO_RESOLUTIONS.values()):
-            resolution = "720x1280"
-        width, height = (int(value) for value in resolution.split("x", 1))
-        fps = int(self.cfg.get("video_fps", 30))
-        if fps not in {0, 24, 30, 50, 60}:
-            fps = 30
-        quality = str(self.cfg.get("video_quality", "high"))
-        crf = {"standard": 21, "high": 18, "maximum": 16}.get(quality, 18)
-        return {
-            "width": width, "height": height, "fps": fps, "crf": crf,
-            'backend_version': 1, 'encoder': self.cfg.get('video_encoder', 'auto'), 'green_filter_threads': 4,
-            "motion_strength": max(0.0, min(1.5, float(self.cfg.get("video_motion_strength", 1.0)))),
-            "transition_sec": max(0.0, min(0.6, float(self.cfg.get("video_transition_sec", 0.22)))),
-        }
+        return video_render_settings(self.cfg, VIDEO_RESOLUTIONS)
 
     def _save_video_options(self):
         try:
@@ -5716,17 +5735,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
 
     @staticmethod
     def _credit_state(configured=False, message="ยังไม่ได้เชื่อมต่อ", **values):
-        state = {
-            "configured": bool(configured),
-            "connected": False,
-            "loading": False,
-            "credits": None,
-            "unlimited": False,
-            "message": str(message or ""),
-            "expires_at": "",
-        }
-        state.update(values)
-        return state
+        return credit_state(configured, message, **values)
 
     def _refresh_service_credits(self, force=False, silent=True):
         now = time.monotonic()
@@ -9291,13 +9300,11 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
     def _activate_or_launch_chrome(self, url):
         """Focus an existing Chrome window or launch exactly one new window."""
         def connected_window():
-            if not self._chrome_window_available():
-                return False
-            if not hasattr(self, 'bridge'):
-                return True  # Widget-only test hosts have no provider transport.
-            return bool(self._compatible_extension()[1])
+            # Extension heartbeat can lag behind an already-open Chrome window.
+            # Launching a URL during that gap adds another provider tab.
+            return self._chrome_window_available()
         if connected_window():
-            if hasattr(self, 'bridge'):
+            if hasattr(self, 'bridge') and self._compatible_extension()[1]:
                 self.bridge.queue_extension_command('focus_browser')
                 return 'focus_requested'
             threading.Thread(target=self._focus_chrome_after_launch, daemon=True).start()
@@ -9308,7 +9315,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             self._chrome_launch_lock = lock
         with lock:
             if connected_window():
-                if hasattr(self, 'bridge'):
+                if hasattr(self, 'bridge') and self._compatible_extension()[1]:
                     self.bridge.queue_extension_command('focus_browser')
                     return 'focus_requested'
                 threading.Thread(target=self._focus_chrome_after_launch, daemon=True).start()
@@ -9737,6 +9744,8 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
 
     @staticmethod
     def _desktop_story_row(job, folder=None):
+        from core.story_recovery_summary import story_recovery_summary
+
         brief = job.get('creative_brief')
         public_brief = ({'title': str(brief.get('title') or '')[:100],
             'description': str(brief.get('description') or '')[:600]} if isinstance(brief, dict) else None)
@@ -9762,6 +9771,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             video_status = (f"Flow {video_plan_summary['flow']} + Meta {video_plan_summary['meta']}"
                             f" • เก็บแล้ว {video_plan_summary['completed']}/{target_count} ฉาก")
         return {
+            **({'recovery': story_recovery_summary(job, folder)} if folder is not None else {}),
             **({'video_plan_summary': video_plan_summary} if video_plan_summary is not None else {}),
             "meta_clip_count": int(job.get('meta_clip_count') or 0),
             "meta_scene_sequence_version": int(job.get('meta_scene_sequence_version') or 0),
@@ -10638,6 +10648,11 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
                 ))
         if excerpt:
             lines.extend(("", "--- หน้าจอล่าสุดที่ Extension อ่านได้ ---", excerpt[:3000]))
+        if job_id.startswith("STORY-"):
+            from core.story_failure_timeline import story_failure_timeline
+            timeline = story_failure_timeline(self.stories.root, job_id)
+            if timeline:
+                lines.extend(("", timeline, "", "ไฟล์ trace ต้นฉบับ: workspace/stories/" + job_id + "/logs/extension_trace.jsonl"))
         self._automation_error_log = {
             "job_id": job_id,
             "service": service,
@@ -10858,6 +10873,16 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         if action == "prepare_app_update":
             from ui.update_guard import prepare
             return prepare(self, payload or {})
+        if action == "reload_extension_after_update":
+            import secrets
+            with self._app_update_lock:
+                nonce = str((payload or {}).get("nonce") or "")
+                if (not getattr(self, "_app_update_pending", False) or not nonce
+                        or not secrets.compare_digest(nonce, str(getattr(self, "_app_update_nonce", "")))):
+                    raise ValueError("ไม่พบการอัปเดต Extension ที่กำลังทำอยู่")
+                self.bridge.request_extension_reload(
+                    str(payload.get("client_id") or ""), str(payload.get("target_version") or ""))
+                return {"ok": True, "reload_requested": True}
         if getattr(self, "_app_update_pending", False) and action != "shutdown":
             raise ValueError("กำลังเตรียมอัปเดต • เปิดโปรแกรมใหม่หากต้องการกลับมาทำงาน")
         product_runtime = None
@@ -12344,29 +12369,36 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             elif kind == "story_error":
                 job_id = self._story_pipeline_job_id or self.story_job_id.get().strip()
                 self._story_render_active = None
-                keep_ai_draft_open = self._should_keep_story_ai_draft(job_id, payload)
-                if job_id and not keep_ai_draft_open and self._schedule_story_recovery(job_id, str(payload)):
+                raw_error = str(payload.get("value") or "") if isinstance(payload, dict) else str(payload)
+                trace = (self.bridge.extension_status().get("trace") or []) if job_id else []
+                review_notice = (story_existing_draft_notice(job_id, raw_error, trace)
+                    or story_image_refusal_notice(job_id, raw_error, trace)) if job_id else ""
+                reported_error = review_notice or str(payload)
+                keep_ai_draft_open = (bool(review_notice)
+                    or any(code in raw_error for code in ("AI_WEB_WAIT_REVIEW", "AI_WEB_RESUME_REVIEW"))
+                    or self._should_keep_story_ai_draft(job_id, payload))
+                if job_id and not keep_ai_draft_open and self._schedule_story_recovery(job_id, reported_error):
                     continue
                 try:
                     error_job = self.stories.get(job_id)
                 except Exception:
                     error_job = {}
                 from core.meta_error_report import story_service_label
-                self._capture_automation_error_log(job_id, payload, story_service_label(error_job))
+                self._capture_automation_error_log(job_id, reported_error, story_service_label(error_job))
                 if job_id:
                     try:
                         stage = str(self.stories.get(job_id).get("pipeline_stage") or "")
-                        self.stories.mark_failed(job_id, stage, str(payload))
+                        self.stories.mark_failed(job_id, stage, reported_error)
                     except Exception as exc:
                         self.log.warning("job_id=%s state=STORY_MARK_FAILED result=error error=%s", job_id, exc)
-                self.story_status.set(f"Story Shorts ผิดพลาด • {payload}")
+                self.story_status.set(f"Story Shorts ผิดพลาด • {reported_error}")
                 self.status.set("Story Shorts ทำงานไม่สำเร็จ")
-                self._write_console(f"STORY • {payload}", "error")
-                queue_item = self.story_queue.mark_failed_by_job(job_id, str(payload)) if job_id else None
-                self._creation_story_failure(queue_item, str(payload))
+                self._write_console(f"STORY • {reported_error}", "error")
+                queue_item = self.story_queue.mark_failed_by_job(job_id, reported_error) if job_id else None
+                self._creation_story_failure(queue_item, reported_error)
                 if queue_item and queue_item.get("mode") == "drama":
-                    self._pause_failed_drama_episode(queue_item, str(payload))
-                self._finish_story_popup("error", "สร้าง Story Shorts ไม่สำเร็จ", str(payload))
+                    self._pause_failed_drama_episode(queue_item, reported_error)
+                self._finish_story_popup("error", "สร้าง Story Shorts ไม่สำเร็จ", reported_error)
                 keep_flow_open = False
                 if job_id:
                     try:

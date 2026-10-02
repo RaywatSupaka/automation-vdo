@@ -1,3 +1,6 @@
+import re
+
+
 STORY_STAGES = (
     ("chatgpt", "ChatGPT Web", 0, 60),
     ("voice", "สร้างเสียง AI", 60, 80),
@@ -7,6 +10,57 @@ STORY_STAGES = (
 
 STORY_AUTO_RECOVERY_LIMIT = 2
 
+
+def story_existing_draft_notice(job_id, failure, trace):
+    """Do not recover into another tab when the owned page has a foreign draft."""
+    if "เครื่องมือสร้างรูปภาพยังไม่พร้อม" not in str(failure or ""):
+        return ""
+    for row in reversed(trace or []):
+        if not isinstance(row, dict) or row.get("job_id") != job_id or row.get("action") != "error":
+            continue
+        detail = row.get("detail") or {}
+        if ("เครื่องมือสร้างรูปภาพยังไม่พร้อม" in str(row.get("message") or "")
+                and isinstance(detail, dict) and detail.get("tool_reason") == "draft_changed"
+                and detail.get("dispatch_completed") is False):
+            return ("AI_WEB_WAIT_REVIEW • แท็บ ChatGPT มีข้อความค้างในช่องพิมพ์ "
+                    "จึงยังไม่ส่งคำขอ Story • ตรวจข้อความในแท็บเดิมก่อนทำต่อ")
+        break
+    return ""
+
+
+def story_image_refusal_notice(job_id, failure, trace):
+    """Explain a helper failure using the exact preceding provider refusal.
+
+    A helper error is not a new provider verdict. Only a refusal from the same
+    Job and run, before the current error, may explain why recovery stopped.
+    """
+    failure = str(failure or "")
+    if not any(marker in failure for marker in (
+        "แท็บช่วยงานมีรูปค้าง", "STORY_REPAIR_", "AI_WEB_RESUME_REVIEW",
+    )):
+        return ""
+    rows = [row for row in trace or [] if isinstance(row, dict)
+            and str(row.get("job_id") or "") == str(job_id or "")]
+    latest_error = next((row for row in reversed(rows)
+                         if row.get("action") == "error" and failure in str(row.get("message") or "")), None)
+    if not latest_error:
+        return ""
+    run_id = str(latest_error.get("run_id") or "")
+    if not run_id:
+        return ""
+    before = [row for row in rows if str(row.get("run_id") or "") == run_id
+              and int(row.get("sequence") or 0) < int(latest_error.get("sequence") or 0)]
+    refusal = next((row for row in reversed(before)
+                    if row.get("action") == "image_attempt_result"
+                    and "policy_refusal" in str(row.get("message") or "")), None)
+    if not refusal:
+        return ""
+    match = re.search(r"ภาพ\s*(\d+)", str(refusal.get("message") or ""))
+    scene = match.group(1) if match else "ปัจจุบัน"
+    return (f"STORY_IMAGE_REFUSED • ผู้ให้บริการปฏิเสธภาพฉาก {scene} ตามนโยบาย "
+            "โดยไม่ได้บอกข้อห้ามที่เจาะจง • งานช่วยปรับพรอมต์ทำต่อไม่สำเร็จ "
+            "กรุณาตรวจคำตอบและพรอมต์เดิมในแชต • ไม่ส่งคำขอภาพซ้ำอัตโนมัติ")
+
 _MANUAL_RECOVERY_MARKERS = (
     "ผู้ใช้ยกเลิก", "user_cancel", "api key", "เครดิต", "แพ็กเกจ",
     "เข้าสู่ระบบ", "login", "captcha", "ยืนยันตัวตน", "reload extension",
@@ -15,7 +69,8 @@ _MANUAL_RECOVERY_MARKERS = (
     # even when the first answer is still available in the owned conversation.
     "ai_analysis_timeout", "ai_analysis_format_review", "ai_analysis_json_ambiguous",
     "gemini_text_send_review", "gemini_text_request_review",
-    "ai_web_resume_review", "ai_web_wait_review", "ใช้เวลาตอบนานเกิน 6 นาที",
+    "ai_web_resume_review", "ai_web_wait_review", "ai_image_reference_unconfirmed",
+    "ใช้เวลาตอบนานเกิน 6 นาที",
 )
 
 _CONTENT_RECOVERY_STOP_CODES = (

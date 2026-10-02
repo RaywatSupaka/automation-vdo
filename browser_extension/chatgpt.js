@@ -841,12 +841,16 @@
     );
   }
 
-  function chatGPTComposerAttachmentState(scope = null) {
-    const editor = composer();
-    const shell = scope || editor?.closest("form")
+  function chatGPTComposerShell(editor = composer()) {
+    return editor?.closest('form')
       || document.querySelector('form[data-type="unified-composer"]')
       || editor?.parentElement?.parentElement
-      || document;
+      || null;
+  }
+
+  function chatGPTComposerAttachmentState(scope = null) {
+    const editor = composer();
+    const shell = scope || chatGPTComposerShell(editor) || document;
     const selectors = [
       '[data-testid*="file-thumbnail"]',
       '[data-testid*="attachment"]',
@@ -1017,17 +1021,36 @@
     error.code='AI_IMAGE_REFERENCE_UNCONFIRMED';error.referenceProof=proof;throw error;
   }
 
-  async function attachSourceImages(urls, completedCount = 0, strictReference = "") {
+  function retainedStoryReferenceReady(expectedPrompt, referenceName, ownsPreparation) {
+    if (IS_GEMINI || !referenceName || !ownsPreparation?.() || stopButtonVisible()) return false;
+    const editor = composer(), shell = chatGPTComposerShell(editor);
+    const attachment = shell && chatGPTComposerAttachmentState(shell);
+    if (!shell || !attachment || attachment.count !== 1 || attachment.busy || attachment.failed) return false;
+    const labels = [shell.textContent || '', ...[...shell.querySelectorAll('[alt],[title],[aria-label]')]
+      .filter(node => !editor.contains(node))
+      .map(node => `${node.getAttribute('alt') || ''} ${node.getAttribute('title') || ''} ${node.getAttribute('aria-label') || ''}`)].join(' ');
+    const wrapped = globalThis.SmartFlowSingleAnswer?.wrap?.(expectedPrompt);
+    const normalize = value => String(value || '').trim().replace(/\s+/g, ' ');
+    return Boolean(wrapped && labels.includes(referenceName) && normalize(composerText(editor)) === normalize(wrapped)
+      && chatGPTStoryRequest(wrapped).reason === 'request_missing');
+  }
+
+  async function attachSourceImages(urls, completedCount = 0, strictReference = "", retainedReference = null) {
     if (!urls?.length) throw new Error("Job นี้ไม่มีรูปสินค้าต้นฉบับ");
     const expectedCount = Math.min(activeCoverRequest ? 3 : activeSourceReferenceLimit, urls.length);
-    const referenceShell = () => (IS_GEMINI ? composer()?.closest('.text-input-field') : null)
-      || composer()?.closest('form') || composer()?.parentElement?.parentElement;
+    const referenceShell = () => IS_GEMINI
+      ? (composer()?.closest('.text-input-field') || composer()?.closest('form') || composer()?.parentElement?.parentElement)
+      : chatGPTComposerShell();
     const localPreviews = () => IS_GEMINI
       ? [...(referenceShell()?.querySelectorAll('img[alt="attachment"],img[data-test-id="uploaded-img"],img[alt*="uploaded" i],img[alt*="อัปโหลด" i]') || [])].filter(visible)
       : activeCoverRequest ? chatGPTCoverAttachmentPreviews(referenceShell())
       : sourceAttachmentPreviews().filter((node) => referenceShell()?.contains(node));
     if (strictReference && localPreviews().length) {
-      const error = new Error("AI_IMAGE_REFERENCE_UNCONFIRMED • มีรูปเก่าค้างในช่องข้อความ จึงไม่แนบหรือส่งซ้ำ");
+      if (retainedReference?.() && localPreviews().length === 1) {
+        await report('recovery_reference_reused', 'ยืนยันรูปอ้างอิงและคำสั่งที่เตรียมไว้แล้ว • ใช้คำขอเดิมต่อ', completedCount);
+        return;
+      }
+      const error = new Error("AI_IMAGE_REFERENCE_UNCONFIRMED • มีรูปค้างในช่องข้อความที่ยังยืนยันเจ้าของไม่ได้ • ยังไม่ส่งคำขอ");
       error.code = "AI_IMAGE_REFERENCE_UNCONFIRMED";
       throw error;
     }
@@ -5148,10 +5171,16 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         if(provider==='gemini' && matches(owned) && owned.run_id===activeRunId
             && owned.status==='awaiting_result' && owned.send_phase==='prepared'
             && owned.gemini_generation_nonce && !owned.result_proof) return;
+        const retainedReferencePrepared = provider === 'chatgpt' && matches(owned)
+          && owned.status === 'awaiting_result' && owned.send_phase === 'prepared'
+          && owned.previous_scene_reference_index === index - 1 && !owned.image_url
+          && !owned.send_nonce && !owned.result_proof
+          && owned.prepared_conversation === location.href.split(/[?#]/)[0];
         await write({ version: 1, job_id: jobId, provider, scene_index: index, identity,
           ...(owned?.conversation_restart?{conversation_restart:owned.conversation_restart}:{}),
           ...(owned?.fresh_restart?{fresh_restart:owned.fresh_restart}:{}),
           ...(owned?.previous_scene_reference_index?{previous_scene_reference_index:owned.previous_scene_reference_index}:{}),
+          ...(retainedReferencePrepared?{retained_reference_prepared:true}:{}),
           ...(owned?.standalone_scene_attempted?{standalone_scene_attempted:true}:{}),
           service_retry_count: Number(owned?.service_retry_count || 0),
           resume_image_prompt: String(owned?.resume_image_prompt || ''),
@@ -5159,6 +5188,14 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
           run_id: activeRunId, created_at: Date.now(), status: "awaiting_result",
           ...(['chatgpt','gemini'].includes(provider)?{send_phase:'prepared',prepared_conversation:location.href.split(/[?#]/)[0]}:{}),
           review_revision: Number(pkg.scene_prompt_override_revision || 0) });
+      },
+      ownsRetainedReference() {
+        return Boolean(provider === 'chatgpt' && matches(owned)
+          && owned.run_id === activeRunId && owned.status === 'awaiting_result'
+          && owned.send_phase === 'prepared' && owned.retained_reference_prepared === true
+          && owned.previous_scene_reference_index === index - 1 && !owned.image_url
+          && !owned.send_nonce && !owned.result_proof
+          && owned.prepared_conversation === location.href.split(/[?#]/)[0]);
       },
       async dispatching(prompt,baseline){
         if(!['chatgpt','gemini'].includes(provider)||!matches(owned)||owned.status!=='awaiting_result'
@@ -5348,6 +5385,13 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     // leftover composer attachment. Page-wide Gemini previews are not proof.
     if (inputKind === 'text_to_image' && (snapshot.image_expansion_open || (!IS_GEMINI && snapshot.source_attachment_count > 0))) {
       const error = new Error('STORY_IMAGE_CONTEXT_CONFLICT • งานสร้างภาพจากข้อความพบหน้าดูภาพหรือรูปค้างในช่องพิมพ์ • เก็บพรอมต์ไว้ ยังไม่กดส่ง');
+      error.code = 'STORY_IMAGE_CONTEXT_CONFLICT';
+      throw error;
+    }
+    if (inputKind === 'reference_image' && !IS_GEMINI
+        && (snapshot.source_attachment_count !== snapshot.source_count
+          || snapshot.source_attachment_busy || snapshot.source_attachment_failed)) {
+      const error = new Error(`STORY_IMAGE_CONTEXT_CONFLICT • ภาพอ้างอิงในช่อง ChatGPT ${snapshot.source_attachment_count}/${snapshot.source_count} รูป • ยังไม่กดส่ง`);
       error.code = 'STORY_IMAGE_CONTEXT_CONFLICT';
       throw error;
     }
@@ -5861,12 +5905,17 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
 
   async function submitImagePrompt(text, imageUrls = [], completedCount = 0, strictReference = "", storyContext = null, geminiImageIndex = 0, alternateWait = null) {
     await waitForResponseIdle(420000,null,'',completedCount);
-    await setChatGPTImageTool(true, completedCount, text);
+    const retainedReference = () => retainedStoryReferenceReady(text, strictReference,
+      storyContext?.ownsRetainedReference);
+    const hasRetainedReference = strictReference && retainedReference();
+    await setChatGPTImageTool(true, completedCount, hasRetainedReference
+      ? globalThis.SmartFlowSingleAnswer.wrap(text) : text);
     let editor = await waitForComposer();
     const beforeUserTurns = userTurns().length;
     const beforeUserSignature = lastUserTurnSignature();
     if (imageUrls.length) {
-      await attachSourceImages(imageUrls, completedCount, strictReference);
+      await attachSourceImages(imageUrls, completedCount, strictReference,
+        hasRetainedReference ? retainedReference : null);
       editor = await waitForComposer();
     }
     // Capture the baseline only after reference uploads are visible. Otherwise
@@ -6234,6 +6283,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         if (mode === 'story' && aspectRatio === '16:9') imageInstruction = imageInstruction.replace(/แนวตั้งเก้าต่อสิบหก/g, 'แนวนอนสิบหกต่อเก้า').replace(/แนวตั้ง/g, 'แนวนอน').replace(/9:16/g, '16:9').replace(/vertical/gi, 'horizontal');
         image = await submitImagePrompt(imageInstruction,
           sourceUrls, completedCount, referenceMode === 'previous_scene' ? `smartflow-story-previous-${index-1}` : '', mode === 'story' ? { scene_index: index, attempt: attempt + 1, completedCount,
+            ownsRetainedReference:imageReceipt ? () => imageReceipt.ownsRetainedReference() : null,
             postRefreshRedo:imageReceipt?.postRefreshRedo===true,
             onMissingSend: imageReceipt ? text => imageReceipt.missingSend(text) : null,
             onDispatch: imageReceipt ? (text,baseline) => imageReceipt.dispatching(text,baseline) : null,

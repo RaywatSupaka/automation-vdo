@@ -627,6 +627,37 @@ return `<article class="story-recovery-item"><header><div><small>${escapeHtml(jo
   }).join('');
 }
 
+function storyRecoveryTimeline(job, failed) {
+  const total = Math.max(0, Number(job.scene_count || 0));
+  const recovery = job.recovery || {};
+  const saved = new Set((Array.isArray(recovery.saved_image_scenes) ? recovery.saved_image_scenes : [])
+    .map(Number).filter(index => Number.isInteger(index) && index >= 1 && index <= total));
+  const verifiedCount = saved.size;
+  const reportedCount = Number(job.image_count || 0);
+  const countLabel = Array.isArray(recovery.saved_image_scenes)
+    ? `${verifiedCount}/${total} ฉาก` : `${reportedCount}/${total} ฉาก`;
+  const failedScene = Number(recovery.failed_image_scene || 0);
+  const analysisReady = recovery.analysis_ready === true;
+  const stage = String(job.pipeline_stage || '').toLowerCase();
+  const imageChips = Array.from({length: Math.min(total, 15)}, (_, offset) => {
+    const index = offset + 1;
+    const state = saved.has(index) ? 'done' : failed && index === failedScene ? 'failed' : 'pending';
+    const label = state === 'done' ? 'บันทึกแล้ว' : state === 'failed' ? 'หยุดที่นี่' : 'ยังไม่เริ่ม';
+    return `<span class="story-recovery-scene ${state}" title="ภาพฉาก ${index}: ${label}">ฉาก ${index} · ${label}</span>`;
+  }).join('');
+  const failureLabel = failedScene
+    ? `ภาพฉาก ${failedScene}${recovery.send_not_started ? ' • ยังไม่ส่งคำขอ' : ' • ต้องตรวจสอบ'}`
+    : stage === 'chatgpt' ? 'ขั้นเชื่อมต่อหรือสร้างบท' : stage === 'voice' ? 'ขั้นเสียงพากย์'
+      : stage === 'video' ? 'ขั้นประกอบวิดีโอ' : 'ขั้นทำงานล่าสุด';
+  return `<div class="story-recovery-timeline" aria-label="สถานะขั้นตอนงาน">
+    <div class="story-recovery-step ${analysisReady ? 'done' : failed && stage === 'chatgpt' && !failedScene ? 'failed' : 'pending'}"><b>บทและรายละเอียด</b><span>${analysisReady ? 'บันทึกแล้ว' : 'ยังไม่ยืนยันว่าครบ'}</span></div>
+    <div class="story-recovery-step ${verifiedCount === total && total ? 'done' : 'pending'}"><b>ภาพประกอบ</b><span>บันทึกแล้ว ${countLabel}</span></div>
+    ${imageChips ? `<div class="story-recovery-scenes">${imageChips}</div>` : ''}
+    ${failed ? `<div class="story-recovery-step failed"><b>จุดที่หยุด</b><span>${escapeHtml(failureLabel)}</span></div>` : ''}
+    <div class="story-recovery-step ${job.voice_status === 'ready' ? 'done' : 'pending'}"><b>เสียงและวิดีโอ</b><span>${job.voice_status === 'ready' ? 'เสียงบันทึกแล้ว' : 'ยังไม่ถึงขั้นนี้หรือยังไม่เสร็จ'}</span></div>
+  </div>`;
+}
+
 function renderStories(stories, storyProgress = {}) {
   renderLongVideoRecovery(stories, storyProgress);
   const list = $('#story-list');
@@ -675,12 +706,12 @@ function renderStories(stories, storyProgress = {}) {
     const stage = stageLabels[String(job.pipeline_stage || '').toLowerCase()] || 'ทำ Story Shorts ต่อ';
     const error = String(job.last_error || '').trim();
     const creativeLabel=window.creativeJobLabel?.(job)||'';
-    const badge = isActive ? '<span class="story-recovery-badge running">กำลังทำงาน</span>' : failed ? '<span class="story-recovery-badge failed">ต้องตรวจสอบ</span>' : '<span class="story-recovery-badge paused">พร้อมทำต่อ</span>';
+    const badge = isActive ? '<span class="story-recovery-badge running">กำลังทำงาน</span>' : failed ? '<span class="story-recovery-badge failed">หยุดที่ขั้นหนึ่ง</span>' : '<span class="story-recovery-badge paused">พร้อมทำต่อ</span>';
     const action = isActive
       ? '<button class="button secondary compact" disabled>กำลังดำเนินการ</button>'
       : `<button class="button primary compact" data-retry-story="${escapeHtml(job.id)}">↻ ทำต่อจากจุดเดิม</button>`;
     const dismiss = isActive ? '' : `<button class="button danger compact" data-dismiss-story="${escapeHtml(job.id)}" data-story-title="${escapeHtml(job.title)}">ยกเลิกงานนี้</button>`;
-    return `<article class="story-recovery-item ${failed ? 'failed' : ''}"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title)}</h3></div>${badge}</header><p>${escapeHtml(job.topic || job.description || 'รอข้อมูลเรื่อง')}</p>${creativeLabel?`<p class="creative-saved-label">${escapeHtml(creativeLabel)}</p>`:''}<div class="story-recovery-checkpoint"><b>Checkpoint: ${escapeHtml(stage)}</b><span>ภาพเดิม ${Number(job.image_count || 0)}/${Number(job.scene_count || 0)} • ${escapeHtml(mode)}</span></div>${error ? `<div class="story-recovery-error">${escapeHtml(error)}</div>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button>${dismiss}${action}${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
+    return `<article class="story-recovery-item"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title)}</h3></div>${badge}</header><p>${escapeHtml(job.topic || job.description || 'รอข้อมูลเรื่อง')}</p>${creativeLabel?`<p class="creative-saved-label">${escapeHtml(creativeLabel)}</p>`:''}<div class="story-recovery-checkpoint"><b>Checkpoint: ${escapeHtml(stage)}</b><span>${escapeHtml(mode)}</span></div>${storyRecoveryTimeline(job, failed)}${error ? `<details class="story-recovery-error"><summary>ดูรายละเอียดข้อผิดพลาด</summary><p>${escapeHtml(error)}</p></details>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button>${dismiss}${action}${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
   }).join('');
 }
 

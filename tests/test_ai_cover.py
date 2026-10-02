@@ -35,6 +35,31 @@ class AICoverTests(unittest.TestCase):
         self.assertEqual(row['send_diagnostics'], {'gesture_phase':'released','release_on_send_target':True})
         self.assertFalse(self.service.completion(self.job)['ready'])
 
+    def test_cover_send_records_target_motion_without_prompt_or_coordinates(self):
+        rid = self.claim()
+        self.service.event(rid, dict(phase='running', send_state='unconfirmed', send_diagnostics={
+            'gesture_phase':'released', 'dispatch_completed':True, 'trusted_click_seen':False,
+            'send_target_strategy':'center', 'target_changed':True,
+            'target_geometry_changes_during_gesture':1,
+            'target_node_changes_prepress':0,
+            'click_events':[{'type':'pointerdown','trusted':True,'on_target':True,
+                             'elapsed_ms':18,'phase':'pressed','x':401,'prompt':'private'},
+                            {'type':'mouseup','trusted':True,'on_target':False,
+                             'elapsed_ms':88,'phase':'released','y':812},
+                            {'type':'unknown','prompt':'private'}],
+            'prompt':'private','x':401}))
+        detail = self.service.get(rid)['send_diagnostics']
+        self.assertEqual(detail['send_target_strategy'],'center')
+        self.assertTrue(detail['target_changed'])
+        self.assertEqual(detail['target_geometry_changes_during_gesture'],1)
+        self.assertEqual(detail['click_events'],[
+            {'type':'pointerdown','trusted':True,'on_target':True,'elapsed_ms':18,'phase':'pressed'},
+            {'type':'mouseup','trusted':True,'on_target':False,'elapsed_ms':88,'phase':'released'}])
+        self.assertNotIn('prompt',repr(detail))
+        self.assertNotIn("'x'",repr(detail))
+        self.assertNotIn("'y'",repr(detail))
+        self.assertEqual(self.service.get(rid)['phase'],'running')
+
     def test_collector_diagnostics_are_bounded_not_completion(self):
         rid=self.claim()
         state=dict(stage='stabilizing',owned=True,candidates=1,loaded=1,url='omit',prompt='omit')
@@ -59,6 +84,23 @@ class AICoverTests(unittest.TestCase):
         self.assertEqual(row['phase'],'needs_review')
         self.assertIn('พบภาพแล้วแต่ยังบันทึกไฟล์ไม่สำเร็จ',row['message'])
         self.assertEqual(self.manifest.read()['video_status'],'ready')
+
+    def test_worker_timeout_identifies_unconfirmed_send_before_image_reader(self):
+        rid=self.claim()
+        self.service.event(rid,dict(phase='running',send_state='unconfirmed',active=False,
+            send_diagnostics={'dispatch_completed':True,'trusted_click_seen':False,
+                              'gesture_phase':'released'}))
+        cancel=SimpleNamespace(is_set=lambda:False,wait=lambda _:None)
+        ticks=iter([0,361])
+        with patch('ui.ai_cover.time',SimpleNamespace(monotonic=lambda:next(ticks))):
+            finish_ai_cover(SimpleNamespace(bridge=SimpleNamespace(ai_covers=self.service)),
+                            self.job,cancel,lambda _:None)
+        row=self.service.get(rid)
+        self.assertEqual(row['phase'],'needs_review')
+        self.assertIn('ยังยืนยันไม่ได้ว่า ChatGPT รับคำสั่งสร้างปก',row['message'])
+        self.assertNotIn('ตัวอ่านภาพ',row['message'])
+        self.assertEqual(self.manifest.read()['video_status'],'ready')
+        self.assertEqual(len(self.service.store.read()),1)
 
     def test_one_selected_cover_from_two_candidates_saves_once_and_preserves_final(self):
         rid=self.claim()
