@@ -123,6 +123,7 @@ def safe_ai_image_observation(payload: Mapping[str, object]) -> dict[str, object
         return {}
     result = {}
     for key, lower, upper in (("scene_index", 1, 50), ("candidate_count", 0, 20),
+                              ("progress_count", 0, 20),
                               ("refresh_attempts", 0, 3), ("refreshed_check_ms", 0, 3_600_000),
                               ("stable_samples", 0, 100_000)):
         value = payload.get(key)
@@ -147,6 +148,9 @@ def safe_ai_image_observation(payload: Mapping[str, object]) -> dict[str, object
             result[key] = value
     if type(payload.get("response_active")) is bool:
         result["response_active"] = payload["response_active"]
+    for key in ("stop_visible", "stale_progress"):
+        if type(payload.get(key)) is bool:
+            result[key] = payload[key]
     signature = payload.get("response_signature")
     if isinstance(signature, str) and re.fullmatch(r"[0-9a-f]{1,16}", signature):
         result["response_signature"] = signature

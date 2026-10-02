@@ -30,7 +30,7 @@ SUITES = {
         "syntax": ["web_ui/app.js"],
     },
     "story-image-result": {
-        "python": [],
+        "python": ["test_ai_send_diagnostics_bridge.py"],
         "node": ["tests/chatgpt_semantic_turns_435.cjs"],
         "syntax": ["browser_extension/chatgpt.js"],
     },
@@ -112,7 +112,8 @@ FILE_SUITES = {
     "tests/story_recovery_timeline.cjs": ("story-recovery-ui",),
     "browser_extension/background.js": ("extension-update", "story-dispatch"),
     "core/local_bridge.py": ("extension-update", "refactor", "story-dispatch"),
-    "core/bridge_diagnostics.py": ("refactor",),
+    "core/bridge_diagnostics.py": ("refactor", "story-image-result"),
+    "tests/test_ai_send_diagnostics_bridge.py": ("story-image-result",),
     "core/bridge_types.py": ("refactor",),
     "browser_extension/src/core/timeout.js": ("refactor",),
     "browser_extension/src/background/job-router.js": ("refactor",),

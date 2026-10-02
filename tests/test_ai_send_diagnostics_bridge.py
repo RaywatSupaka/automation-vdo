@@ -91,6 +91,7 @@ class AISendDiagnosticsBridgeTests(unittest.TestCase):
     def test_story_image_wait_facts_survive_http_status_and_durable_trace(self):
         facts = {"scene_index": 2, "result_reason": "waiting_response", "candidate_count": 0,
                  "response_active": False, "response_signature": "abc123",
+                 "stop_visible": False, "progress_count": 1, "stale_progress": False,
                  "refresh_outcome": "rejected_preclaim", "refresh_reason": "live_guard_changed",
                  "refresh_attempts": 1}
         response = self.progress("waiting_for_image", **facts, prompt="PRIVATE PROMPT")
@@ -110,6 +111,11 @@ class AISendDiagnosticsBridgeTests(unittest.TestCase):
         self.assertEqual(facts, {})
         self.assertEqual(LocalBridge._safe_ai_image_observation({
             "step": "ai_send_dispatched", "scene_index": 2, "candidate_count": 1}), {})
+
+    def test_story_image_busy_sources_reject_unbounded_values(self):
+        self.assertEqual(LocalBridge._safe_ai_image_observation({
+            "step": "waiting_for_image", "stop_visible": "false", "progress_count": 999,
+            "stale_progress": 1, "prompt": "PRIVATE PROMPT"}), {})
 
     def test_post_refresh_recovery_identity_survives_durable_trace_without_prompt(self):
         facts = {"scene_index": 4, "recovery_kind": "missing_after_refresh", "recovery_phase": "checking",
