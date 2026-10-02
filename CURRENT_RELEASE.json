@@ -1,12 +1,14 @@
 {
   "cover_heartbeat_500": {
-    "status": "candidate_source_only_activation_pending",
+    "status": "paired_installed_story_scene2_verified_cover_pending",
     "paired_extension_version": "0.15.500",
     "desktop_launcher_version": "0.15.500.0",
     "scope": "Passively collect an exact owned cover after an uncertain Send; accept a stable loaded cover behind a stale Stop; report bounded liveness without replaying the provider request; clear only an exact owned unsent Story reference before checkpoint reattachment",
-    "installed_activation_verified": false,
+    "installed_activation_verified": true,
     "provider_output_verified": false,
-    "live_run_observation": "Current SmartFlow and Chrome remain on paired 498 while the new Story queue is paused after a separate pre-Send scene-2 error. Version 500 has offline fixture coverage only. The root already contains a different immutable 499 package, so this change advances to 500."
+    "live_run_observation": "Root SmartFlow launcher 0.15.500.0 reopened in DEV MODE with the original Chrome Extension ID connected at 0.15.500. Existing Story A9425B resumed from its saved scene 1 and saved scene 2 under 500; the job continued to scene 3. Cover heartbeat still has fixture evidence only. The root already contains a different immutable 499 package, so this change advanced to 500.",
+    "main_sha256": "3A8FB2BDBD6137BF1B76699B4C12C8C6C69F76C78924F2646A7CA4CE4B4E0798",
+    "extension_zip_sha256": "D5CFB5D06585BA435BE357D10957112B4D6DC9F65DD866F1CC3F96476E285138"
   },
   "story_image_prior_run_guard_498": {
     "status": "paired_installed_connected_cover_review_preserved",
@@ -1712,7 +1714,7 @@
     "flow_continuous_348_verification": "Full1321 passed251.635s; focused10 passed2.029s. Flow rounds3-5 both providers, same-image/helper dedup, legacy budget-only recovery, 45-event audit and ordinary Story limits verified.37-file package parity. Installed348 E2E pending; user347 engine untouched. docs/reports/flow-continuous-repair-348.md",
     "flow_same_image_repair_346_verification": "Full1318 ran221.235s:1316 passed, one old widgetless fixture and one blueprint version literal failed; both corrected without production changes, final focused33 passed0.740s including failed cases. Prior focused34 passed12.587s, desktop60 passed1.301s.27JSsyntax and37-file source/folder/ZIP parity. Same-image/provider text repair first, validated original reference/new prompt enter fresh Flow project with request-scoped receipt; exact owned Story detail. Existing in-flight alternatives preserved. Installed345 userengine40664 not restarted/reloaded, no Codex provider generation. Installed346 E2E pending; docs/reports/flow-same-image-repair-346.md",
     "resume_routing_345_verification": "Final1309 passed196.738s; focused68 passed9.850s; new real-source routing/reader19cases plus Gemini332owner25 and motion344completion24.27JS syntax;37-file source/folder/ZIP parity. Readonly actual A5F176 routes scene10 to saved chat;32BFBF original request hash b27b60a3. Exact pending request routing, Gemini first URL/container remount ownership, shared stop reasons and truthful stage logs. Userengine46632/344 idle queuepaused untouched; tests exited19065closed. No provider generation. Installed345 E2E pending. docs/reports/resume-routing-345.md.",
-    "status": "candidate_cover_heartbeat_500_activation_pending",
+    "status": "candidate_cover_heartbeat_500_provider_output_pending",
     "extension_source": "browser_extension",
     "desktop_version_contract": "core/local_bridge.py",
     "install_directory": "deliverables/SmartFlow_AI_Extension_0.15.500",

@@ -1,6 +1,6 @@
 # SmartFlow AI — Codex Quick Blueprint
 
-Source candidate 0.15.500 on `feature/webview2-prototype` adds passive post-video cover liveness and result collection plus owned unsent Story reference cleanup; live app/Chrome remain paired at 498 until activation. An older, different immutable 499 package already exists in the main root. See `PROGRAM_BLUEPRINT.md` “AI cover send diagnostics” and `PROJECT_STATE.md` top. The queued Story A9425B stopped before scene-2 Send; its scene-1 checkpoint is preserved.
+Paired 0.15.500 on `feature/webview2-prototype` adds passive post-video cover liveness and result collection plus owned unsent Story reference cleanup. Root SmartFlow and the original Chrome Extension ID connected at 500 in DEV MODE; queued Story A9425B resumed from saved scene 1 and saved scene 2. Cover heartbeat awaits live provider output. An older, different immutable 499 package remains in the main root. See `PROGRAM_BLUEPRINT.md` “AI cover send diagnostics” and `PROJECT_STATE.md` top.
 
 รุ่น `0.15.497` เป็น candidate แยกสำหรับรับภาพ Story ที่เสร็จแล้วแม้ตัวบ่งชี้ progress ค้าง โดยยังตรวจ Stop/เจ้าของผลและไม่ส่งซ้ำ; โปรแกรมและ Chrome ที่เปิดอยู่ยังใช้ 496 ระหว่างงาน `STORY-20261002-E25264` ทำงาน.
 
