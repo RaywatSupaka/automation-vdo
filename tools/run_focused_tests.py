@@ -116,6 +116,7 @@ FILE_SUITES = {
     "tests/test_ai_cover_queue_gate.py": ("refactor",),
     "tests/test_extension_modular_architecture.py": ("refactor",),
     "tests/gemini_discovery_harness.js": ("refactor",),
+    "tests/result_readiness_392.cjs": ("refactor",),
     "tests/test_audit_progress.py": ("test-runner",),
     "tools/run_audit_checks.py": ("test-runner",),
     "tools/build_installer_one_click.py": ("installer",),
