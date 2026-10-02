@@ -7,6 +7,7 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature ai-cover
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-dispatch
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-recovery-ui
+.venv\Scripts\python.exe tools\run_focused_tests.py --feature story-image-result
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature extension-update
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature release-contract
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature refactor
@@ -20,6 +21,8 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 `story-dispatch` checks duplicate command protection, exact saved-conversation tab adoption on Resume, ambiguous-tab stop, desktop URL routing and heartbeat dispatch ownership, plus read-only ChatGPT bootstrap tab selection, stale drafts, document replacement, retained-reference reuse for a prepared unsent Story draft across unified composer forms, exact attachment count before Send, and the unchanged Gemini tab route.
 
 `story-recovery-ui` checks durable saved-scene evidence, bounded trace fallback for a later reference error without a scene number, and the Story recovery timeline shown in the desktop UI. It does not send provider requests or alter saved jobs.
+
+`story-image-result` checks owned ChatGPT image result collection when a stale progress marker remains after the completed image, while a real Stop button still blocks collection. It makes no provider request.
 
 `membership` checks the development token gate and membership backend plus JavaScript syntax. The optional real HTML login check needs Playwright and its Chromium browser: `node tests/membership_ui.cjs`.
 

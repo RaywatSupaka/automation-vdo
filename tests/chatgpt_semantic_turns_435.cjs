@@ -195,6 +195,37 @@ let checks=0;const eq=(a,b,label)=>{assert.deepEqual(a,b,label);checks++;};
   // monitor. Empty live composer is not treated as proof of acceptance.
   await page.addScriptTag({content:part('  function createStoryImageWaitMonitor(', '  async function recoverOwnedStoryImage(')
     +'recoverOwnedStoryImage=('+part('  async function recoverOwnedStoryImage(', '  async function claimUnavailablePendingStep(').trim()+');'});
+  const staleProgress=await page.evaluate(async()=>{
+    mount(true);loadImages();
+    chatGPTConversationFrames()[1].insertAdjacentHTML('beforeend','<div role="progressbar">Finished image spinner</div>');
+    const originalNow=Date.now;clock=originalNow();Date.now=()=>clock;
+    try{
+      const monitor=createStoryImageWaitMonitor(prompt,{prompt,conversation_url:location.href},5,4);
+      const initial=await monitor.observe();
+      clock+=61000;
+      const settled=await monitor.observe();
+      busy=true;
+      const stopped=await monitor.observe();
+      return {initial:initial.busy,settled:settled.busy,stale:settled.staleProgress===true,
+        stopped:stopped.busy,reason:settled.state.reason,dispatches};
+    }finally{busy=false;Date.now=originalNow;}
+  });
+  eq(staleProgress,{initial:true,settled:false,stale:true,stopped:true,reason:'image_ready',dispatches:0},
+    'stable owned completed image may outlive a stale progress marker, but Stop still vetoes and nothing is sent');
+  const recoveredImage=await page.evaluate(async()=>{
+    mount(true);loadImages();
+    chatGPTConversationFrames()[1].insertAdjacentHTML('beforeend','<div role="progressbar">Stale spinner</div>');
+    const originalNow=Date.now;clock=originalNow();const initial=clock;Date.now=()=>clock;
+    try{
+      const proof={prompt,conversation_url:location.href,request_turn_id:'fallback-turn-0:0:user',
+        request_message_id:'owned-user'};
+      const monitor=createStoryImageWaitMonitor(prompt,proof,5,4);
+      const image=await recoverOwnedStoryImage(proof,null,{monitor,scene_index:5,completedCount:4});
+      return {image:!!image,elapsed:clock-initial,dispatches};
+    }finally{Date.now=originalNow;}
+  });
+  eq(recoveredImage,{image:true,elapsed:62000,dispatches:0},
+    'result-only recovery collects the same stable image with no second provider request');
   const timeoutRecovery=await page.evaluate(async()=>{
     mount();document.querySelector('.whitespace-pre-wrap').textContent='previous scene already saved';
     document.querySelector('[data-markdown-text-style]').textContent='previous response';

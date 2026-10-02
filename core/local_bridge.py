@@ -16,7 +16,7 @@ from core.bridge_diagnostics import safe_ai_send_diagnostics, safe_ai_image_obse
 
 
 class LocalBridge:
-    REQUIRED_EXTENSION_VERSION = "0.15.496"
+    REQUIRED_EXTENSION_VERSION = "0.15.497"
     COMMAND_LEASE_SECONDS = 180
     FLOW_RUN_ACTIONS = {
         "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow",

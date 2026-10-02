@@ -29,6 +29,11 @@ SUITES = {
         "node": ["tests/story_recovery_timeline.cjs"],
         "syntax": ["web_ui/app.js"],
     },
+    "story-image-result": {
+        "python": [],
+        "node": ["tests/chatgpt_semantic_turns_435.cjs"],
+        "syntax": ["browser_extension/chatgpt.js"],
+    },
     "test-runner": {
         "python": ["test_audit_progress.py"],
         "node": [],
@@ -86,7 +91,8 @@ FILE_SUITES = {
     "tests/test_story_duplicate_dispatch.py": ("story-dispatch",),
     "tests/story_bootstrap_tab_guard.cjs": ("story-dispatch",),
     "tests/story_retained_reference_resume.cjs": ("story-dispatch",),
-    "browser_extension/chatgpt.js": ("story-dispatch",),
+    "browser_extension/chatgpt.js": ("story-dispatch", "story-image-result"),
+    "tests/chatgpt_semantic_turns_435.cjs": ("story-image-result",),
     "RUN_DEV.bat": ("membership",),
     "core/membership.py": ("membership",),
     "web_ui/membership.js": ("membership",),

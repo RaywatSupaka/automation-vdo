@@ -3976,7 +3976,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       ...(frame.matches?.(progressSelector)?[frame]:[]),...frame.querySelectorAll(progressSelector)
     ]))].filter(node=>visible(node));
     // A virtualized/missing request node must not hide the provider's Stop.
-    const busy=Boolean(stopButtonVisible() || progress.length);
+    const stopVisible=stopButtonVisible();
+    const busy=Boolean(stopVisible || progress.length);
     const missingEvidence=state.reason==='request_missing'?storyImageMissingRequestEvidence(prompt,proof):null;
     const missingRequestOwned=missingEvidence!==null;
     // Stable asset identity excludes signed URL renewals and DOM replacement.
@@ -4000,7 +4001,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       :!busy && state.images.some(i=>i.complete && (!i.naturalWidth || !i.naturalHeight))?'image_load_failed'
       :!busy && state.reason==='no_image' && completedControl && answer && !String(answer.textContent||'').trim()
         ?'empty_completed_response':!busy && missingRequestOwned?'request_dom_missing':'';
-    return {state,request,busy,completedControl:completedControl||serviceError,missingRequestOwned,stalledReason,
+    return {state,request,busy,stopVisible,progressCount:progress.length,
+      completedControl:completedControl||serviceError,missingRequestOwned,stalledReason,
       failureText:serviceError?failureText:'',signature:(hash>>>0).toString(16)};
   }
 
@@ -4237,6 +4239,16 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         return observation;
       }
       if(observation.signature!==signature){signature=observation.signature;changedAt=now;stableSamples=0;}
+      // ChatGPT can leave a progress marker mounted after the owned image and
+      // its completion controls are ready. A real Stop button still vetoes.
+      // Require a full-size unchanged image and unchanged marker for a minute
+      // before treating only that stale marker as finished.
+      const image=observation.state.images[0];
+      const staleProgress=observation.state.reason==='image_ready' && !observation.stopVisible
+        && observation.progressCount>0 && observation.completedControl
+        && image?.complete && image.naturalWidth>=256 && image.naturalHeight>=256
+        && now-changedAt>=60000;
+      if(staleProgress){observation.busy=false;observation.staleProgress=true;}
       stableSamples=observation.stalledReason&&!observation.busy?Math.min(100,stableSamples+1):0;
       if(observation.busy){if(activeSince===null)activeSince=now;activeSamples=Math.min(100,activeSamples+1);}
       else {activeSince=null;activeSamples=0;}
@@ -4298,6 +4310,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         await report(checking&&!observation.busy?'image_refresh_check':'waiting_for_image',`ฉาก ${sceneIndex} • ${stage} • รอต่อและไม่ส่งสร้างซ้ำ`,completedCount,
           {scene_index:sceneIndex,result_reason:observation.state.reason,candidate_count:observation.state.images.length,
             response_active:observation.busy,response_signature:signature,
+            stop_visible:observation.stopVisible,progress_count:observation.progressCount,
+            stale_progress:observation.staleProgress===true,
             ...(checking?{recovery_phase:'checking',send_nonce:refreshedReceipt.send_nonce,
               refreshed_check_ms:Math.max(0,now-(postReadySince??now)),stable_samples:postReadySamples}:{}),
             refresh_outcome:refreshOutcome,refresh_reason:refreshReason,refresh_attempts:refreshRejects});
@@ -4488,8 +4502,9 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       if(state.reason==='image_ready' && !monitored?.busy && !stopButtonVisible()){
         const key=storyImageAssetKey(state.images[0]);await sleep(2000);assertNotCancelled();
         const stable=chatGPTStoryImageSnapshot(boundProof.prompt,new Set(),boundProof);
+        const finalObservation=monitor?await monitor.observe():storyImageWaitObservation(boundProof.prompt,boundProof);
         if(location.href.split(/[?#]/)[0]===boundProof.conversation_url && stable.reason==='image_ready' && !stopButtonVisible()
-            && (!monitor || !storyImageWaitObservation(boundProof.prompt,boundProof).busy)
+            && !finalObservation.busy
             && storyImageAssetKey(stable.images[0])===key)return stable.images[0];
       }else if(!['request_missing','conversation_pending','waiting_response','no_image','image_loading','image_ready'].includes(state.reason))return null;
       if(monitor || sample<6)await sleep(5000);

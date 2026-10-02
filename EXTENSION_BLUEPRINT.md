@@ -1,5 +1,9 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
+## Runtime candidate `0.15.497`: completed Story image with a stale ChatGPT progress marker
+
+The Story result monitor retains exact conversation, request and image ownership. When the current response contains one full-size completed image and its completion controls but a progress marker remains mounted, it observes the same image and marker for at least 60 seconds. If no Stop button is visible, it treats only that stale marker as finished and collects the existing image without a new Send. A visible Stop, changed image or changed marker continues to block collection. Progress reports include the separate Stop and progress-marker counts so a later live run can distinguish the cause. This candidate is source-tested only; the active 0.15.496 job and installed Extension have not been changed.
+
 ## เวอร์ชัน Runtime ปัจจุบัน: `0.15.496` — one composer scope and exact reference count
 
 The 495 live Story completed all ten images and its local video, but the resumed scene-5 request counted two composer attachments for one expected reference before Send. The retained-reference preflight and upload path used different composer-shell fallbacks when the editor lacked a closest form. Version 496 uses the same shell resolver for attachment detection, retained-reference proof and upload. A Story reference-image request now stops before Send if the composer attachment count is not exactly the expected source count or upload is busy/failed. The paired DEV desktop and original Chrome Extension ID connected at 496; this new guard has focused fixtures but no live provider request yet.

@@ -1,5 +1,9 @@
 # SmartFlow AI — Program Blueprint
 
+## Story image result under a stale progress marker (0.15.497 candidate, 2026-10-02)
+
+For an accepted Story image request, the content script still resolves the exact conversation, request turn and owned image. A full-size completed image with current-turn completion controls can be collected after its image and progress marker remain unchanged for 60 seconds, provided no Stop button is visible. This is result-only recovery; it neither sends a new prompt nor presses Stop. A changing image/marker or visible Stop continues to block collection. Trace details distinguish `stop_visible`, `progress_count` and `stale_progress`. The installed 496 live job E25264 showed `image_ready` but `response_active=true` at scene 5; its exact busy signal has not yet been measured, so live recovery for 497 is unverified.
+
 ## Story image composer scope and attachment count (0.15.496, 2026-10-02)
 
 The ChatGPT retained-reference check, attachment counter and uploader now resolve the same composer shell, including the unified composer form when the editor is not nested in a form. A prepared unsent Story image can reuse its one named previous-scene attachment without another upload. Before any Story reference-image Send, the audit requires exactly the requested attachment count and no busy or failed upload; excess references stop before Send with a logged context conflict. The 495 live run produced a ready ten-scene Story and local video, but scene 5 had two attachment nodes for one source and therefore does not prove correct reuse. Paired 496 is installed and connected; this specific branch is not yet live-proven.

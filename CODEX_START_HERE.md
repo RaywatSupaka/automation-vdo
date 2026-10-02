@@ -1,5 +1,7 @@
 # SmartFlow AI — Codex Quick Blueprint
 
+รุ่น `0.15.497` เป็น candidate แยกสำหรับรับภาพ Story ที่เสร็จแล้วแม้ตัวบ่งชี้ progress ค้าง โดยยังตรวจ Stop/เจ้าของผลและไม่ส่งซ้ำ; โปรแกรมและ Chrome ที่เปิดอยู่ยังใช้ 496 ระหว่างงาน `STORY-20261002-E25264` ทำงาน.
+
 รุ่น `0.15.496` ติดตั้งและเชื่อมต่อใน DEV MODE ใช้กรอบช่องพิมพ์เดียวกันเพื่อตรวจ/แนบรูปอ้างอิง Story และหยุดก่อนส่งถ้าจำนวนรูปไม่ตรง; ดู `PROGRAM_BLUEPRINT.md` หัวข้อ Story image composer scope and attachment count และรายงาน 496. งานจริง CB0614 เสร็จภายใต้ 495 แต่ฉาก 5 นับรูปแนบ 2 ต่อคำขอ 1; ผลจริงของกติกา 496 ยังไม่ยืนยัน.
 
 รุ่น `0.15.492` เปิดใช้และเชื่อมต่อแล้วใน DEV MODE: Story ใหม่จัดการร่างเก่าที่ถูกคืนมาในแท็บ ChatGPT ซึ่งโปรแกรมเพิ่งเปิดเอง โดยล้างเฉพาะข้อความในแท็บงานใหม่ ตรวจว่าหน้าว่างคงที่ แล้วเริ่มคำขอหนึ่งครั้ง หากแท็บที่เลือกไว้เปลี่ยนระหว่างตรวจจะย้ายไปแท็บงานใหม่โดยไม่แตะแท็บเดิม ไม่ล้างงานที่มีไฟล์แนบ บทสนทนา หรือกำลังสร้างผล และไม่ส่งซ้ำงาน Resume. ยังไม่ลอง Story ใหม่กับผู้ให้บริการ; ดู `PROGRAM_BLUEPRINT.md` หัวข้อ Automatic Story bootstrap draft recovery และรายงาน 492.
@@ -808,4 +810,3 @@ Invoke-RestMethod http://127.0.0.1:8765/health
 
 Story ChatGPT preference-pair response selects one loaded image locally instead of timing out on multiple_images. Exact request/old-asset/stability guards retained, restore supported. No preference vote or new Send. Read docs/reports/story-image-comparison-334.md. Installed E2E pending;333 lifecycle remains in force.
 471 CANONICAL INTEGRATED: start docs/reports/logic-version-map-471.md for per-logic observed versions and limits, then editorial-handoff-471.md for2994AFroot cause and handoff. Main now paired471; installed activation and actual Final unverified. Do not reapply staged patches, rerun unchanged tests, infer old current-version headings as authority or reactivate monitoring. User owns Extension update; no installer.
-
