@@ -9,6 +9,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 SUITES = {
+    "webview2-prototype": {
+        "python": ["test_provider_prototype.py"],
+        "node": [],
+        "syntax": [],
+    },
     "ai-cover": {
         "python": ["test_ai_cover.py"],
         "node": [],
@@ -79,6 +84,8 @@ SUITES = {
 }
 
 FILE_SUITES = {
+    "desktop/provider_prototype.py": ("webview2-prototype",),
+    "tests/test_provider_prototype.py": ("webview2-prototype",),
     "core/ai_cover.py": ("ai-cover",),
     "ui/ai_cover.py": ("ai-cover",),
     "tests/test_ai_cover.py": ("ai-cover",),

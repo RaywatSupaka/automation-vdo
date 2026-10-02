@@ -13,10 +13,13 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature refactor
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature test-runner
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature installer
+.venv\Scripts\python.exe tools\run_focused_tests.py --feature webview2-prototype
 .venv\Scripts\python.exe tools\run_focused_tests.py --changed
 ```
 
 `refactor` checks extracted UI and bridge helpers, browser module imports, and the paired source preflight without contacting a provider.
+
+`webview2-prototype` checks profile separation and bounded read-only diagnostics. Run `.venv\Scripts\python.exe -m desktop.provider_prototype --smoke` for an offline native WebView2 launch check. `--check-provider` opens a separate ChatGPT profile, observes page readiness only, and closes within 30 seconds; neither check sends a prompt.
 
 `story-dispatch` checks duplicate command protection, exact saved-conversation tab adoption on Resume, ambiguous-tab stop, desktop URL routing and heartbeat dispatch ownership, plus read-only ChatGPT bootstrap tab selection, stale drafts, document replacement, retained-reference reuse for a prepared unsent Story draft across unified composer forms, exact attachment count before Send, and the unchanged Gemini tab route.
 

@@ -1,5 +1,9 @@
 # SmartFlow AI — Program Blueprint
 
+## Isolated WebView2 provider lab (`feature/webview2-prototype`, 2026-10-02)
+
+`desktop/provider_prototype.py` is a separate developer entry point for a WebView2 provider window with an isolated profile and read-only page probe. It does not enter the SmartFlow Story route, expose a host send API, change the installed Chrome Extension, or touch job receipts. Its JSONL log keeps only coarse page/control signals. The offline native window and a read-only ChatGPT page load were verified; login, upload, provider Send/result and customer UI integration remain future steps. See `docs/plans/webview2-provider-prototype.md`.
+
 ## Prior-run accepted Story image request (0.15.498 installed, 2026-10-02)
 
 An empty ChatGPT response after refreshing the saved conversation does not prove that an accepted request from a cancelled earlier run failed. If the pending image receipt has an accepted or uncertain Send from a different run ID, result recovery retains the receipt and conversation and stops with `STORY_IMAGE_RECEIPT_REVIEW` before any reminder, new tab, or provider Send. The user can inspect the original conversation; no duplicate request is silently issued. Installed 497 did issue a second scene-6 request after an empty post-refresh result during Story E25264 Continue. Paired 498 is installed and connected; this exact guard has fixture evidence but no live provider result yet.
@@ -22,7 +26,7 @@ The Extension keeps a prepared receipt for an image request that failed before S
 
 ## Story recovery status in the desktop UI (2026-10-02)
 
-The Story Shorts recovery cards use `core/story_recovery_summary.py` and saved local scene files to show confirmed analysis, each saved image scene, the exact failed image scene, and later pending scenes separately. A job-level error no longer colors the whole card red. The last error is expandable; a `CHATGPT_IMAGE_RESULT_SEND_NOT_STARTED` scene is labeled as not sent, not as an image-generation failure. The summary is read-only and does not retry, clear, or change job checkpoints. `STORY-20261002-CB0614` has analysis ready and local images 1–2; its scene-3 pre-send check failed after an earlier prompt-ready observation. Three older Story jobs have no saved image checkpoints. A WebView2 provider prototype is planned in `docs/plans/webview2-provider-prototype.md`; branch `feature/webview2-prototype` has been created but no prototype code has been added.
+The Story Shorts recovery cards use `core/story_recovery_summary.py` and saved local scene files to show confirmed analysis, each saved image scene, the exact failed image scene, and later pending scenes separately. A job-level error no longer colors the whole card red. The last error is expandable; a `CHATGPT_IMAGE_RESULT_SEND_NOT_STARTED` scene is labeled as not sent, not as an image-generation failure. The summary is read-only and does not retry, clear, or change job checkpoints. `STORY-20261002-CB0614` has analysis ready and local images 1–2; its scene-3 pre-send check failed after an earlier prompt-ready observation. Three older Story jobs have no saved image checkpoints. A separate read-only WebView2 provider lab is tracked in `docs/plans/webview2-provider-prototype.md`.
 
 For a later image-reference error without a scene number in `last_error`, the summary reads a bounded tail of the same job's trace and identifies the latest failed image attempt. It does not infer success from the trace and suppresses a failure once a later image checkpoint is saved. This source change needs an idle desktop restart before the already-open window displays it.
 
