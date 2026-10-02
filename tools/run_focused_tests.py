@@ -31,7 +31,7 @@ SUITES = {
     },
     "story-image-result": {
         "python": ["test_ai_send_diagnostics_bridge.py"],
-        "node": ["tests/chatgpt_semantic_turns_435.cjs"],
+        "node": ["tests/chatgpt_semantic_turns_435.cjs", "tests/chatgpt_recovery_loop_456.cjs"],
         "syntax": ["browser_extension/chatgpt.js"],
     },
     "test-runner": {
@@ -93,6 +93,7 @@ FILE_SUITES = {
     "tests/story_retained_reference_resume.cjs": ("story-dispatch",),
     "browser_extension/chatgpt.js": ("story-dispatch", "story-image-result"),
     "tests/chatgpt_semantic_turns_435.cjs": ("story-image-result",),
+    "tests/chatgpt_recovery_loop_456.cjs": ("story-image-result",),
     "RUN_DEV.bat": ("membership",),
     "core/membership.py": ("membership",),
     "web_ui/membership.js": ("membership",),

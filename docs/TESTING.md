@@ -22,7 +22,7 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 
 `story-recovery-ui` checks durable saved-scene evidence, bounded trace fallback for a later reference error without a scene number, and the Story recovery timeline shown in the desktop UI. It does not send provider requests or alter saved jobs.
 
-`story-image-result` checks owned ChatGPT image result collection when a stale progress marker remains after the completed image, while a real Stop button still blocks collection. It makes no provider request.
+`story-image-result` checks owned ChatGPT image result collection when a stale progress marker remains after the completed image, while a real Stop button still blocks collection. It also checks that Continue never restarts an accepted prior-run image request after an empty post-refresh response. These fixtures make no provider request.
 
 `membership` checks the development token gate and membership backend plus JavaScript syntax. The optional real HTML login check needs Playwright and its Chromium browser: `node tests/membership_ui.cjs`.
 

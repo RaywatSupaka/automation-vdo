@@ -4637,6 +4637,14 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       canRetryCompleted(text) {return pkg.browser_recovery?.version===1 && retryableCompletedImageText(text);},
       async retryAfterRefresh(error) {
         if(error?.code!=='STORY_IMAGE_POST_REFRESH_REDO' || !postRefreshRedo || !matches(owned))throw error;
+        // A Continue after cancellation can observe the prior run's accepted
+        // request as an empty answer after reload. That absence cannot prove
+        // the provider did not finish it later. Preserve the old receipt and
+        // conversation; never allocate a second tab/Send across run IDs.
+        if(owned.run_id!==activeRunId && owned.send_nonce
+            && ['dispatching','accepted'].includes(owned.send_phase))
+          throw storyImageRecoveryError('STORY_IMAGE_RECEIPT_REVIEW',index,
+            'CHATGPT_IMAGE_PRIOR_RUN_PENDING • คำขอฉากนี้ถูกส่งในรอบงานก่อนแล้ว แต่ยังยืนยันผลไม่ได้ • เก็บคำขอและแชตเดิม ไม่ส่งซ้ำ');
         if(provider==='chatgpt' && owned.send_phase==='accepted' && !owned.same_chat_reminder
             && error.postRefreshEvidence?.result_reason==='waiting_response' && await reminder().prepare(error)){
           await report('image_reminder_pending',`ฉาก ${index} • คำขอและรูปเดิมอยู่ครบ กำลังส่งย้ำสั้น ๆ ในแชตเดิม`,completedCount,

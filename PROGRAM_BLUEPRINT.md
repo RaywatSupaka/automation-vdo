@@ -1,8 +1,12 @@
 # SmartFlow AI — Program Blueprint
 
-## Story image result under a stale progress marker (0.15.497 candidate, 2026-10-02)
+## Prior-run accepted Story image request (0.15.498 candidate, 2026-10-02)
 
-For an accepted Story image request, the content script still resolves the exact conversation, request turn and owned image. A full-size completed image with current-turn completion controls can be collected after its image and progress marker remain unchanged for 60 seconds, provided no Stop button is visible. This is result-only recovery; it neither sends a new prompt nor presses Stop. A changing image/marker or visible Stop continues to block collection. Trace details distinguish `stop_visible`, `progress_count` and `stale_progress`. The installed 496 live job E25264 showed `image_ready` but `response_active=true` at scene 5; its exact busy signal has not yet been measured, so live recovery for 497 is unverified.
+An empty ChatGPT response after refreshing the saved conversation does not prove that an accepted request from a cancelled earlier run failed. If the pending image receipt has an accepted or uncertain Send from a different run ID, result recovery retains the receipt and conversation and stops with `STORY_IMAGE_RECEIPT_REVIEW` before any reminder, new tab, or provider Send. The user can inspect the original conversation; no duplicate request is silently issued. Installed 497 did issue a second scene-6 request after an empty post-refresh result during Story E25264 Continue. Source498 is tested in isolation and awaits an idle activation.
+
+## Story image result under a stale progress marker (0.15.497 installed, 2026-10-02)
+
+For an accepted Story image request, the content script still resolves the exact conversation, request turn and owned image. A full-size completed image with current-turn completion controls can be collected after its image and progress marker remain unchanged for 60 seconds, provided no Stop button is visible. This is result-only recovery; it neither sends a new prompt nor presses Stop. A changing image/marker or visible Stop continues to block collection. Trace details distinguish `stop_visible`, `progress_count` and `stale_progress`. The installed 496 live job E25264 showed `image_ready` but `response_active=true` at scene 5; its exact busy signal was not measured. Scene 5 saved at the cancellation handoff and scene 6 later saved under 497, but the 497 cross-run retry duplicated the scene-6 request.
 
 ## Story image composer scope and attachment count (0.15.496, 2026-10-02)
 
