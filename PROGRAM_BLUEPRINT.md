@@ -1,8 +1,8 @@
 # SmartFlow AI — Program Blueprint
 
-## Prior-run accepted Story image request (0.15.498 candidate, 2026-10-02)
+## Prior-run accepted Story image request (0.15.498 installed, 2026-10-02)
 
-An empty ChatGPT response after refreshing the saved conversation does not prove that an accepted request from a cancelled earlier run failed. If the pending image receipt has an accepted or uncertain Send from a different run ID, result recovery retains the receipt and conversation and stops with `STORY_IMAGE_RECEIPT_REVIEW` before any reminder, new tab, or provider Send. The user can inspect the original conversation; no duplicate request is silently issued. Installed 497 did issue a second scene-6 request after an empty post-refresh result during Story E25264 Continue. Source498 is tested in isolation and awaits an idle activation.
+An empty ChatGPT response after refreshing the saved conversation does not prove that an accepted request from a cancelled earlier run failed. If the pending image receipt has an accepted or uncertain Send from a different run ID, result recovery retains the receipt and conversation and stops with `STORY_IMAGE_RECEIPT_REVIEW` before any reminder, new tab, or provider Send. The user can inspect the original conversation; no duplicate request is silently issued. Installed 497 did issue a second scene-6 request after an empty post-refresh result during Story E25264 Continue. Paired 498 is installed and connected; this exact guard has fixture evidence but no live provider result yet.
 
 ## Story image result under a stale progress marker (0.15.497 installed, 2026-10-02)
 

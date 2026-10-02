@@ -1,8 +1,8 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
-## Runtime candidate `0.15.498`: accepted Story image from an earlier run
+## Runtime installed `0.15.498`: accepted Story image from an earlier run
 
-When Continue reads an accepted or uncertain image receipt whose run ID differs from the active Story run, an empty response after refreshing the saved conversation is not proof of provider failure. The content script retains the original receipt and conversation and raises `STORY_IMAGE_RECEIPT_REVIEW` before any reminder or new image request. Installed 497 reopened a new tab and sent scene 6 again after exactly this cross-run gap in Story E25264. Source498 has focused tests but is not installed while that Story remains active.
+When Continue reads an accepted or uncertain image receipt whose run ID differs from the active Story run, an empty response after refreshing the saved conversation is not proof of provider failure. The content script retains the original receipt and conversation and raises `STORY_IMAGE_RECEIPT_REVIEW` before any reminder or new image request. Installed 497 reopened a new tab and sent scene 6 again after exactly this cross-run gap in Story E25264. Paired 498 is installed with the original Extension ID after the Story became idle. The guard has focused tests but no live provider output yet.
 
 ## Runtime installed `0.15.497`: completed Story image with a stale ChatGPT progress marker
 
