@@ -219,10 +219,16 @@ def main(argv=None):
     parser.add_argument("--version", help="Customer version; default is the next beta after CURRENT_RELEASE.json")
     parser.add_argument("--check-only", action="store_true", help="Run gates without creating customer release artifacts")
     parser.add_argument("--full-tests", action="store_true", help="Also run the full source test suite before building")
+    parser.add_argument("--repeat-full-tests-reason", help="Document why this build needs another full test run")
     parser.add_argument("--ffmpeg-dir", type=Path, default=ROOT / "build/ffmpeg-beta12/bin")
     parser.add_argument("--android-dir", type=Path, default=ROOT / "tools/scrcpy-win64-v4.1")
     parser.add_argument("--inno", type=Path, default=ROOT / "build/installer-tools/inno/ISCC.exe")
     args = parser.parse_args(argv)
+    if args.repeat_full_tests_reason is not None:
+        if not args.full_tests:
+            parser.error("--repeat-full-tests-reason requires --full-tests")
+        if not args.repeat_full_tests_reason.strip():
+            parser.error("--repeat-full-tests-reason must not be empty")
     try:
         if sys.platform != "win32":
             raise BuildGateError("The customer Setup can only be built on Windows.")
@@ -250,8 +256,10 @@ def main(argv=None):
             run([str(python), "-m", "unittest", "discover", "-s", "tests", "-p", filename],
                 f"Installer gate: {filename}")
         if args.full_tests:
-            run([str(python), "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
-                "Full source regression suite")
+            audit = [str(python), str(ROOT / "tools/run_audit_checks.py"), "--full"]
+            if args.repeat_full_tests_reason:
+                audit += ["--repeat-full", "--reason", args.repeat_full_tests_reason]
+            run(audit, "Full source regression suite")
         if args.check_only:
             print("CHECK ONLY: all gates passed; no installer was built.")
             return 0

@@ -1,0 +1,43 @@
+name: Focused checks
+
+on:
+  pull_request:
+  push:
+    branches: [dev]
+
+jobs:
+  changed-feature-tests:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Select changed feature suites
+        id: plan
+        shell: pwsh
+        env:
+          TEST_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          $selection = & python tools/run_focused_tests.py --changed --base $env:TEST_BASE --plan
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $selection | Write-Output
+          if ($selection -match '^SUITES=.+') { "run_tests=true" >> $env:GITHUB_OUTPUT }
+          else { "run_tests=false" >> $env:GITHUB_OUTPUT }
+      - uses: actions/setup-node@v4
+        if: steps.plan.outputs.run_tests == 'true'
+        with:
+          node-version: '20'
+      - name: Install Python dependencies
+        if: steps.plan.outputs.run_tests == 'true'
+        run: python -m pip install -r requirements.txt
+      - name: Run tests for changed features
+        if: steps.plan.outputs.run_tests == 'true'
+        shell: pwsh
+        env:
+          TEST_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python tools/run_focused_tests.py --changed --base $env:TEST_BASE
