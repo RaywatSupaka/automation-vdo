@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070914">
   <title>SmartFlow AI</title>
   <link rel="icon" type="image/png" href="/api/desktop/media?item_id=__brand__&kind=preview">
-  <link rel="stylesheet" href="/desktop/styles.css?v=421">
+  <link rel="stylesheet" href="/desktop/styles.css?v=424">
   <link rel="stylesheet" href="/desktop/workspace.css?v=2">
   <link rel="stylesheet" href="/desktop/studio.css?v=scene-plan-457">
   <link rel="stylesheet" href="/desktop/creation_queue.css?v=7">
@@ -355,6 +355,8 @@
         <section class="page" data-view="story">
           <section class="page-intro story-page-intro"><div><span class="eyebrow">STORY SHORTS STUDIO</span><h1>เล่าเรื่องให้ต่อเนื่องและน่าดู</h1><p>ใส่เพียงหัวข้อ หรือเพิ่มแนวทางที่ต้องการ แล้วระบบจะเขียนบท สร้างภาพ พากย์เสียง ใส่ซับ ทำปก 9:16 และประกอบคลิปจนเสร็จ</p></div><div class="story-intro-actions"><button class="button batch-launch-button" id="open-story-batch"><span>＋</span><b>สร้างหลายคลิป</b><small>ต่อคิวสูงสุด 10 คลิป</small></button><button class="button secondary" data-page="library">▶ ดูผลงานในคลังวิดีโอ</button></div></section>
           <div class="story-compose-shell">
+            <div class="story-view-tabs" role="tablist" aria-label="เลือกงานเล่าเรื่อง Shorts"><button type="button" id="story-new-tab" role="tab" aria-selected="true" aria-controls="story-new-panel">เริ่มเรื่องใหม่</button><button type="button" id="story-old-tab" role="tab" aria-selected="false" aria-controls="story-recovery-panel">งานเดิม <span id="story-recovery-tab-count">0</span></button></div>
+            <div id="story-new-panel" role="tabpanel" aria-labelledby="story-new-tab">
             <section class="panel story-form-panel">
               <header class="story-form-heading"><div><span class="eyebrow">CREATE NEW STORY</span><h2>เริ่มเรื่องใหม่</h2><p>กรอกหัวข้ออย่างเดียวก็เริ่มได้ รายละเอียดและรูปหลักเป็นตัวเลือกเสริม</p></div><span class="story-mode-chip">✦ ONE-CLICK</span></header>
               <div class="story-compose-grid">
@@ -362,27 +364,36 @@
                 <label class="field story-topic-field"><span><b>1</b> หัวข้อคลิป <small>จำเป็น</small></span><input id="story-topic" required aria-describedby="story-topic-error story-submit-hint" placeholder="เช่น หมาจรที่เฝ้ารอเจ้าของทุกเย็น"><small class="field-error" id="story-topic-error" hidden>ใส่หัวข้อเรื่องก่อนเริ่มสร้าง</small></label>
                   <label class="field story-detail-field"><span><b>2</b> รายละเอียดเรื่องและวิธีเล่าที่ต้องการ <small>ไม่ใส่ก็ได้</small></span><textarea id="story-text" rows="6" placeholder="เช่น เล่าแบบเพื่อนคุยกัน เปิดด้วยเหตุการณ์ชวนสงสัย ค่อย ๆ เผยปมและจบอย่างอบอุ่น — เว้นว่างให้ AI คิดจากหัวข้อ"></textarea></label>
                 </div>
-                <aside class="story-options-card">
-                  <div class="story-options-title"><span class="eyebrow">QUICK SETUP</span><h3>ตั้งค่าคลิป</h3></div>
-                  <label class="field"><span>สร้างภาพด้วย</span><select id="story-provider"><option value="chatgpt">ChatGPT Web</option><option value="gemini">Gemini Web</option></select></label>
-                  <label class="field locked-field"><span>โมเดลที่ Extension จะเลือก</span><select id="story-model"></select><small>ChatGPT ใช้โมเดลปัจจุบันอัตโนมัติ • Gemini เลือกได้</small></label>
-                  <label class="field"><span>เปลี่ยนภาพเป็นวิดีโอด้วย</span><select id="story-video-mode"><option value="image_motion">ภาพเคลื่อนไหวอัตโนมัติ • ไม่ใช้ Flow</option><option value="google_flow">Google Flow ทุกฉาก • ภาพละ 1 คลิป</option><option value="meta_ai">Meta AI ทุกฉาก (ทดลอง) • แนวตั้ง</option></select><small id="story-video-mode-note">รวดเร็ว ประกอบภาพด้วย Motion และ Transition ในเครื่อง</small></label>
-                  <label class="field range-field story-scene-control"><span>จำนวนฉาก <b id="story-scene-label">10 ฉาก</b></span><input id="story-scenes" type="range" min="6" max="15" value="10"><small>แนะนำ 8–10 ฉาก สำหรับ Shorts ที่ดูกระชับ</small></label>
-                  <div class="image-picker story-image-picker"><div><span>รูปหลัก</span><b id="story-image-name">ไม่บังคับ • ให้ AI สร้างเองได้</b></div><button class="button secondary compact" id="choose-story-image">เลือกรูป</button></div>
-                  <input type="hidden" id="story-image-path">
-                  <input type="file" id="story-image-file" accept="image/png,image/jpeg,image/webp" hidden>
-                  <div class="story-auto-list"><span>✓ เขียนบทและชื่อคลิป</span><span>✓ สร้างภาพธีมเดียวกันให้ครบก่อน</span><span id="story-video-mode-feature">✓ ประกอบภาพเป็นคลิปในเครื่อง</span><span>✓ พากย์เสียง ใส่ซับ และตัดต่อ</span><span>✓ สร้างปก Shorts แนวตั้ง 9:16</span></div>
+                <aside class="story-options-card" aria-label="ตั้งค่าคลิป Story Shorts">
+                  <div class="story-setup-header"><div class="story-options-title"><span class="eyebrow">QUICK SETUP</span><h3>ตั้งค่าคลิป</h3></div><span id="story-setup-position" aria-live="polite">ขั้นที่ 1 จาก 3</span></div>
+                  <div class="story-setup-progress" role="progressbar" aria-label="ตำแหน่งในตั้งค่าคลิป" aria-valuemin="0" aria-valuemax="3" aria-valuenow="1"><i id="story-setup-progress-fill"></i></div>
+                  <nav class="story-setup-nav" aria-label="หัวข้อตั้งค่าคลิป"><button type="button" data-story-setup="image" aria-current="step">1 ภาพ</button><button type="button" data-story-setup="video">2 วิดีโอ</button><button type="button" data-story-setup="review">3 ตรวจงาน</button></nav>
+                  <div class="story-setup-scroll" id="story-setup-scroll" tabindex="0" aria-label="เลื่อนดูตั้งค่าคลิป">
+                    <section class="story-setup-section" data-story-setup-section="image"><h4><b>1</b> ภาพและสไตล์</h4><p>เลือกบริการสร้างภาพ แล้วกำหนดแนวภาพให้เหมาะกับเรื่อง</p>
+                      <label class="field"><span>สร้างภาพด้วย</span><select id="story-provider"><option value="chatgpt">ChatGPT Web</option><option value="gemini">Gemini Web</option></select></label>
+                      <label class="field locked-field"><span>โมเดลที่ Extension จะเลือก</span><select id="story-model"></select><small>ChatGPT ใช้โมเดลปัจจุบันอัตโนมัติ • Gemini เลือกได้</small></label>
+                    </section>
+                    <section class="story-setup-section" data-story-setup-section="video"><h4><b>2</b> วิดีโอและจำนวนฉาก</h4><p>เลือกวิธีทำภาพเคลื่อนไหวและความยาวเรื่อง</p>
+                      <label class="field"><span>เปลี่ยนภาพเป็นวิดีโอด้วย</span><select id="story-video-mode"><option value="image_motion">ภาพเคลื่อนไหวอัตโนมัติ • ไม่ใช้ Flow</option><option value="google_flow">Google Flow ทุกฉาก • ภาพละ 1 คลิป</option><option value="meta_ai">Meta AI ทุกฉาก (ทดลอง) • แนวตั้ง</option></select><small id="story-video-mode-note">รวดเร็ว ประกอบภาพด้วย Motion และ Transition ในเครื่อง</small></label>
+                      <label class="field range-field story-scene-control"><span>จำนวนฉาก <b id="story-scene-label">10 ฉาก</b></span><input id="story-scenes" type="range" min="6" max="15" value="10"><small>แนะนำ 8–10 ฉาก สำหรับ Shorts ที่ดูกระชับ</small></label>
+                    </section>
+                    <section class="story-setup-section" data-story-setup-section="review"><h4><b>3</b> ตรวจงานก่อนเริ่ม</h4><p>เพิ่มรูปหลักได้หากต้องการ แล้วตรวจสิ่งที่ระบบจะทำให้</p>
+                      <div class="image-picker story-image-picker"><div><span>รูปหลัก</span><b id="story-image-name">ไม่บังคับ • ให้ AI สร้างเองได้</b></div><button class="button secondary compact" id="choose-story-image">เลือกรูป</button></div>
+                      <input type="hidden" id="story-image-path">
+                      <input type="file" id="story-image-file" accept="image/png,image/jpeg,image/webp" hidden>
+                      <div class="story-auto-list"><span>✓ เขียนบทและชื่อคลิป</span><span>✓ สร้างภาพธีมเดียวกันให้ครบก่อน</span><span id="story-video-mode-feature">✓ ประกอบภาพเป็นคลิปในเครื่อง</span><span>✓ พากย์เสียง ใส่ซับ และตัดต่อ</span><span>✓ สร้างปก Shorts แนวตั้ง 9:16</span></div>
+                    </section>
+                  </div>
                 </aside>
               </div>
               <footer class="story-submit-bar"><div><strong>พร้อมสร้างคลิปตั้งแต่ต้นจนจบ</strong><small id="story-submit-hint">ใส่หัวข้อก่อนเริ่ม • ระบบบันทึก Checkpoint และทำต่อจากจุดเดิมได้หากมีขั้นตอนสะดุด</small></div><button class="story-create-button" id="create-story"><span><small>เริ่มระบบอัตโนมัติ</small>สร้าง Story Shorts</span><b>→</b></button></footer>
             </section>
             <div class="story-queue-link"><span>ดูคิว พักคิว หรือทำคลิปที่หยุดไว้ต่อได้ในหน้าเดียว</span><button type="button" class="button secondary compact" data-page="creation">คิวสร้างคลิป →</button></div>
-            <section class="panel story-recovery-panel" id="story-recovery-panel" hidden>
-              <details id="story-recovery-details">
-              <summary class="story-recovery-head"><div><h2>งานที่ต้องดำเนินการต่อ</h2><p>งานเล่าเรื่องเดิมที่บันทึกไว้ • แตะเพื่อดู</p></div><span id="story-recovery-count">0 งาน</span></summary>
+            </div>
+            <section class="panel story-recovery-panel" id="story-recovery-panel" role="tabpanel" aria-labelledby="story-old-tab" hidden>
+              <div class="story-recovery-head"><div><h2>งานเล่าเรื่องเดิม</h2><p>เลื่อนดูงานที่ยังไม่เสร็จ • ความคืบหน้าอ้างอิงจากไฟล์ที่บันทึกแล้ว</p></div><span id="story-recovery-count">0 งาน</span></div>
               <div class="story-recovery-tools"><small>ทำต่อจาก Checkpoint เดิม โดยใช้บทและภาพที่บันทึกไว้</small><button type="button" class="button danger compact" id="story-recovery-clear" disabled>ล้างงานที่ต้องทำต่อทั้งหมด</button></div>
-              <div class="story-recovery-list" id="story-list"></div>
-              </details>
+              <div class="story-recovery-list" id="story-list" role="list" aria-label="งานเล่าเรื่องเดิมที่ต้องดำเนินการต่อ" tabindex="0"></div>
             </section>
           </div>
         </section>
@@ -643,7 +654,7 @@
   <script src="/desktop/membership.js?v=3"></script>
   <link rel="stylesheet" href="/desktop/logo_editor.css?v=452">
   <script src="/desktop/logo_editor.js?v=452"></script>
-  <script src="/desktop/app.js?v=460"></script>
+  <script src="/desktop/app.js?v=463"></script>
   <script src="/desktop/product_snapshot.js?v=451"></script>
   <script src="/desktop/android_wifi.js?v=2"></script>
   <script src="/desktop/clip_cover.js?v=451"></script>

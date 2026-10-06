@@ -21,12 +21,14 @@ const fs=require('fs'),assert=require('assert/strict'),{chromium}=require('playw
    const postAction=async(...v)=>{calls.push(v);await new Promise(resolve=>hold=resolve);if(fail)return {ok:false,error:'busy'};ui.state.stories=[];return {ok:true,cleared:11};};
    ${code}
    document.querySelector('button').onclick=()=>clearStoryRecovery();
+   setStoryView('old');
    renderStories(ui.state.stories,{});
   `});
   assert.equal(await page.locator('#story-recovery-count').textContent(),'11 งาน');
-  assert.equal(await page.locator('article').count(),8);
-  assert.equal(await page.locator('#story-recovery-details').getAttribute('open'),null);
-  await page.locator('#story-recovery-details > summary').click();
+  assert.equal(await page.locator('article').count(),11);
+  assert.equal(await page.locator('#story-list').evaluate(el=>getComputedStyle(el).overflowY),'auto');
+  assert.equal(await page.locator('#story-recovery-panel').isVisible(),true);
+  assert.equal(await page.locator('#story-list').evaluate(el=>el.scrollHeight>el.clientHeight),true);
   const bounds=await page.locator('#story-recovery-clear').boundingBox();
   assert(bounds.x>=0 && bounds.x+bounds.width<=600);
   if(process.env.STORY_CLEAR_SCREENSHOT)await page.screenshot({path:process.env.STORY_CLEAR_SCREENSHOT});
@@ -37,7 +39,8 @@ const fs=require('fs'),assert=require('assert/strict'),{chromium}=require('playw
   await page.evaluate(()=>clearStoryRecovery());
   assert.equal(await page.evaluate(()=>calls.length),1);
   await page.evaluate(async()=>{hold();await window.pending;});
-  assert.equal(await page.locator('#story-recovery-panel').isVisible(),false);
+  assert.equal(await page.locator('#story-recovery-panel').isVisible(),true);
+  assert.match(await page.locator('#story-list').textContent(),/ไม่มีงานเรื่องเล่าที่ต้องทำต่อ/);
   await page.evaluate(()=>{ui.state.stories=[{id:'STORY-x'}];fail=true;window.pending=clearStoryRecovery();});
   await page.evaluate(async()=>{hold();await window.pending;});
   assert.equal(await page.locator('#story-recovery-clear').isDisabled(),false);

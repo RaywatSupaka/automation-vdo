@@ -232,6 +232,39 @@ button.is-busy{position:relative;cursor:wait}.button.is-busy{color:transparent!i
 .story-recovery-error{max-height:none;overflow:visible}
 .story-recovery-error summary{cursor:pointer;color:#ffabb8}
 .story-recovery-error p{margin:7px 0 0;overflow-wrap:anywhere}
+.story-view-tabs{display:flex;gap:8px;margin:0 0 14px;padding:6px;border:1px solid var(--line);border-radius:14px;background:rgba(8,12,27,.72)}
+.story-view-tabs button{flex:1;min-height:46px;border:1px solid transparent;border-radius:10px;color:var(--muted);background:transparent;font:700 12px "Segoe UI",sans-serif;cursor:pointer}
+.story-view-tabs button[aria-selected="true"]{border-color:rgba(49,216,255,.32);color:var(--text);background:linear-gradient(110deg,rgba(49,216,255,.13),rgba(148,83,255,.13))}
+.story-view-tabs button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.story-view-tabs span{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:5px;border-radius:999px;color:var(--cyan);background:rgba(49,216,255,.12);font-size:10px}
+#story-recovery-panel .story-recovery-head{cursor:default}
+#story-new-panel[hidden]{display:none}
+.story-recovery-empty{grid-column:1/-1;padding:32px 18px;text-align:center;color:var(--muted);font-size:12px}
+#story-list{max-height:min(68vh,720px);overflow-y:auto;overscroll-behavior:contain;align-content:start;scrollbar-gutter:stable}
+#story-list:focus-visible{outline:2px solid var(--cyan);outline-offset:-3px}
+.story-form-panel .story-options-card{gap:0;padding:0;min-width:0}
+.story-setup-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 20px 12px}
+.story-setup-header>span{color:var(--cyan);font-size:11px;font-weight:800;white-space:nowrap}
+.story-setup-progress{height:7px;margin:0 20px 14px;overflow:hidden;border-radius:999px;background:#080c19}
+.story-setup-progress i{display:block;width:33.333%;height:100%;border-radius:inherit;background:var(--gradient);transition:width .2s ease}
+.story-setup-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:0 20px 14px}
+.story-setup-nav button{min-height:37px;border:1px solid var(--line);border-radius:9px;padding:5px;color:var(--muted);background:rgba(5,9,22,.35);font:700 11px "Segoe UI",sans-serif;cursor:pointer}
+.story-setup-nav button[aria-current="step"]{border-color:rgba(49,216,255,.4);color:var(--text);background:rgba(49,216,255,.1)}
+.story-setup-nav button:focus-visible,.story-setup-scroll:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px}
+.story-setup-scroll{min-height:260px;max-height:min(60vh,610px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;border-top:1px solid var(--line)}
+.story-setup-section{display:grid;gap:12px;padding:17px 20px 22px;border-bottom:1px solid var(--line);scroll-margin-top:8px}
+.story-setup-section:last-child{border-bottom:0}
+.story-setup-section h4{display:flex;align-items:center;gap:9px;margin:0;font-size:13px}
+.story-setup-section h4 b{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;color:#06101d;background:var(--gradient);font-size:11px}
+.story-setup-section>p{margin:-5px 0 3px;color:var(--muted);font-size:11px;line-height:1.5}
+.story-setup-section .visual-style-card{margin:0}
+@media(max-width:700px){.story-setup-scroll{max-height:min(58vh,540px)}.story-setup-header,.story-setup-section{padding-left:18px;padding-right:18px}.story-setup-nav{padding-left:18px;padding-right:18px}.story-setup-progress{margin-left:18px;margin-right:18px}}
+.story-recovery-progress{display:grid;gap:7px}
+.story-recovery-progress-label{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--muted);font-size:11px}
+.story-recovery-progress-label b{font-size:11px;font-weight:700;color:var(--text)}
+.story-recovery-progress-label span{color:var(--cyan);font-weight:700}
+.story-recovery-progress-track{height:8px;overflow:hidden;border-radius:999px;background:#080c19}
+.story-recovery-progress-track i{display:block;height:100%;border-radius:inherit;background:var(--gradient);transition:width .35s ease}
 .product-preparation{margin:16px 0;padding:16px 18px;border:1px solid #235568;border-radius:14px;background:#0d1a29}
 .product-preparation[hidden]{display:none}
 .product-preparation p{margin:6px 0 0;color:var(--muted);font-size:13px;overflow-wrap:anywhere}

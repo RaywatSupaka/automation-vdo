@@ -576,6 +576,59 @@ function setSelectOptions(selector, values, selectedValue) {
 }
 
 let storyRecoveryClearing = false;
+let storyView = 'new';
+function setStoryView(view) {
+  storyView = view === 'old' ? 'old' : 'new';
+  const old = storyView === 'old';
+  const newPanel = $('#story-new-panel');
+  const oldPanel = $('#story-recovery-panel');
+  if (newPanel) newPanel.hidden = old;
+  if (oldPanel) oldPanel.hidden = !old;
+  $('#story-new-tab')?.setAttribute('aria-selected', String(!old));
+  $('#story-old-tab')?.setAttribute('aria-selected', String(old));
+}
+
+function updateStorySetupPosition() {
+  const scroller = $('#story-setup-scroll');
+  const progress = $('.story-setup-progress');
+  const position = $('#story-setup-position');
+  if (!scroller || !progress || !position) return;
+  const sections = [...scroller.querySelectorAll('[data-story-setup-section]')];
+  if (!sections.length) return;
+  let index = 0;
+  if (scroller.scrollTop > 2) {
+    const edge = scroller.getBoundingClientRect().top + scroller.clientHeight * .35;
+    sections.forEach((section, current) => {
+      if (section.getBoundingClientRect().top <= edge) index = current;
+    });
+  }
+  if (scroller.scrollTop >= scroller.scrollHeight - scroller.clientHeight - 2 && scroller.scrollTop > 2)
+    index = sections.length - 1;
+  const step = index + 1;
+  position.textContent = `ขั้นที่ ${step} จาก ${sections.length}`;
+  progress.setAttribute('aria-valuemax', String(sections.length));
+  progress.setAttribute('aria-valuenow', String(step));
+  $('#story-setup-progress-fill').style.width = `${step / sections.length * 100}%`;
+  document.querySelectorAll('[data-story-setup]').forEach(button => {
+    if (button.dataset.storySetup === sections[index].dataset.storySetupSection)
+      button.setAttribute('aria-current', 'step');
+    else button.removeAttribute('aria-current');
+  });
+}
+
+function initStorySetupScroller() {
+  const scroller = $('#story-setup-scroll');
+  if (!scroller) return;
+  scroller.addEventListener('scroll', updateStorySetupPosition, {passive:true});
+  document.querySelectorAll('[data-story-setup]').forEach(button => button.addEventListener('click', () => {
+    const section = scroller.querySelector(`[data-story-setup-section="${button.dataset.storySetup}"]`);
+    if (!section) return;
+    const top = section.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    scroller.scrollTo({top, behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
+  }));
+  window.addEventListener('resize', updateStorySetupPosition);
+  updateStorySetupPosition();
+}
 async function clearStoryRecovery() {
   if (storyRecoveryClearing) return;
   if (!window.confirm('ล้างงานที่ต้องดำเนินการต่อทั้งหมดในหน้าเล่าเรื่อง Shorts?\nรวมงานที่ไม่ได้แสดงใน 8 รายการแรก และนำงานเหล่านี้ออกจากคิว\nรูป บท เสียง วิดีโอ และ Checkpoint เดิมยังอยู่ ไม่ลบไฟล์ และไม่กระทบงานสินค้า/ละครสั้น')) return;
@@ -659,6 +712,19 @@ function storyRecoveryTimeline(job, failed) {
   </div>`;
 }
 
+function storyRecoveryProgress(job, storyProgress, isActive) {
+  const livePercent = Number(storyProgress.percent);
+  const live = isActive && Number.isFinite(livePercent);
+  const total = Math.max(0, Number(job.scene_count || 0));
+  const saved = new Set((Array.isArray(job.recovery?.saved_image_scenes) ? job.recovery.saved_image_scenes : [])
+    .map(Number).filter(index => Number.isInteger(index) && index >= 1 && index <= total));
+  const percent = live ? Math.max(0, Math.min(100, Math.round(livePercent)))
+    : total ? Math.round(saved.size / total * 100) : 0;
+  const label = live ? 'ความคืบหน้างานปัจจุบัน' : 'ภาพฉากที่บันทึกแล้ว';
+  const detail = live ? `${percent}%` : total ? `${saved.size}/${total} ฉาก` : 'รอข้อมูลจำนวนฉาก';
+  return `<div class="story-recovery-progress"><div class="story-recovery-progress-label"><b>${label}</b><span>${detail}</span></div><div class="story-recovery-progress-track" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div></div>`;
+}
+
 function renderStories(stories, storyProgress = {}) {
   renderLongVideoRecovery(stories, storyProgress);
   const list = $('#story-list');
@@ -687,17 +753,20 @@ function renderStories(stories, storyProgress = {}) {
     };
     return rank(a) - rank(b) || String(b.updated_at || '').localeCompare(String(a.updated_at || ''));
   });
-  panel.hidden = pending.length === 0;
+  panel.hidden = storyView !== 'old';
   const count = $('#story-recovery-count');
   if (count) count.textContent = `${pending.length} งาน`;
+  const tabCount = $('#story-recovery-tab-count');
+  if (tabCount) tabCount.textContent = String(pending.length);
   const clear = $('#story-recovery-clear');
   if (clear) {
     clear.disabled = storyRecoveryClearing || !pending.length || Boolean(storyProgress.active);
     clear.textContent = storyRecoveryClearing ? 'กำลังล้างรายการ…' : 'ล้างงานที่ต้องทำต่อทั้งหมด';
   }
-  if (!pending.length) { list.innerHTML = ''; return; }
+  if (!pending.length) { list.innerHTML = '<div class="story-recovery-empty">ไม่มีงานเรื่องเล่าที่ต้องทำต่อ • ผลงานที่เสร็จแล้วดูได้ในคลังวิดีโอ</div>'; return; }
   const stageLabels = {chatgpt:'สร้างบทและภาพ',voice:'สร้างเสียงพากย์',google_flow:'เตรียมช่วงวิดีโอ',video:'ประกอบวิดีโอ',finishing:'ตรวจและบันทึกผลงาน'};
-  list.innerHTML = pending.slice(0, 8).map(job => {
+  const previousScroll = list.scrollTop;
+  list.innerHTML = pending.map(job => {
     const mode = ['google_flow','meta_ai'].includes(job.video_generation_mode)
       ? videoSourcePresentation(job).label
       : 'Motion ในเครื่อง';
@@ -712,8 +781,9 @@ function renderStories(stories, storyProgress = {}) {
       ? '<button class="button secondary compact" disabled>กำลังดำเนินการ</button>'
       : `<button class="button primary compact" data-retry-story="${escapeHtml(job.id)}">↻ ทำต่อจากจุดเดิม</button>`;
     const dismiss = isActive ? '' : `<button class="button danger compact" data-dismiss-story="${escapeHtml(job.id)}" data-story-title="${escapeHtml(job.title)}">ยกเลิกงานนี้</button>`;
-    return `<article class="story-recovery-item"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title)}</h3></div>${badge}</header><p>${escapeHtml(job.topic || job.description || 'รอข้อมูลเรื่อง')}</p>${creativeLabel?`<p class="creative-saved-label">${escapeHtml(creativeLabel)}</p>`:''}<div class="story-recovery-checkpoint"><b>Checkpoint: ${escapeHtml(stage)}</b><span>${escapeHtml(mode)}</span></div>${storyRecoveryTimeline(job, failed)}${error ? `<details class="story-recovery-error"><summary>ดูรายละเอียดข้อผิดพลาด</summary><p>${escapeHtml(error)}</p></details>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button>${dismiss}${action}${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
+    return `<article class="story-recovery-item" role="listitem"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title)}</h3></div>${badge}</header><p>${escapeHtml(job.topic || job.description || 'รอข้อมูลเรื่อง')}</p>${creativeLabel?`<p class="creative-saved-label">${escapeHtml(creativeLabel)}</p>`:''}<div class="story-recovery-checkpoint"><b>Checkpoint: ${escapeHtml(stage)}</b><span>${escapeHtml(mode)}</span></div>${storyRecoveryProgress(job, storyProgress, isActive)}${storyRecoveryTimeline(job, failed)}${error ? `<details class="story-recovery-error"><summary>ดูรายละเอียดข้อผิดพลาด</summary><p>${escapeHtml(error)}</p></details>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button>${dismiss}${action}${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
   }).join('');
+  list.scrollTop = previousScroll;
 }
 
 let dramaQueuePending = false;
@@ -2145,6 +2215,10 @@ bindAiModelSelect('#drama-provider','#drama-model');
 bindAiModelSelect('#story-batch-provider','#story-batch-model');
 bindModalCloseControls();
 bindNavigationFallbacks();
+$('#story-new-tab')?.addEventListener('click', () => setStoryView('new'));
+$('#story-old-tab')?.addEventListener('click', () => setStoryView('old'));
+setStoryView('new');
+initStorySetupScroller();
 
 for (const selector of ['#product-link', '#story-topic', '#drama-title']) {
   $(selector)?.addEventListener('input', updateCreationAvailability);

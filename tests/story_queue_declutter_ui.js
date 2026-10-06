@@ -40,7 +40,11 @@ const {chromium} = require('playwright');
       showPage('story');
     });
     assert.equal(await page.locator('#story-queue-panel').count(),0);
-    assert.equal(await page.locator('#story-recovery-details').getAttribute('open'),null);
+    assert.equal(await page.locator('#story-recovery-panel').isVisible(),false);
+    await page.evaluate(()=>setStoryView('old'));
+    assert.equal(await page.locator('#story-recovery-panel').isVisible(),true);
+    assert.equal(await page.locator('#story-new-panel').isVisible(),false);
+    await page.evaluate(()=>setStoryView('new'));
     if(process.env.STORY_SHORTS_SCREENSHOT) {
       await page.setViewportSize({width:1440,height:1000});
       await page.locator('.story-queue-link').scrollIntoViewIfNeeded();
