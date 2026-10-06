@@ -534,7 +534,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.507-20261002.1";
+const FLOW_HELPER_BUILD = "flow-0.15.513-20261006.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";
@@ -3244,6 +3244,7 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
   let tabId = null;
   let bootstrapDocumentId='';
   let ownedFreshChatGPTRoot=false;
+  let occupiedFreshRootReplacements=0;
   let resumeDocumentId=String(resultDocumentId||'');
   let resumeReceiptVerifier=null,resumeReceiptKey='',resumeDocumentFence=null;
   let resumeHandoffCheckpoint=null;
@@ -3538,9 +3539,20 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
         : {...proof,reason:cleared.reason};
       if(!cleared.cleared)break;
     }
+    if(!proof.empty && ownedFreshChatGPTRoot && occupiedFreshRootReplacements<1
+        && ['attachment_present','conversation_present','response_active'].includes(proof.reason)) {
+      // The newly opened root can restore another tab's content. Keep that
+      // document intact and try one separate owned root before any Start.
+      tabId=await openAIWebTab(provider);
+      bootstrapDocumentId='';
+      occupiedFreshRootReplacements++;
+      continue;
+    }
     if(!proof.empty) {
       const notice=proof.reason==='draft_present'
         ? 'ระบบล้างร่างที่ค้างในแท็บงานใหม่ไม่สำเร็จ • ยังไม่ส่งคำขอ'
+        : proof.reason==='attachment_present'
+          ? 'แท็บงานใหม่มีไฟล์แนบที่ยืนยันเจ้าของไม่ได้ • ยังไม่ส่งคำขอ'
         : proof.reason==='composer_not_ready' || proof.reason==='probe_failed'
           ? 'หน้า ChatGPT ยังไม่พร้อมหลังรอโหลด • ยังไม่ส่งคำขอ'
           : 'หน้า ChatGPT มีงานหรือหน้าเปลี่ยนไป • ยังไม่ส่งคำขอ';
@@ -8121,12 +8133,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Attaching CDP can give reactive pages one more render opportunity.
         // Re-read the exact draft and live button after attach so coordinates
         // captured from the previous render can never click a stale location.
-        const inspectSendPoint = async (prepareFocus = false, armKey = "") => {
-          const [row] = await chrome.scripting.executeScript({target:sendTarget(),world:'MAIN',
-            args:[wirePrompt,false,prepareFocus,armKey,message.provider==='chatgpt'],func:resolveAiSendPrepressPoint});
-          const result=row?.result;
-          if (!result?.ok) { const error=new Error(result?.error || 'ยืนยันตำแหน่งปุ่มส่งไม่ได้'); error.preflightReason=result?.reason; throw error; }
-          return result;
+        const inspectSendPoint = async (prepareFocus = false, armKey = "", beforeClaim = true) => {
+          while (true) {
+            const [row] = await chrome.scripting.executeScript({target:sendTarget(),world:'MAIN',
+              args:[wirePrompt,false,prepareFocus,armKey,message.provider==='chatgpt'],func:resolveAiSendPrepressPoint});
+            const result=row?.result;
+            if (result?.ok) return result;
+            const reason=result?.reason || 'readiness_unconfirmed';
+            if (message.provider==='chatgpt'
+                && ['send_not_ready','response_active','target_blocked','send_target_ambiguous'].includes(reason)
+                && sendPreflightRechecks<3) {
+              sendPreflightReasons.push(reason);
+              await new Promise(resolve=>setTimeout(resolve,5000));
+              await assertSendOwner();
+              sendPreflightRechecks++;
+              continue;
+            }
+            const error=new Error(`${result?.error || 'ยืนยันตำแหน่งปุ่มส่งไม่ได้'}${sendPreflightRechecks ? ` • ตรวจซ้ำ ${sendPreflightRechecks} ครั้ง ห่างกัน 5 วินาทีแล้ว` : ''}`);
+            error.preflightReason=reason;
+            error.preflightStage=beforeClaim?'after_attach':'after_claim';
+            throw error;
+          }
         };
         let hoverKey = "", stableKey = "", stableCount = 0;
         for (let attempt = 0; attempt < 16; attempt += 1) {
@@ -8174,7 +8201,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           await assertSendOwner();
           const finalReady=await sendReady();
           if(finalReady?.ok!==true)throw Error('Story Send readiness เปลี่ยนก่อนกด • ยังไม่ส่ง');
-          finalPoint=await inspectSendPoint(false,finalPoint.key);
+          finalPoint=await inspectSendPoint(false,finalPoint.key,false);
         }
         // Once press dispatch starts, any exception is ambiguous. Do not issue
         // another press, Enter, or a release retargeted to a different button.
@@ -8247,6 +8274,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (gesturePhase !== 'not_started' || !canAttestNoDispatch) throw error;
         sendResponse({ok:false, error:String(error?.message || error), notDispatched:true,
           diagnostics:{gesture_phase:'not_started', preflight_reason:['draft_mismatch','send_not_ready','send_target_ambiguous','response_active','composer_form_changed','capture_missing','target_changed','readiness_changed','target_blocked'].includes(error.preflightReason)?error.preflightReason:'rejected_before_press',
+            ...(error.preflightStage?{preflight_stage:error.preflightStage}:{}),
             preflight_rechecks:sendPreflightRechecks, preflight_reasons:sendPreflightReasons.slice(0,3)}});
         return;
       } finally {

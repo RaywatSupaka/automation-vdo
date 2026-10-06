@@ -1,5 +1,29 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
+## Accepted cover native Retry claim (0.15.513, 2026-10-06)
+
+Installed observation: root launcher and original Extension 513 connected in DEV MODE. A new cover request for Story 913AB4 sent once, saved one verified image, and advanced the queue. The old stream-error panel vanished after browser restart, so the native Retry branch remains fixture-proven only; the old accepted request is retained for audit.
+
+An accepted, paused cover may resume collection in its original owned tab. If that exact one-user exchange shows ChatGPT's native stream error and one Retry control, the Extension records a one-use Retry claim with the request ID, conversation URL and user message ID before clicking. The Desktop validates the accepted Send, verified original references, no saved result, zero image candidates and the bounded stream-error stage. The claim survives worker restart; a consumed budget never clicks again. The resumed collector can use the original upload proof after the native Retry while preserving exact prompt, single user, URL, message ID and no conflicting visible reference names. Candidate 512 did not pass the Desktop collector-stage contract and was never activated.
+
+## Native ChatGPT cover stream error (0.15.512, 2026-10-06)
+
+The cover collector recognizes the exact native stream-error panel following one owned user request even when ChatGPT creates no assistant turn. With no image, draft, Stop control, later user request, or second Retry control, a fresh cover may persist its one-retry budget before clicking the native Retry. It rechecks the same owner, conversation and button just before the click and never resends the prompt or references. If the error persists after a bounded wait, it stops with `AI_COVER_STREAM_ERROR`. A collect-only accepted request never clicks Retry and reports this blocker immediately. The queue still requires a saved validated image before continuing; source fixtures do not prove live provider behavior.
+
+## Accepted cover with hidden reference filenames (0.15.511, 2026-10-05)
+
+Collect-only recovery can use the desktop's verified reference upload proof if ChatGPT no longer displays the attached filenames after an accepted Send. The original Extension-owned tab, exact latest prompt, single user turn, conversation URL, user message ID and expected proof counts must agree; any visible conflicting SmartFlow reference name or retry turn blocks recovery. The collector rechecks ownership before image download and saves only the exact assistant result. It never sends or uploads again. Source fixture proof and installed provider recovery remain separate.
+
+## Story bootstrap occupied fresh root (0.15.510, 2026-10-05)
+
+A fresh ChatGPT root can restore an attachment, conversation, or active response after the initial tab selection. When this happens before Story Start, Background preserves the occupied tab and opens at most one other owned root. The second root must pass the same stable-document empty proof; otherwise it stops with `AI_WEB_WAIT_REVIEW` and the exact safe reason. It never clears an attachment or replays a provider Send. DEV bridge and Extension 510 are connected; loaded Chrome path and real provider output remain unverified.
+
+## Candidate `0.15.509`: post-attach Send recheck
+
+The prepress Send target is read again after debugger attach and after the Story dispatch latch. If its unique owned control is briefly unavailable, wait and recheck up to three times total before pressing, with exact owner and draft validation. Persistent unready or changed state stops with a typed stage; a later attempt cannot replay a claimed, uncertain or accepted Send.
+
+Candidate 508 covered the post-attach read but not the final after-claim read. Its package was superseded before activation.
+
 ## Candidate `0.15.507`: guarded reference reattach
 
 The 506 live trace showed `attachment_count_changed` before Send. A visibly empty and file-input-empty composer may continue to the existing saved-checkpoint attachment path. Multiple, busy, failed or hidden references still block Send; the upload path verifies the reattached scene before submission.

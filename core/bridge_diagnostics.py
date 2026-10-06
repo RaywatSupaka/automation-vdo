@@ -45,6 +45,7 @@ def safe_ai_send_diagnostics(payload: Mapping[str, object]) -> AISendDiagnostics
             "readiness_changed", "target_blocked", "rejected_before_press",
             "chatgpt_image_tool", "send_target_ambiguous", "composer_form_changed",
         },
+        "preflight_stage": {"after_attach", "after_claim"},
     }
     click_types = {"pointerdown", "mousedown", "pointerup", "mouseup", "click"}
     for source in sources:

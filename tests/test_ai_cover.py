@@ -75,6 +75,50 @@ class AICoverTests(unittest.TestCase):
                     {**state,'stop_visible':'yes'}, {**state,'stalled_ms':-1}):
             with self.assertRaises(ValueError):self.service.event(rid,dict(phase='running',collector_state=bad))
 
+    def test_native_stream_retry_claim_survives_collect_only_resume(self):
+        self.manifest.update(lambda m:{**m,'image_ai_provider':'chatgpt'})
+        rid=self.claim()
+        proof=dict(status='verified',expected=1,loaded=1,method='filename',reason='ready')
+        self.service.event(rid,dict(phase='running',send_state='accepted',reference_proof=proof))
+        self.service.event(rid,dict(phase='needs_review',message='native stream error'))
+        self.assertEqual(self.service.event(rid,dict(phase='running',retry_count=1))['retry_count'],0)
+        self.service.recover_result(rid,self.job)
+        self.service.event(rid,dict(phase='claimed'))
+        self.service.event(rid,dict(phase='running',send_state='accepted'))
+        claim=dict(version=1,request_id=rid,conversation_url='https://chatgpt.com/c/fixture',
+                   user_id='owned-user-id',reason='native_stream_error')
+        state=dict(stage='stream_error_retry',owned=True,candidates=0,loaded=0)
+        row=self.service.event(rid,dict(phase='running',retry_count=1,
+                                         native_retry_claim=claim,collector_state=state))
+        self.assertEqual(row['retry_count'],1)
+        self.assertEqual(row['native_retry_claim'],claim)
+        self.assertEqual(self.manifest.read()['ai_cover_state']['native_retry_claim'],claim)
+        self.service.event(rid,dict(phase='needs_review',message='Retry did not finish'))
+        self.service.recover_result(rid,self.job)
+        packet=self.service.package(rid)
+        self.assertEqual(packet['native_retry_claim'],claim)
+        self.assertEqual(packet['retry_count'],1)
+        self.assertTrue(packet['collect_only'])
+
+    def test_native_stream_retry_claim_rejects_wrong_owner_or_missing_proof(self):
+        self.manifest.update(lambda m:{**m,'image_ai_provider':'chatgpt'})
+        rid=self.claim()
+        self.service.event(rid,dict(phase='running',send_state='accepted'))
+        claim=dict(version=1,request_id=rid,conversation_url='https://chatgpt.com/c/fixture',
+                   user_id='owned-user-id',reason='native_stream_error')
+        state=dict(stage='stream_error_retry',owned=True,candidates=0,loaded=0)
+        event=dict(phase='running',retry_count=1,native_retry_claim=claim,collector_state=state)
+        with self.assertRaises(ValueError):self.service.event(rid,event)
+        proof=dict(status='verified',expected=1,loaded=1,method='filename',reason='ready')
+        self.service.event(rid,dict(phase='running',reference_proof=proof))
+        for change in ({'request_id':'foreign'},{'user_id':''},{'conversation_url':'https://example.com/c/fixture'},
+                       {'reason':'quota'}):
+            with self.subTest(change=change),self.assertRaises(ValueError):
+                self.service.event(rid,{**event,'native_retry_claim':{**claim,**change}})
+        with self.assertRaises(ValueError):
+            self.service.event(rid,{**event,'collector_state':{**state,'stage':'answer_missing'}})
+        self.assertEqual(self.service.get(rid)['retry_count'],0)
+
     def test_worker_timeout_reports_last_collector_stage_keeps_video(self):
         rid=self.claim()
         self.service.event(rid,dict(phase='running',active=False,
@@ -415,6 +459,69 @@ class AICoverTests(unittest.TestCase):
         self.assertNotIn('secret',self.service.get(rid)['result_proof'])
         self.assertEqual((self.folder/'video.mp4').read_bytes(),b'preserve this final video')
         self.assertEqual(len(self.manifest.read()['ai_cover_history']),1)
+
+    def test_owner_supplied_existing_cover_finishes_exact_request_without_provider_replay(self):
+        rid = self.claim()
+        self.service.event(rid, dict(phase='running', send_state='accepted',
+            send_diagnostics={'gesture_phase': 'released', 'trusted_click_seen': True}))
+        self.service.event(rid, dict(phase='needs_review', message='image visible but collector lost identity'))
+        supplied = self.root / 'downloaded-cover.png'
+        Image.new('RGB', (576, 1024), 'red').save(supplied)
+        row = self.service.adopt_user_supplied_result(rid, self.job, supplied)
+        manifest = self.manifest.read()
+        self.assertEqual((row['phase'], row['completion_source']), ('ready', 'user_supplied'))
+        self.assertNotIn('result_proof', row)
+        self.assertTrue(self.service.completion(self.job)['ready'])
+        self.assertEqual(manifest['cover_revision'], rid)
+        self.assertEqual(manifest['cover_renderer'], 'user-supplied-ai-cover-v1')
+        self.assertEqual(manifest['ai_cover_history'][-1]['source'], 'user_supplied')
+        self.assertTrue((self.folder / manifest['cover_path']).is_file())
+        self.assertEqual((self.folder / 'video.mp4').read_bytes(), b'preserve this final video')
+        self.assertTrue(supplied.is_file())
+        with self.assertRaises(ValueError):
+            self.service.adopt_user_supplied_result(rid, self.job, supplied)
+
+    def test_owner_supplied_cover_repairs_manifest_saved_before_ledger_ack(self):
+        rid = self.claim()
+        self.service.event(rid, dict(phase='running', send_state='accepted'))
+        self.service.event(rid, dict(phase='needs_review'))
+        supplied = self.root / 'downloaded-cover.png'
+        Image.new('RGB', (576, 1024), 'red').save(supplied)
+        self.service.adopt_user_supplied_result(rid, self.job, supplied)
+        saved = self.folder / self.manifest.read()['cover_path']
+        before = saved.read_bytes()
+        self.service.store.update(lambda records: {**records,
+            rid: {**records[rid], 'phase': 'needs_review', 'completion_source': ''}})
+        self.assertFalse(self.service.completion(self.job)['ready'])
+        self.service.adopt_user_supplied_result(rid, self.job, supplied)
+        self.assertEqual(saved.read_bytes(), before)
+        self.assertTrue(self.service.completion(self.job)['ready'])
+        self.assertEqual(len(self.manifest.read()['ai_cover_history']), 1)
+
+    def test_owner_supplied_cover_rejects_unaccepted_wrong_or_changed_request(self):
+        supplied = self.root / 'downloaded-cover.png'
+        Image.new('RGB', (576, 1024), 'red').save(supplied)
+        rid = self.claim()
+        self.service.event(rid, dict(phase='needs_review'))
+        with self.assertRaises(ValueError):
+            self.service.adopt_user_supplied_result(rid, self.job, supplied)
+        self.assertFalse(self.service.completion(self.job)['ready'])
+        newer = self.service.request(self.job, force=True)
+        self.service.event(newer['request_id'], dict(phase='claimed'))
+        self.service.event(newer['request_id'], dict(phase='running', send_state='accepted'))
+        self.service.event(newer['request_id'], dict(phase='needs_review'))
+        with self.assertRaises(ValueError):
+            self.service.adopt_user_supplied_result(rid, self.job, supplied)
+        with self.assertRaises(ValueError):
+            self.service.adopt_user_supplied_result(newer['request_id'], 'STORY-OTHER', supplied)
+        wide = self.root / 'wide-cover.png'
+        Image.new('RGB', (1024, 576), 'red').save(wide)
+        with self.assertRaises(ValueError):
+            self.service.adopt_user_supplied_result(newer['request_id'], self.job, wide)
+        Image.new('RGB', (576, 1024), 'green').save(self.folder / 'old.jpg')
+        with self.assertRaises(ValueError):
+            self.service.adopt_user_supplied_result(newer['request_id'], self.job, supplied)
+        self.assertFalse(self.service.completion(self.job)['ready'])
 
     def test_collect_only_rejects_wrong_cancelled_newer_and_active_request(self):
         rid=self.claim()

@@ -49,7 +49,8 @@ class AICovers:
             'reference_proof', 'result_proof', 'collector_state', 'collect_only',
             'send_state', 'send_diagnostics', 'preparation_state', 'error_code',
             'notDispatched', 'successor_request_id', 'parent_request_id',
-            'download_failure', 'download_replacement_count') if k in row}
+            'download_failure', 'download_replacement_count', 'completion_source',
+            'native_retry_claim') if k in row}
 
     @staticmethod
     def _has_send_evidence(row):
@@ -165,6 +166,86 @@ class AICovers:
             self.store.write_unlocked(records)
             AtomicJsonFile(self.folder(job_id)/'job.json').update(lambda manifest:{**manifest,
                 'ai_cover_state':self._state(row)})
+            return row
+
+    @_claim_cover_files(by_request=True)
+    def adopt_user_supplied_result(self, rid, job_id, source):
+        """Save an owner-supplied copy of an accepted cover without another provider Send."""
+        source = Path(source).resolve()
+        if not source.is_file() or source.stat().st_size > 25 * 1024 * 1024:
+            raise ValueError('ไม่พบไฟล์ปกที่ส่งมา หรือไฟล์ใหญ่เกินไป')
+        folder = self.folder(job_id)
+        request = self.get(rid)
+        expected_aspect = request.get('aspect_ratio')
+        with Image.open(source) as opened:
+            if opened.width * opened.height > 40_000_000:
+                raise ValueError('ภาพปกใหญ่เกินไป')
+            expected = 16 / 9 if expected_aspect == '16:9' else 9 / 16
+            ratio = opened.width / opened.height
+            if min(opened.size) < 256 or not ((1.3 <= ratio <= 2.2) if expected > 1 else (.4 <= ratio <= .8)):
+                raise ValueError('ขนาดหรือสัดส่วนปกไม่ตรงคำขอ')
+            opened.load()
+            prepared = ImageOps.pad(opened.convert('RGB'), (1920, 1080) if expected > 1 else (1080, 1920),
+                                    color=(12, 15, 24))
+        with self.store.locked():
+            records = self.store.read_unlocked({})
+            row = records.get(str(rid))
+            if not row or row.get('job_id') != job_id:
+                raise ValueError('คำขอปกไม่ตรงงาน')
+            latest = max((r for r in records.values() if r.get('job_id') == job_id),
+                         key=lambda r: r.get('created_at', 0))
+            if (latest.get('request_id') != rid or row.get('phase') != 'needs_review'
+                    or row.get('aspect_ratio') != expected_aspect):
+                raise ValueError('คำขอปกเปลี่ยนหรือมีผลใหม่แล้ว')
+            if row.get('send_state') not in {'accepted', 'unconfirmed'} or not self._has_send_evidence(row):
+                raise ValueError('ยังไม่มีหลักฐานว่าคำขอปกเดิมถูกส่ง')
+            manifest_store = AtomicJsonFile(folder / 'job.json')
+            manifest = manifest_store.read()
+            target = folder / 'covers' / f'user_cover_{rid}.jpg'
+            relative = str(target.relative_to(folder))
+            already_saved = (manifest.get('cover_revision') == rid
+                and manifest.get('cover_path') == relative and target.is_file()
+                and target.stat().st_size > 0
+                and any(entry.get('request_id') == rid and entry.get('path') == relative
+                        and entry.get('source') == 'user_supplied'
+                        for entry in manifest.get('ai_cover_history') or []))
+            if (manifest.get('video_status') != 'ready'
+                    or not already_saved and manifest.get('cover_revision') != row.get('previous_cover_revision')):
+                raise ValueError('วิดีโอหรือปกของงานเปลี่ยนแล้ว')
+            prior_cover = folder / str(manifest.get('cover_path') or '')
+            if not already_saved and prior_cover.is_file() and prior_cover.stat().st_size > 0:
+                raise ValueError('มีไฟล์ปกเดิมที่บันทึกแล้ว • ไม่ทับปกของผู้ใช้')
+            if not already_saved:
+                target.parent.mkdir(exist_ok=True)
+                temporary = target.with_name(f'.{target.name}.{uuid.uuid4().hex}.tmp')
+                try:
+                    prepared.save(temporary, 'JPEG', quality=95)
+                    temporary.replace(target)
+                finally:
+                    temporary.unlink(missing_ok=True)
+            history = list(manifest.get('ai_cover_history') or [])
+            if not any(entry.get('request_id') == rid for entry in history):
+                history.append(dict(request_id=rid, path=relative,
+                                    previous_path=manifest.get('cover_path'), provider=row['provider'],
+                                    source='user_supplied'))
+            row = {**row, 'phase': 'ready', 'active': False, 'updated_at': time.time(),
+                   'completion_source': 'user_supplied',
+                   'message': 'บันทึกไฟล์ปกที่เจ้าของงานส่งมาแล้ว • ไม่ส่งคำขอสร้างภาพซ้ำ'}
+            def save_manifest(current):
+                if (current.get('video_status') != 'ready'
+                        or not already_saved and current.get('cover_revision') != row['previous_cover_revision']
+                        or already_saved and (current.get('cover_revision') != rid
+                            or current.get('cover_path') != relative)):
+                    raise ValueError('วิดีโอหรือปกของงานเปลี่ยนระหว่างบันทึก')
+                if already_saved:
+                    return {**current, 'ai_cover_state': self._state(row)}
+                return {**current, 'cover_path': relative, 'cover_status': 'ready',
+                    'cover_size': list(prepared.size), 'cover_revision': rid,
+                    'cover_renderer': 'user-supplied-ai-cover-v1',
+                    'ai_cover_history': history, 'ai_cover_state': self._state(row)}
+            manifest_store.update(save_manifest)
+            records[rid] = row
+            self.store.write_unlocked(records)
             return row
 
     def active(self):
@@ -292,7 +373,8 @@ class AICovers:
                     raise ValueError('คำขอปกนี้ถูกรับไปแล้ว ห้ามส่งซ้ำ')
             elif phase not in {'preparing', 'recovering', 'running', 'ready', 'needs_review', 'cancelled'}:
                 raise ValueError('สถานะปกไม่ถูกต้อง')
-            retry = event.get('retry_count', row.get('retry_count', 0))
+            previous_retry = row.get('retry_count', 0)
+            retry = event.get('retry_count', previous_retry)
             if 'send_diagnostics' in event:
                 detail = event['send_diagnostics']
                 if not isinstance(detail, dict):
@@ -341,6 +423,32 @@ class AICovers:
             if type(retry) is not int or not row.get('retry_count',0) <= retry <= 1:
                 raise ValueError('เกินสิทธิ์ลองสร้างปกใหม่')
             row['retry_count'] = retry
+            if 'native_retry_claim' in event:
+                claim = event['native_retry_claim']
+                previous_claim = row.get('native_retry_claim')
+                proof = row.get('reference_proof') or {}
+                expected = len(row.get('sources') or [row['source']])
+                state = event.get('collector_state') or {}
+                if (not isinstance(claim, dict)
+                    or set(claim) != {'version','request_id','conversation_url','user_id','reason'}
+                    or type(claim['version']) is not int or claim['version'] != 1
+                    or claim['request_id'] != rid or claim['reason'] != 'native_stream_error'
+                    or not isinstance(claim['conversation_url'], str)
+                    or not re.fullmatch(r'https://chatgpt\.com/c/[A-Za-z0-9_-]+', claim['conversation_url'])
+                    or not isinstance(claim['user_id'], str)
+                    or not re.fullmatch(r'[\w:.-]{1,250}', claim['user_id'], flags=re.ASCII)
+                    or row['provider'] != 'chatgpt' or phase != 'running'
+                    or row['phase'] not in {'claimed','running'}
+                    or row.get('send_state') != 'accepted' or row.get('result_proof')
+                    or proof.get('status') != 'verified' or proof.get('expected') != expected
+                    or proof.get('loaded') != expected or proof.get('reason') != 'ready'
+                    or proof.get('method') not in {'filename','input_files'}
+                    or retry != 1 or previous_retry not in {0,1}
+                    or previous_retry == 1 and previous_claim != claim
+                    or state.get('stage') != 'stream_error_retry' or state.get('owned') is not True
+                    or state.get('candidates') != 0 or state.get('loaded') != 0):
+                    raise ValueError('หลักฐาน Retry ของปกเดิมไม่ครบหรือเจ้าของงานเปลี่ยน')
+                row['native_retry_claim'] = dict(claim)
             if 'reference_chain' in event:
                 chain = event['reference_chain']
                 expected = len(row.get('sources') or [row['source']])
@@ -438,7 +546,8 @@ class AICovers:
                 state = event['collector_state']
                 if (not isinstance(state, dict)
                     or state.get('stage') not in {'request_missing', 'answer_missing', 'generating', 'multiple_images',
-                                                  'waiting_image', 'loading_image', 'stabilizing', 'downloading'}
+                                                  'waiting_image', 'loading_image', 'stabilizing', 'downloading',
+                                                  'stream_error', 'stream_error_retry', 'image_error_retry'}
                     or type(state.get('owned')) is not bool
                     or ('stop_visible' in state and type(state['stop_visible']) is not bool)
                     or ('stalled_ms' in state and (type(state['stalled_ms']) is not int

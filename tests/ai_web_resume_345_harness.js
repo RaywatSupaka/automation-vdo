@@ -17,7 +17,7 @@ async function routing(provider,kind='closed',stage='motion'){
     rememberAutomationTabs:async()=>{},focusOpenedBrowserTab:async()=>{},waitForTabComplete:async()=>{},
     isWebLoginUrl:()=>false,isGoogleVerificationUrl:()=>false,
     chrome:{storage:{local:{get:async()=>({[`smartpostAIWebTab:${provider}:${job.id}`]:9}),set:async x=>Object.assign(storage,x),remove:async()=>{}}},
-      tabs:{get:async id=>{if(kind==='closed'&&id===9)throw Error('closed');return current;},
+      tabs:{query:async()=>[],get:async id=>{if(kind==='closed'&&id===9)throw Error('closed');return current;},
         create:async options=>{opened.push(options.url);return current={id:10,url:kind==='redirect'?root:options.url};},
         update:async()=>current,remove:async id=>removed.push(id),
         sendMessage:async(id,message)=>{messages.push({id,message,url:current.url});return {ok:true};}},

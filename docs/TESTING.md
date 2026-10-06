@@ -9,6 +9,7 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature ai-cover
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-dispatch
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-recovery-ui
+.venv\Scripts\python.exe tools\run_focused_tests.py --feature story-setup-ui
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-image-result
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature extension-update
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature release-contract
@@ -26,13 +27,15 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 
 `webview2-prototype` checks profile separation, bounded read-only diagnostics, DEV-only page gating, child-control bounds, and bridge isolation. Run `.venv\Scripts\python.exe -m desktop.provider_prototype --smoke` for the separate offline CLI research window. Run `$env:SMARTFLOW_DEV_BYPASS_MEMBERSHIP='1'; .venv\Scripts\python.exe tools\smoke_provider_lab_ui.py` for an offline native fixture that verifies the provider WebView2 is a child of the same SmartFlow-style window, loads, and hides on page exit. In the source DEV MODE SmartFlow window, use the sidebar `AI Chat` menu for the embedded ChatGPT page. These checks do not send a prompt or exercise a real job.
 
-`ai-cover` checks the post-video cover ledger and exact owned ChatGPT result collection. It covers an uncertain Send followed by a late answer and a completed cover image behind a stale Stop control. The browser fixture makes no provider request.
+`ai-cover` checks the post-video cover ledger and exact owned ChatGPT result collection. It covers an uncertain Send followed by a late answer, a completed cover image behind a stale Stop control, an accepted cover whose attachment filenames disappear after submission, and native stream-error ownership, durable Retry claim across paused collect-only resume, duplicate controls and ownership change before Retry. The browser fixtures make no provider request.
 
 `story-dispatch` checks duplicate command protection, exact saved-conversation tab adoption on Resume, ambiguous-tab stop, desktop URL routing and heartbeat dispatch ownership, plus read-only ChatGPT bootstrap tab selection, stale drafts, document replacement, retained-reference reuse for a prepared unsent Story draft across unified composer forms, exact attachment count before Send, and the unchanged Gemini tab route.
 It also checks bounded removal of one exactly named unsent Story reference left in the composer after a failed Send preflight; ownership changes, unrelated drafts and multiple attachments remain blocked.
 The actual Background Send harness also checks up to three five-second read-only readiness rechecks, including transient ambiguous Send controls, one final gesture, and no gesture after the draft changes or ambiguity persists. The Story image result group verifies bounded reason and recheck evidence reaches the local trace without prompt text.
 
 `story-recovery-ui` checks durable saved-scene evidence, bounded trace fallback for a later reference error without a scene number, and the Story recovery timeline shown in the desktop UI. It does not send provider requests or alter saved jobs.
+
+`story-setup-ui` checks the Story Shorts Quick Setup's bounded inner scroll, three visible setup steps and progress, navigation by click, retained form values, and narrow layouts without provider requests.
 
 `story-image-result` checks owned ChatGPT image result collection when a stale progress marker remains after the completed image, while a real Stop button still blocks collection. It also checks that Continue never restarts an accepted prior-run image request after an empty post-refresh response. These fixtures make no provider request.
 

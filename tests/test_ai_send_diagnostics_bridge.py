@@ -36,11 +36,15 @@ class AISendDiagnosticsBridgeTests(unittest.TestCase):
 
     def test_transient_send_rechecks_keep_only_bounded_reasons(self):
         detail = {"gesture_phase": "not_started", "preflight_reason": "send_target_ambiguous",
+                  "preflight_stage": "after_attach",
                   "preflight_rechecks": 3,
                   "preflight_reasons": ["send_target_ambiguous", "response_active", "send_not_ready"]}
         self.assert_evidence(self.progress("error", detail={**detail, "prompt": "PRIVATE PROMPT"}), detail)
         self.assertEqual(LocalBridge._safe_ai_send_diagnostics({"detail": {
+            "preflight_stage": "after_claim"}}), {"preflight_stage": "after_claim"})
+        self.assertEqual(LocalBridge._safe_ai_send_diagnostics({"detail": {
             "preflight_rechecks": 99,
+            "preflight_stage": "PRIVATE PROMPT",
             "preflight_reasons": ["PRIVATE PROMPT", "send_not_ready", "https://secret/", "response_active"],
         }}), {"preflight_reasons": ["send_not_ready"]})
 

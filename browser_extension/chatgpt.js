@@ -7631,6 +7631,32 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       && Boolean(user.compareDocumentPosition(scope)&Node.DOCUMENT_POSITION_FOLLOWING) ? scope : null;
   }
 
+  function coverNativeStreamErrorSnapshot(request, prompt) {
+    if(IS_GEMINI || !motionRequestIsLatestUser(prompt) || !coverConversationURL()
+        || userTurns().length!==1 || !coverUserId(userTurns()[0])
+        || analysisResponseStopButton() || composerText(composer()).trim())return null;
+    const user=userTurns()[0],main=user.closest('main')||document.querySelector('main');
+    if(!main || !main.contains(user))return null;
+    // ChatGPT can render its technical stream error beside the submitted user
+    // bubble, without an assistant turn. Require the exact native error and
+    // Retry control AFTER this unique owned request; never scan old exchanges.
+    const buttons=[...main.querySelectorAll('button')].filter(button=>{
+      if(!visible(button) || button.disabled || button.getAttribute('aria-disabled')==='true'
+          || !(user.compareDocumentPosition(button)&Node.DOCUMENT_POSITION_FOLLOWING))return false;
+      const label=String(button.textContent||button.getAttribute('aria-label')||'').trim();
+      if(!/^(?:ลองใหม่|ลองอีกครั้ง|Retry|Try again)$/i.test(label))return false;
+      let container=button.parentElement;
+      for(let depth=0;container && depth<3;depth++,container=container.parentElement){
+        const copy=container.cloneNode(true);
+        copy.querySelectorAll('button,svg').forEach(node=>node.remove());
+        if(confirmedStoryImageServiceError(String(copy.textContent||'').trim()))return true;
+      }
+      return false;
+    });
+    if(buttons.length!==1 || coverResultImages(coverResultScope()).length)return null;
+    return {button:buttons[0],owner_id:coverUserId(user),conversation_url:coverConversationURL()};
+  }
+
   function coverImageKey(image) {
     const raw=String(image.currentSrc||image.src||'');
     try{const url=new URL(raw);
@@ -7697,9 +7723,25 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
 
   function coverRecoveryOwnsReferences(request) {
     if(request.reference_chain)return !!coverRetryChainSnapshot(request);
-    // Legacy requests retain their exact attached-turn rule; a filename
-    // elsewhere in the conversation is never an ownership receipt.
-    return coverUserHasReferences(request,userTurns().at(-1));
+    const users=userTurns(),latest=users.at(-1);
+    if(coverUserHasReferences(request,latest))return true;
+    const visibleLabels=[latest?.textContent,...[...(latest?.querySelectorAll?.('img,[aria-label],[title]')||[])]
+      .flatMap(node=>[node.alt,node.getAttribute('aria-label'),node.getAttribute('title')])].join(' ');
+    if(visibleLabels.includes('smartflow-cover-'))return false;
+    // ChatGPT can hide attachment filenames after an accepted Send. The
+    // desktop already verified the upload before that Send. Use that durable
+    // proof only for a single-turn, exact-prompt result in the owned tab.
+    const proof=request.reference_proof||{},count=(request.sources || request.source_images || [request.source_data]).length;
+    const nativeClaim=request.native_retry_claim;
+    const claimedRetry=request.retry_count===1 && nativeClaim?.version===1
+      && nativeClaim.request_id===request.request_id && nativeClaim.reason==='native_stream_error'
+      && nativeClaim.conversation_url===coverConversationURL()
+      && nativeClaim.user_id===coverUserId(latest);
+    return request.collect_only===true && !IS_GEMINI && request.send_state==='accepted'
+      && (!request.retry_count || claimedRetry) && users.length===1 && Boolean(coverUserId(latest))
+      && Boolean(coverConversationURL()) && motionRequestIsLatestUser(coverPromptForRequest(request))
+      && proof.status==='verified' && proof.expected===count && proof.loaded===count
+      && ['filename','input_files'].includes(proof.method) && proof.reason==='ready';
   }
 
   function coverDraftSnapshot(request, prompt) {
@@ -7864,7 +7906,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
   }
 
   async function collectCoverImage(request, attempt) {
-    let nativeRetryUsed=false, retryReply='', retryWaiting=false;
+    let nativeRetryUsed=false, nativeStreamRetryUsed=false, retryReply='', retryWaiting=false,retryStarted=0;
     const coverPrompt=coverPromptForRequest(request);
     let before=new Set(),users=0,signature='',answers=0;
     if(request.collect_only){
@@ -7929,31 +7971,53 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         && /สร้างรูปภาพไม่สำเร็จ/.test(retryScope.textContent||'')
         ? [...retryScope.querySelectorAll('button')].filter(button=>visible(button) && !button.disabled
           && String(button.textContent||'').trim()==='ลองอีกครั้ง') : [];
-      if(!request.collect_only && !nativeRetryUsed && attempt===0 && !request.retry_count && !candidates.length
-          && !analysisResponseStopButton() && retryButtons.length===1){
-        // Persist the shared one-retry budget BEFORE the native Retry click.
-        const saved=await coverEvent({phase:'running',retry_count:1,active:true,message:'กดลองอีกครั้งของภาพปกเดิม • รอคำตอบใหม่ ไม่ส่งพรอมต์หรือแนบรูปซ้ำ'});
-        if(saved.retry_count!==1)throw Error('ยังยืนยันสิทธิ์ลองอีกครั้งไม่ได้');
-        nativeRetryUsed=true;request.retry_count=1;retryWaiting=true;retryReply=text;
-        assertNotCancelled();
-        if(!motionRequestIsLatestUser(coverPrompt) || analysisResponseStopButton()
-            || latestAssistantStrictlyAfterLatestUser()?.closest?.('[data-conversation-screenshot-content]')!==retryScope
-            || retryButtons[0].disabled || !retryButtons[0].isConnected || !visible(retryButtons[0]))throw Error('คำตอบเปลี่ยนก่อนกดลองอีกครั้ง');
-        retryButtons[0].click();
-        activity=Date.now();lastSignature='';imageURL='';imageSince=0;textSince=Date.now();
-        await sleep(700);continue;
-      }
-      if(retryWaiting && (analysisResponseStopButton() || text!==retryReply || images.length))retryWaiting=false;
+      const streamError=owns && !turn && !candidates.length
+        ?coverNativeStreamErrorSnapshot(request,coverPrompt):null;
+      const nativeRetry=retryButtons.length===1?retryButtons[0]:streamError?.button;
       if(owns && !acceptedReported){
         acceptedReported=true;
         await coverEvent({phase:'running',send_state:'accepted',message:'พบคำขอปกในแชตเดิม • กำลังเก็บผลโดยไม่ส่งซ้ำ'});
+      }
+      if((!request.collect_only || streamError) && !nativeRetryUsed && attempt===0 && !request.retry_count && !candidates.length
+          && !analysisResponseStopButton() && nativeRetry){
+        // Persist the shared one-retry budget BEFORE the native Retry click.
+        const native_retry_claim=streamError?{
+          version:1,request_id:request.request_id,conversation_url:streamError.conversation_url,
+          user_id:streamError.owner_id,reason:'native_stream_error'}:null;
+        const saved=await coverEvent({phase:'running',retry_count:1,active:true,
+          collector_state:{stage:streamError?'stream_error_retry':'image_error_retry',owned:true,candidates:0,loaded:0},
+          ...(native_retry_claim?{native_retry_claim}:{}),
+          message:'กดลองอีกครั้งของภาพปกเดิม • รอคำตอบใหม่ ไม่ส่งพรอมต์หรือแนบรูปซ้ำ'});
+        if(saved.retry_count!==1 || native_retry_claim
+            && JSON.stringify(saved.native_retry_claim)!==JSON.stringify(native_retry_claim))
+          throw Error('ยังยืนยันสิทธิ์ลองอีกครั้งไม่ได้');
+        nativeRetryUsed=true;nativeStreamRetryUsed=!!streamError;request.retry_count=1;
+        if(native_retry_claim)request.native_retry_claim=native_retry_claim;
+        retryWaiting=true;retryReply=text;retryStarted=Date.now();
+        assertNotCancelled();
+        const sameStream=streamError && coverNativeStreamErrorSnapshot(request,coverPrompt);
+        if(!motionRequestIsLatestUser(coverPrompt) || analysisResponseStopButton()
+            || (streamError ? !sameStream || sameStream.button!==nativeRetry
+              || sameStream.owner_id!==streamError.owner_id || sameStream.conversation_url!==streamError.conversation_url
+              : latestAssistantStrictlyAfterLatestUser()?.closest?.('[data-conversation-screenshot-content]')!==retryScope)
+            || nativeRetry.disabled || !nativeRetry.isConnected || !visible(nativeRetry))throw Error('คำตอบเปลี่ยนก่อนกดลองอีกครั้ง');
+        nativeRetry.click();
+        activity=Date.now();lastSignature='';imageURL='';imageSince=0;textSince=Date.now();
+        await sleep(700);continue;
+      }
+      if(retryWaiting && (analysisResponseStopButton() || text!==retryReply || images.length
+          || nativeStreamRetryUsed && !streamError))retryWaiting=false;
+      if(streamError && (request.collect_only || !retryWaiting || Date.now()-retryStarted>30000)){
+        const error=Error('ChatGPT เกิดข้อผิดพลาดในสตรีมของปกเดิม • เก็บคำขอไว้ ไม่ส่งซ้ำ');
+        error.code='AI_COVER_STREAM_ERROR';
+        throw error;
       }
       const progress=JSON.stringify([text,candidates.map(i=>[coverImageKey(i),i.complete,i.naturalWidth,i.naturalHeight])]);
       if(progress!==lastSignature){lastSignature=progress;activity=Date.now();lastContentChange=activity;}
       const stopVisible=!!analysisResponseStopButton();
       if(stopVisible)activity=Date.now();
       if(stopVisible!==lastStopVisible){imageSince=Date.now();lastStopVisible=stopVisible;}
-      const collector_state={stage:!owns?'request_missing':!turn?'answer_missing':stopVisible?'generating':
+      const collector_state={stage:!owns?'request_missing':streamError?'stream_error':!turn?'answer_missing':stopVisible?'generating':
         !candidates.length?'waiting_image':!images.length?'loading_image':'stabilizing',
         owned:owns,candidates:Math.min(10,candidates.length),loaded:Math.min(10,images.length),
         stop_visible:stopVisible,stalled_ms:Math.max(0,Date.now()-lastContentChange)};
@@ -8003,7 +8067,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         collector_state:{stage:'downloading',owned:true,candidates:1,loaded:1}});
       let data;
       const ownsDownload=()=>motionRequestIsLatestUser(coverPromptForRequest(request))
-        && (!request.reference_chain || coverRecoveryOwnsReferences(request))
+        && (!(request.collect_only || request.reference_chain) || coverRecoveryOwnsReferences(request))
         && !analysisResponseStopButton()
         && coverResultImages(coverResultScope()).some(candidate=>coverImageKey(candidate)===coverImageKey(image));
       for(let downloadAttempt=0;downloadAttempt<3;downloadAttempt++){

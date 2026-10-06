@@ -1,5 +1,21 @@
 # SmartFlow AI — Program Blueprint
 
+## Owner-supplied recovery of an accepted AI cover (2026-10-05)
+
+When the provider has accepted a cover request but the result reader cannot verify the original attachment labels after the reply renders, the queue remains paused. `AICovers.adopt_user_supplied_result` can save an original cover file supplied by the owner against that exact latest request without another provider Send. It requires a terminal review state with accepted or uncertain Send evidence, a ready video, unchanged cover revision, a valid image and the requested orientation. It records `completion_source=user_supplied` and a request-scoped cover history entry; it does not claim the Extension collected or verified the image. The source file and finished video remain untouched. The queue's existing completion gate opens only after the request-owned copy is saved. This path is used only with an explicitly supplied image file; a screenshot of queue status is not image evidence.
+
+## Story Shorts Quick Setup scroll and progress (2026-10-05)
+
+The new Story form's Quick Setup is a bounded scroll panel with three visible sections: image/style, video/scenes, and review/reference image. Its navigation and progress indicate the section currently in view; selecting a section scrolls within the settings panel without changing form values or starting a job. The existing Story creation payload and provider guards remain unchanged.
+
+## Story bootstrap occupied fresh root (0.15.510, 2026-10-05)
+
+Before a new Story analysis request, an owned ChatGPT root that restores an attachment or conversation is preserved. The Extension can try one other new root, then requires a stable empty document before Start. A second occupied root produces a bounded review with a specific reason; the failed job and all prior provider state remain untouched. Source and fixture verification do not prove installed activation or provider output.
+
+## ChatGPT post-attach Send recheck / 0.15.509
+
+The initial Send target may be ready, then disappear while Chrome debugger attaches or the composer rerenders. Before any physical press, Background rechecks `send_not_ready`, `response_active`, `target_blocked`, or `send_target_ambiguous` at most three times total, five seconds apart. This includes the final read after the Story dispatch latch is written, within the same handler and before a press. Each probe revalidates the exact job, run, tab, receipt and full draft. Changed ownership or draft stops immediately. A final failure records `preflight_stage=after_attach` or `after_claim`, reason and count without prompt content, and preserves saved scenes. A later attempt cannot replay a claimed, accepted or uncertain Send. This covers Story `STORY-20261005-7B9E37` scene 2 after Extension 507's first-stage retry did not apply.
+
 ## Owner-authorized uncertain Story image replay / 0.15.505–507
 
 ## Prior-run Story image draft watchdog / 0.15.504
@@ -46,6 +62,10 @@ The Extension keeps a prepared receipt for an image request that failed before S
 
 The Story Shorts recovery cards use `core/story_recovery_summary.py` and saved local scene files to show confirmed analysis, each saved image scene, the exact failed image scene, and later pending scenes separately. A job-level error no longer colors the whole card red. The last error is expandable; a `CHATGPT_IMAGE_RESULT_SEND_NOT_STARTED` scene is labeled as not sent, not as an image-generation failure. The summary is read-only and does not retry, clear, or change job checkpoints. `STORY-20261002-CB0614` has analysis ready and local images 1–2; its scene-3 pre-send check failed after an earlier prompt-ready observation. Three older Story jobs have no saved image checkpoints. A separate read-only WebView2 provider lab is tracked in `docs/plans/webview2-provider-prototype.md`.
 
+The saved Story Shorts list now shows every pending ordinary Story in a bounded scroll area, retaining its scroll position across state refreshes. Each inactive card shows image progress from confirmed local scene files only, labeled as saved image scenes rather than overall job completion. The currently active card shows its matching live desktop job percent. Analysis, voice, video, and failed-scene status remain separate in the existing timeline. This display change does not modify the job or retry it.
+
+The Story Shorts page presents “เริ่มเรื่องใหม่” and “งานเดิม” as adjacent tabs above the form. Selecting “งานเดิม” reveals the recovery cards directly, with no need to scroll past the long new-story form or expand another disclosure. The tab count follows the same pending-Story filter; an empty tab gives a clear message and leaves the finished-video Library separate.
+
 For a later image-reference error without a scene number in `last_error`, the summary reads a bounded tail of the same job's trace and identifies the latest failed image attempt. It does not infer success from the trace and suppresses a failure once a later image checkpoint is saved. This source change needs an idle desktop restart before the already-open window displays it.
 
 ## Story resume tab and dispatch ownership (0.15.493, 2026-10-02)
@@ -73,6 +93,12 @@ Owner preference to revisit: the tab opened when SmartFlow starts could show Sma
 When Chrome is already open, desktop focuses its window even if the Extension heartbeat has not connected yet; launching the provider URL in that gap created another tab. A new Story analysis preflight with `draft_changed` and no dispatched Send stops for review of the existing ChatGPT draft instead of automatically recovering into another tab. The original tab and draft remain untouched. Source activation requires restarting the SmartFlow developer app after active work ends.
 
 ## AI cover send diagnostics (2026-10-02)
+
+Extension/Desktop 0.15.513 persists `native_retry_claim` for the exact ChatGPT stream-error panel. The claim binds request ID, conversation URL and user message ID, requires the accepted Send and verified source upload, and consumes the single Retry budget before any click. This also applies to a paused accepted cover resumed in collect-only mode. After a worker restart, the same claim permits result collection in the original one-user exchange without another Retry, Send or upload. Changed ownership, duplicate controls, quota text or missing proof remain review cases. Candidate 512 lacked the Desktop collector-stage acceptance and was superseded before activation.
+
+Extension 0.15.512 recognizes ChatGPT's native message-stream error outside the assistant answer. For a fresh cover, it first durably records accepted ownership and a single Retry budget, then clicks the exact native Retry only while the latest prompt, conversation, control, empty draft and idle response still match. It waits for the same request's result without another Send or upload. A repeated error enters review with `AI_COVER_STREAM_ERROR`; collect-only recovery reports the error immediately and never uses provider Retry. The queue remains paused until a verified cover is saved.
+
+Extension 0.15.511 cover recovery: after an accepted Send, ChatGPT may hide the reference attachment filenames in the user turn. A collect-only read of the original Extension-owned tab may use the desktop's request-bound verified upload proof when that conversation has exactly one user turn with the exact latest cover prompt, a stable conversation URL and a user message ID. Visible conflicting SmartFlow reference names, a retry turn, changed prompt, unconfirmed Send or incomplete proof still stop for review. Recheck the same ownership before downloading the assistant's image. No Send, upload, Retry or new tab occurs during this recovery; the queue still requires a validated saved image and ready ACK.
 
 The cover collector reports a bounded heartbeat with the exact request's ownership, loaded image count, Stop visibility and time since answer content changed. A physically dispatched Send with an unknown acceptance remains on that same conversation and passively reads its result. The collector never uses that uncertainty to send another prompt. A loaded, exact owned cover may be saved after 60 seconds of stable display even if ChatGPT leaves Stop mounted; a changed image restarts the stability window. A genuinely active request without a usable cover reaches review after nine minutes, while an idle response still reaches review after six minutes. Existing video and cover receipts remain intact.
 

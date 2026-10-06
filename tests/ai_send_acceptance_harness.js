@@ -16,7 +16,7 @@ function section(source, start, end) {
 // real content acceptance loop. Only browser surfaces and time are mocked.
 function fixture(options = {}) {
   const prompt = "Repair this existing response as JSON; do not create a new job.";
-  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0, preflightReads: 0, delays: [] };
+  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0, preflightReads: 0, postAttachReads: 0, postClaimReads: 0, delays: [] };
   const originalEditor = state.editor;
   const claim={key:'smartpostStoryGeneratedImage:chatgpt:JOB-TEST:6',nonce:'test-nonce',scene_index:6};
   const storage={[claim.key]:{job_id:'JOB-TEST',run_id:'run-test',send_nonce:'test-nonce',send_phase:'dispatching',
@@ -39,7 +39,12 @@ function fixture(options = {}) {
   originalEditor.getBoundingClientRect = () => rect;
   function makeButton() {
     const node = {
-      isConnected: true, get disabled() { return options.disabled === true || (options.readyAfterPreflightReads && state.preflightReads < options.readyAfterPreflightReads); }, innerText: "", textContent: "",
+      isConnected: true, get disabled() { return options.disabled === true
+        || (options.readyAfterPreflightReads && state.preflightReads < options.readyAfterPreflightReads)
+        || (options.postAttachNotReadyReads && state.postAttachReads > 0
+          && state.postAttachReads <= options.postAttachNotReadyReads)
+        || (options.postClaimNotReadyReads && state.postClaimReads > 0
+          && state.postClaimReads <= options.postClaimNotReadyReads); }, innerText: "", textContent: "",
       form: composerForm, type: 'submit',
       getBoundingClientRect: () => ({ ...rect, left: rect.left + state.offset, right: rect.right + state.offset }),
       getAttribute: (name) => name === "aria-label" ? state.label : name === 'type' ? 'submit'
@@ -98,7 +103,10 @@ function fixture(options = {}) {
     },
     setTimeout: (callback, delay) => { state.delays.push(delay); callback(); return 1; },
     chrome: {
-      storage:{local:{get:async()=>structuredClone(storage),set:async value=>Object.assign(storage,structuredClone(value))}},
+      storage:{local:{get:async()=>structuredClone(storage),set:async value=>{
+        if (Object.hasOwn(value,claim.key+':dispatch')) state.dispatchLatched=true;
+        Object.assign(storage,structuredClone(value));
+      }}},
       windows: { update: async () => {} }, tabs: {
         update: async () => {},
         sendMessage: async (_tabId, message) => {
@@ -110,6 +118,14 @@ function fixture(options = {}) {
         if (args[1] === true && func.toString().includes('resolveChatGPTComposerSendTarget')) {
           state.preflightReads++;
           if (options.changeDraftAfterPreflightRead === state.preflightReads) state.editor.innerText = 'Changed draft';
+        }
+        if (args[1] === false && func.toString().includes('resolveChatGPTComposerSendTarget')) {
+          state.postAttachReads++;
+          if (options.changeDraftAfterPostAttachRead === state.postAttachReads) state.editor.innerText = 'Changed draft';
+          if (state.dispatchLatched) {
+            state.postClaimReads++;
+            if (options.changeDraftAfterPostClaimRead === state.postClaimReads) state.editor.innerText = 'Changed draft';
+          }
         }
         page.injectedArgs = args;
         return [{ result: await vm.runInContext(`(${func.toString()})(...injectedArgs)`, page) }];
@@ -240,6 +256,54 @@ async function tests() {
     assert.equal(f.state.preflightReads,readyAfterPreflightReads);
     assert.equal(f.state.delays.filter(delay => delay === 5000).length,readyAfterPreflightReads-1);
     f.checkSingleDispatch();
+  }
+  for (const postAttachNotReadyReads of [1,3]) {
+    const f=fixture({storyClaim:true,acceptImmediately:true,postAttachNotReadyReads});
+    await f.run();
+    assert.equal(f.state.delays.filter(delay => delay === 5000).length,postAttachNotReadyReads);
+    assert.equal(f.reports[0].detail.preflight_rechecks,postAttachNotReadyReads);
+    f.checkSingleDispatch();
+  }
+  {
+    const f=fixture({storyClaim:true,postAttachNotReadyReads:4});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true);
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'send_not_ready');
+    assert.equal(f.responses[0].diagnostics.preflight_stage,'after_attach');
+    assert.equal(f.responses[0].diagnostics.preflight_rechecks,3);
+    assert.equal(f.commands.filter(event => event.type==='mousePressed').length,0);
+  }
+  {
+    const f=fixture({storyClaim:true,postAttachNotReadyReads:2,changeDraftAfterPostAttachRead:2});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true);
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'draft_mismatch');
+    assert.equal(f.responses[0].diagnostics.preflight_rechecks,1);
+    assert.equal(f.commands.filter(event => event.type==='mousePressed').length,0);
+  }
+  {
+    const f=fixture({storyClaim:true,acceptImmediately:true,postClaimNotReadyReads:2});
+    await f.run();
+    assert.equal(f.state.delays.filter(delay => delay === 5000).length,2);
+    assert.equal(f.reports[0].detail.preflight_rechecks,2);
+    f.checkSingleDispatch();
+  }
+  {
+    const f=fixture({storyClaim:true,postClaimNotReadyReads:4});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true);
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'send_not_ready');
+    assert.equal(f.responses[0].diagnostics.preflight_stage,'after_claim');
+    assert.equal(f.responses[0].diagnostics.preflight_rechecks,3);
+    assert.equal(f.commands.filter(event => event.type==='mousePressed').length,0);
+  }
+  {
+    const f=fixture({storyClaim:true,postClaimNotReadyReads:2,changeDraftAfterPostClaimRead:2});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true);
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'draft_mismatch');
+    assert.equal(f.responses[0].diagnostics.preflight_rechecks,1);
+    assert.equal(f.commands.filter(event => event.type==='mousePressed').length,0);
   }
   for (const ambiguousUntilPreflightReads of [2,4]) {
     const f=fixture({storyClaim:true,acceptImmediately:true,ambiguousUntilPreflightReads});
@@ -450,7 +514,7 @@ async function tests() {
     f=fixture({storyClaim:true,[option]:true});await assert.rejects(f.run());
     assert.equal(f.commands.filter(e=>e.type==='mousePressed').length,0,option);
   }
-  process.stdout.write(JSON.stringify({ ok: true, cases: 42 }) + "\n");
+  process.stdout.write(JSON.stringify({ ok: true, cases: 49 }) + "\n");
 }
 
 module.exports = { fixture };

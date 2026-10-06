@@ -28,9 +28,11 @@ async function scenario(name,initial,options,verify) {
     rememberAutomationTabs:async id=>actions.push(['remember',id]),
     rememberedAutomationTabIds:async()=>options.rememberedIds||[],
     openAIWebTab:async provider=>{
+      const freshIndex=actions.filter(row=>row[0]==='create').length;
+      const fresh=options.freshStates?.[freshIndex]||{};
       const tab={id:++nextId,url:provider==='chatgpt'?root:'https://gemini.google.com/app',status:'complete',
-        empty:options.freshEmpty!==false,readyAfter:options.freshReadyAfter||0,
-        reason:options.freshReason||'draft_present',documentId:`doc-${nextId}`};
+        empty:fresh.empty??(options.freshEmpty!==false),readyAfter:options.freshReadyAfter||0,
+        reason:fresh.reason||options.freshReason||'draft_present',documentId:`doc-${nextId}`};
       tabs.push(tab);actions.push(['create',tab.id]);return tab.id;
     },
     waitForTabComplete:async()=>{},isWebLoginUrl:()=>false,isGoogleVerificationUrl:()=>false,
@@ -126,9 +128,19 @@ async function scenario(name,initial,options,verify) {
     assert.equal(actions.filter(a=>a[0]==='clear').length,2);
     assert.equal(actions.filter(a=>a[0]==='start').length,1);
   });
-  await scenario('attachment in new tab is never cleared or submitted',[
+  await scenario('attachment restored into one new tab is preserved while another clean tab starts',[
+    {id:1,empty:false}],{freshStates:[{empty:false,reason:'attachment_present'},{empty:true}]},({actions,outcome,tabs})=>{
+    assert.equal(outcome.tabId,102);
+    assert.equal(actions.filter(a=>a[0]==='create').length,2);
+    assert.equal(tabs[1].empty,false);
+    assert.equal(actions.filter(a=>a[0]==='clear').length,0);
+    assert.equal(actions.filter(a=>a[0]==='start').length,1);
+  });
+  await scenario('attachment restored into two new tabs stops after bounded retry',[
     {id:1,empty:false}],{freshEmpty:false,freshReason:'attachment_present'},({actions,outcome})=>{
     assert.match(String(outcome.message),/AI_WEB_WAIT_REVIEW/);
+    assert.match(String(outcome.message),/ไฟล์แนบที่ยืนยันเจ้าของไม่ได้/);
+    assert.equal(actions.filter(a=>a[0]==='create').length,2);
     assert.equal(actions.filter(a=>a[0]==='clear').length,0);
     assert.equal(actions.filter(a=>a[0]==='start').length,0);
   });
