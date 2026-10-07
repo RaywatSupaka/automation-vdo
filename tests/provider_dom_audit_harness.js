@@ -46,6 +46,7 @@ const section=(start,end)=>source.slice(source.indexOf(start),source.indexOf(end
     state=api.chatGPTComposerAttachmentState();check(state.count===0&&!state.busy&&!state.failed,'Removed current image, old history untouched');cases++;
     return {ok:true,cases};
   },section('  function composer(', '  function loginRequired(')
+    +section('  function chatGPTComposerShell(', '  function chatGPTComposerAttachmentState(')
     +section('  function chatGPTComposerAttachmentState(', '  function sourceAttachmentPreviews(')
     +section('  function preferredSourceFileInput(', '  async function waitForChatGPTSourceAttachmentProof(')
     +section('  function isStopGenerationButton(', '  function stopButton(')

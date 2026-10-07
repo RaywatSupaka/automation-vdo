@@ -128,6 +128,7 @@ function setup(options = {}) {
     f = setup({ afterFirstWait: signal }); await assert.rejects(f.run(),e=>e.code==='AI_SEND_DISPATCHED_UNCONFIRMED');
     assert.equal(f.presses(), 1); cases++;
   }
+  let guardCase = 0;
   for (const change of [
     (f) => { f.state.editor.innerText = 'different draft'; },
     (f,c) => { c.activeRunId = 'another-run'; },
@@ -136,12 +137,12 @@ function setup(options = {}) {
     (f,c,images) => { images.push({ src: 'new-image' }); },
     (f,c,images,refs) => { refs.push({ src: 'new-source' }); },
     (f,c,images,refs,assistants) => { assistants[0].innerText = 'changed response'; },
-    (f) => { f.state.button.disabled = true; },
+    (f) => { Object.defineProperty(f.state.button, 'disabled', {get:()=>true}); },
     (f) => { f.state.expansion = {}; },
     (f) => { f.state.editor.closest = () => ({ querySelectorAll: () => [{}] }); }
   ]) {
     f = setup({ afterFirstWait: change });
-    await assert.rejects(f.run()); assert.equal(f.presses(), 1); assert.equal(f.claimWrites(), 0); cases++;
+    await assert.rejects(f.run()); assert.equal(f.presses(), 1, `changed state ${guardCase}`); assert.equal(f.claimWrites(), 0); cases++; guardCase++;
   }
   for (const options of [{ cancelAtRetryPress: true }, { changeAtRetryPress: true },
     { afterFirstWait: (f,c) => { c.cancelRequested = true; } },
@@ -169,7 +170,7 @@ function setup(options = {}) {
     ['upload failure', f => { f.state.uploadStatus='Upload failed'; }],
     ['active response', f => { f.frontend.stopButtonVisible=()=>true; }],
     ['expanded image dismissal failed', f => { f.state.expansion={}; },{dismissFails:true}],
-    ['disabled send', f => { f.state.button.disabled=true; }]
+    ['disabled send', f => { Object.defineProperty(f.state.button,'disabled',{get:()=>true}); }]
   ]) {
     f=setup(options);prepare(f);
     await assert.rejects(f.run(), undefined, label);

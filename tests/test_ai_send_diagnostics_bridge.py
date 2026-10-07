@@ -57,7 +57,7 @@ class AISendDiagnosticsBridgeTests(unittest.TestCase):
                 self.assertEqual(self.status()["client"]["ai_send_diagnostics"], detail)
         for reason in ("draft_mismatch", "send_not_ready", "capture_missing", "target_changed",
                        "readiness_changed", "target_blocked", "rejected_before_press",
-                       "input_not_delivered"):
+                       "input_not_delivered", "send_surface_changed"):
             with self.subTest(reason=reason):
                 detail = {"gesture_phase": "not_started", "preflight_reason": reason}
                 self.assert_evidence(self.progress("error", **detail), detail)

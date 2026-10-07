@@ -7,6 +7,8 @@ from core.cancellable_process import hidden_process_kwargs
 
 class FlowFormatRecovery410Tests(unittest.TestCase):
     def test_actual_parser_and_owned_helper_recovery(self):
+        if not (Path(__file__).resolve().parents[1] / 'deliverables/SmartFlow_AI_Extension_0.15.409/chatgpt.js').is_file():
+            self.skipTest('Historical 409 Extension is not available in this checkout')
         result = subprocess.run(['node', 'tests/flow_format_recovery_410.cjs'],
                                 cwd=Path(__file__).resolve().parents[1],
                                 capture_output=True, text=True, encoding='utf-8', timeout=45,

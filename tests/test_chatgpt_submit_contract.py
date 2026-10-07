@@ -48,6 +48,8 @@ class ChatGPTSubmitContract(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which('node'), 'Node is required')
     def test_484_baseline_exposes_uncovered_submit_contract(self):
+        if not (ROOT.parent / 'before-runtime' / 'chatgpt.js').is_file():
+            self.skipTest('Historical 484 baseline source is not available in this checkout')
         result, proof = self.run_fixture(baseline=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(proof['ok'])

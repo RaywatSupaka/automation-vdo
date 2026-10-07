@@ -17,6 +17,7 @@ function fixture({ gemini = false, attachments = 0, expanded = false, ack = {ok:
     aiWebFailureDiagnostic: () => JSON.stringify({source_attachment_count:attachments,
       source_attachment_busy:false, source_attachment_failed:false, image_expansion_open:expanded, send_button_enabled:true}),
     assertNotCancelled: () => { if(cancel) throw Object.assign(new Error('cancelled'), {code:'CANCELLED'}); },
+    setTimeout, clearTimeout,
     chrome: {runtime: {sendMessage: async message => {
       events.push('audit'); messages.push(message);
       if(failure) throw new Error('transport down');

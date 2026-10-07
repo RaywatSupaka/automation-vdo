@@ -1,6 +1,8 @@
 # SmartFlow AI — Codex Quick Blueprint
 
-An isolated paired 0.15.520 candidate prevents a minimize/tab-switch race after trusted hover and before Story Send; see `build/browser-surface-520/source/PROGRAM_BLUEPRINT.md` and its `EXTENSION_BLUEPRINT.md`. Focused tests, 41-file Extension ZIP and launcher EXE 520.0 are ready in that worktree. Root DEV and the original Chrome Extension remain 519. On 2026-10-07 the owner stopped the queue and reopened the root launcher in DEV MODE: the queue is paused with zero running and four queued rows, and the 519 Extension is connected. Installed/live 520 behavior is not verified.
+รุ่น Runtime `0.15.521`: คู่ซอร์ส Desktop/Extension เพิ่มการตรวจหน้าต่างและแท็บก่อน Story Send หลัง trusted hover และการรอยืนยัน Cover Send เดิมแบบอ่านอย่างเดียว อ่านหัวข้อ 0.15.521 ใน `PROGRAM_BLUEPRINT.md` และ `EXTENSION_BLUEPRINT.md` ก่อนแก้เส้นทางนี้ แพ็กเกจรุ่น 521 เป็นผลสร้างจากซอร์ส; การเปิดใช้จริงและผลจาก provider ต้องตรวจแยกกัน
+
+The earlier isolated 0.15.520 candidate is superseded by root 521. Root EXE 521.0 and the original Chrome Extension ID are connected at 521 in DEV MODE, with four queued rows paused and zero running. Read the top of `PROJECT_STATE.md` for source, package, audit and activation evidence. New provider output under 521 remains unverified.
 
 Story 97EE7C was recovered under paired 519 DEV MODE on 2026-10-07: owner-authorized one-time scene-2 replay passed three read-only checks, scenes 2–6 and voice completed, and the 29.8-second Final was saved. Its exact queue row was reconciled to completed; seven later items remain paused. Source now reclaims a failed queue row before direct Story Continue and shows stopped work above untouched queued work. Read `PROGRAM_BLUEPRINT.md` “Direct Story Continue and stopped-work display” and the top of `PROJECT_STATE.md`. Focused `story-recovery-ui` passed; the actual root DEV window reopened and displayed the remaining stopped Story before seven waiting rows.
 

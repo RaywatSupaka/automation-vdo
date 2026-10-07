@@ -12,6 +12,8 @@ from core.product_story import prepare_link
 
 class ProductCapture419Tests(unittest.TestCase):
     def test_actual_extension_capture_block(self):
+        if not (Path(__file__).resolve().parents[1] / 'deliverables/SmartFlow_AI_Extension_0.15.418/background.js').is_file():
+            self.skipTest('Historical 418 Extension is not available in this checkout')
         result=subprocess.run(['node','tests/product_capture_419.cjs'],cwd=Path(__file__).resolve().parents[1],
                               capture_output=True,text=True,encoding='utf-8',timeout=30)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)

@@ -44,7 +44,7 @@ def safe_ai_send_diagnostics(payload: Mapping[str, object]) -> AISendDiagnostics
             "draft_mismatch", "send_not_ready", "capture_missing", "target_changed",
             "readiness_changed", "target_blocked", "rejected_before_press",
             "chatgpt_image_tool", "send_target_ambiguous", "composer_form_changed",
-            "input_not_delivered",
+            "input_not_delivered", "send_surface_changed",
         },
         "preflight_stage": {"after_attach", "after_claim"},
     }

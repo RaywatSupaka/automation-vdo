@@ -16,7 +16,8 @@ function section(source, start, end) {
 // real content acceptance loop. Only browser surfaces and time are mocked.
 function fixture(options = {}) {
   const prompt = "Repair this existing response as JSON; do not create a new job.";
-  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0, preflightReads: 0, postAttachReads: 0, postClaimReads: 0, delays: [], windowUpdates: [] };
+  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0, preflightReads: 0, postAttachReads: 0, postClaimReads: 0, delays: [], windowUpdates: [], tabUpdates: [],
+    windowState: options.minimizedWindow ? 'minimized' : 'normal', tabActive: true, probeVerifies: 0 };
   const originalEditor = state.editor;
   const claim={key:'smartpostStoryGeneratedImage:chatgpt:JOB-TEST:6',nonce:'test-nonce',scene_index:6};
   const storage={[claim.key]:{job_id:'JOB-TEST',run_id:'run-test',send_nonce:'test-nonce',send_phase:'dispatching',
@@ -108,9 +109,13 @@ function fixture(options = {}) {
         if (Object.hasOwn(value,claim.key+':dispatch')) state.dispatchLatched=true;
         Object.assign(storage,structuredClone(value));
       }}},
-      windows: { get: async () => ({state:options.minimizedWindow?'minimized':'normal'}),
-        update: async (_id,update) => {state.windowUpdates.push(update);} }, tabs: {
-        update: async () => {},
+      windows: { get: async () => ({state:state.windowState}),
+        update: async (_id,update) => {state.windowUpdates.push(update); if(update.state) state.windowState=update.state;} }, tabs: {
+        get: async () => {
+          if(state.tabMissing) throw Error('Tab closed');
+          return {id:12,windowId:2,active:state.tabActive};
+        },
+        update: async (_id,update) => {state.tabUpdates.push(update); if(update.active) state.tabActive=true;},
         sendMessage: async (_tabId, message) => {
           assert.equal(message.type, "VERIFY_AI_SEND_READY");
           return { ok: !options.cancelDuringPreparation };
@@ -130,7 +135,18 @@ function fixture(options = {}) {
           }
         }
         page.injectedArgs = args;
-        return [{ result: await vm.runInContext(`(${func.toString()})(...injectedArgs)`, page) }];
+        const result = await vm.runInContext(`(${func.toString()})(...injectedArgs)`, page);
+        if (args[0] === 'verify' && args[1]?.key) {
+          state.probeVerifies++;
+          if (state.probeVerifies === 1) {
+            if (options.minimizeAfterHover) state.windowState='minimized';
+            if (options.switchTabAfterHover) state.tabActive=false;
+            if (options.tabMissingAfterHover) state.tabMissing=true;
+          }
+          if (state.probeVerifies === 2 && options.minimizeAgainAfterRecovery)
+            state.windowState='minimized';
+        }
+        return [{ result }];
       } },
       debugger: {
         attach: async () => { if (options.draftChangesBeforeDispatch) state.editor.innerText = "Changed draft"; },
@@ -267,6 +283,29 @@ async function tests() {
     assert(f.state.delays.includes(350) && f.state.delays.includes(300),
       'Wait for layout after restore and again before the dispatch claim');
     f.checkSingleDispatch();
+  }
+  for (const option of ['minimizeAfterHover','switchTabAfterHover']) {
+    const f=fixture({storyClaim:true,acceptImmediately:true,[option]:true});
+    await f.run();
+    assert.equal(f.state.probeVerifies,2,`${option} requires a fresh trusted hover`);
+    assert.equal(f.state.windowUpdates.length,2,`${option} restores only the owned window once`);
+    f.checkSingleDispatch();
+  }
+  {
+    const f=fixture({storyClaim:true,minimizeAfterHover:true,minimizeAgainAfterRecovery:true});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true,'Repeated minimize stops before Send');
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'send_surface_changed');
+    assert.equal(f.commands.filter(event=>event.type==='mousePressed').length,0);
+    assert.equal(f.storage[f.claim.key+':dispatch'],undefined);
+  }
+  {
+    const f=fixture({storyClaim:true,tabMissingAfterHover:true});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true,'Lost owned tab stops before Send');
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'send_surface_changed');
+    assert.equal(f.commands.filter(event=>event.type==='mousePressed').length,0);
+    assert.equal(f.storage[f.claim.key+':dispatch'],undefined);
   }
   // Captured 2026-09-24 ChatGPT composer uses aria-label="ส่ง", no test ID.
   // Content sees it, but both injected trusted-click selectors must agree.
@@ -548,7 +587,7 @@ async function tests() {
     f=fixture({storyClaim:true,[option]:true});await assert.rejects(f.run());
     assert.equal(f.commands.filter(e=>e.type==='mousePressed').length,0,option);
   }
-  process.stdout.write(JSON.stringify({ ok: true, cases: 49 }) + "\n");
+  process.stdout.write(JSON.stringify({ ok: true, cases: 53 }) + "\n");
 }
 
 module.exports = { fixture };

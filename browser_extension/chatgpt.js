@@ -7800,6 +7800,11 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       return changed?['cover_draft_changed']:[];}};
     try{return await sendAndVerify(stable.button,stable.editor,users,signature,answers,false,null,watch);}
     catch(error){
+      // A dispatched Send may be accepted late. Observe the same owned turn
+      // and references without sending or uploading again.
+      if(error.code==='AI_SEND_DISPATCHED_UNCONFIRMED'
+          && await waitForCoverAcceptedSend(request,error))return;
+      if(error.submissionDispatched===true)throw error;
       // Only a fully released, unchanged, still-unsent cover draft may retry once.
       const d=error.sendDiagnostics||{};watch.observe();
       if(error.code!=='AI_SEND_DISPATCHED_UNCONFIRMED'||!baseline.ready||changed
@@ -7812,6 +7817,31 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       watch.observe();if(changed)throw error;
       return await sendAndVerify(fresh.button,fresh.editor,users,signature,answers);
     }
+  }
+
+  async function waitForCoverAcceptedSend(request, error) {
+    if(error?.submissionDispatched!==true || typeof error.readOwnedAcceptance!=='function')return false;
+    const deadline=Date.now()+180000;
+    let stable=0,lastReport=0;
+    while(Date.now()<deadline){
+      assertNotCancelled();
+      const accepted=error.readOwnedAcceptance()==='owned_chatgpt_user_turn'
+        && coverRecoveryOwnsReferences(request);
+      stable=accepted?stable+1:0;
+      if(stable>=3){
+        await coverEvent({phase:'running',send_state:'accepted',active:true,
+          message:'ยืนยันคำขอปกเดิมแล้ว • กำลังรอภาพโดยไม่ส่งซ้ำ'});
+        return true;
+      }
+      if(Date.now()-lastReport>=10000){
+        lastReport=Date.now();
+        await coverEvent({phase:'running',send_state:'unconfirmed',active:true,
+          message:'กำลังตรวจคำขอปกเดิม • ยังไม่ยืนยันการส่งและไม่สร้างซ้ำ',
+          collector_state:{stage:'waiting_acceptance',owned:false,candidates:0,loaded:0}});
+      }
+      await sleep(500);
+    }
+    return false;
   }
 
   function coverPreparationSnapshot(request) {

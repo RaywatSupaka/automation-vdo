@@ -137,6 +137,7 @@ const part=(a,b)=>{const x=source.indexOf(a),y=source.indexOf(b,x+a.length);asse
   }
   const studio=fs.readFileSync(path.join(root,'web_ui/studio.js'),'utf8');
   await page.addScriptTag({content:'const escapeHtml=value=>String(value).replaceAll("<","&lt;");'+studio.slice(studio.indexOf('  function storyFailureMarkup('),studio.indexOf('  function pendingReviewDrafts('))});
-  assert.equal(await page.evaluate(()=>storyFailureMarkup({last_error:'STORY_IMAGE_RECEIPT_REVIEW',image_result_review:{message:'empty reply <script>'}}).includes('empty reply &lt;script>')),true);
+  assert.equal(await page.evaluate(()=>storyFailureMarkup({last_error:'STORY_IMAGE_RECEIPT_REVIEW',image_result_review:{message:'empty reply <script>'}}).includes('ตรวจรายละเอียดงานก่อนทำต่อ')),true);
+  assert.equal(await page.evaluate(()=>storyFailureMarkup({last_error:'STORY_IMAGE_RECEIPT_REVIEW',image_result_review:{message:'empty reply <script>'}}).includes('<script>')),false);
   console.log('Story328: observed SECTION, current-owner-only, old remount/asset exclusion, layers, ambiguity, loading, fresh recovery, timeout/cancellation no-Stop, actual wait loop and Studio explanation passed');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

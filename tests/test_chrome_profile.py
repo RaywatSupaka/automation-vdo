@@ -61,7 +61,8 @@ class ChromeProfileTests(unittest.TestCase):
         window = MainWindow.__new__(MainWindow)
         window.bridge = object()
         window._compatible_extension = lambda: ({}, None)
-        with patch.object(window, '_chrome_window_available', return_value=True), patch.object(window, '_open_url') as launch:
-            self.assertEqual(window._activate_or_launch_chrome('https://chatgpt.com/'), 'launched')
-            self.assertEqual(window._activate_or_launch_chrome('https://chatgpt.com/'), 'launching')
-            launch.assert_called_once()
+        with patch.object(window, '_chrome_window_available', return_value=True), patch.object(window, '_open_url') as launch, patch.object(window, '_focus_chrome_after_launch') as focus:
+            self.assertEqual(window._activate_or_launch_chrome('https://chatgpt.com/'), 'focused')
+            self.assertEqual(window._activate_or_launch_chrome('https://chatgpt.com/'), 'focused')
+            launch.assert_not_called()
+            self.assertEqual(focus.call_count, 2)

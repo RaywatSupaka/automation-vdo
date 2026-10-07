@@ -132,6 +132,7 @@ async function twoPromptWorkflow() {
   for(const options of [{acceptAfterSleeps:44},{acceptAfterSleeps:240},{acceptOnRetryClaim:true},{acceptAtRetryPress:true}]){
     f=setup(options);await f.run();assert.equal(f.presses(),1);cases++;
   }
+  let guardCase = 0;
   for(const change of [
     (f,c)=>{c.stopButtonVisible=()=>true;},
     (f,c)=>{c.userTurns=()=>[{innerText:'old'},{innerText:'unrelated question'}];},
@@ -143,11 +144,11 @@ async function twoPromptWorkflow() {
     (f,c,images)=>{images.push({src:'new-image'});},
     (f,c,images,refs)=>{refs.push({src:'new-ref'});},
     (f,c,images,refs,answers)=>{answers[0].innerText='updated old answer';},
-    f=>{f.state.button.disabled=true;},
+    f=>{Object.defineProperty(f.state.button,'disabled',{get:()=>true});},
     f=>{f.state.expansion={};},
     f=>{f.state.editor.closest=()=>({querySelectorAll:()=>[{}]});}
   ]){
-    f=setup({afterFirstWait:change});await assert.rejects(f.run());assert.equal(f.presses(),1);
+    f=setup({afterFirstWait:change});await assert.rejects(f.run());assert.equal(f.presses(),1,`changed state ${guardCase}`);guardCase++;
     assert.equal(f.frontend.geminiTextRetryGuard,null);cases++;
   }
   for(const options of [{pressResponseLost:true},{releaseResponseLost:true}]){

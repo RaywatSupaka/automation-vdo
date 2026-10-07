@@ -36,6 +36,7 @@ assets/intro/
 assets/screenfx/
 tools/scrcpy-win64-*/
 tools/scrcpy-win64-*.zip
+tools/android/
 *.exe
 *.dll
 

@@ -26,7 +26,7 @@ class FlowOrigin392Tests(AISendErrorLogTests):
         for changed, expected in [({}, True), ({'flow_job_id': 'OTHER'}, False),
                                   ({'flow_run_id': 'OLD'}, False), ({'flow_step': 'generation_in_progress'}, False)]:
             client = {**flow, **changed}
-            window = SimpleNamespace(bridge=SimpleNamespace(extension_status=lambda: {'clients':[client]}),
+            window = SimpleNamespace(stories=SimpleNamespace(root=Path(__file__).parent / 'fixtures' / 'no-story-trace'), bridge=SimpleNamespace(extension_status=lambda: {'clients':[client]}),
                                      log=Mock(), _desktop_set_notice=Mock())
             self.capture(window,'STORY-X','FLOW_REPAIR_REVIEW • paused','Story / ChatGPT Web / Google Flow')
             output=window._automation_error_log['text']
@@ -36,7 +36,7 @@ class FlowOrigin392Tests(AISendErrorLogTests):
         from types import SimpleNamespace
         from unittest.mock import Mock
         for bridge in [Mock(side_effect=RuntimeError('offline')), Mock(return_value=None)]:
-            window = SimpleNamespace(bridge=SimpleNamespace(extension_status=bridge),
+            window = SimpleNamespace(stories=SimpleNamespace(root=Path(__file__).parent / 'fixtures' / 'no-story-trace'), bridge=SimpleNamespace(extension_status=bridge),
                                      log=Mock(), _desktop_set_notice=Mock())
             self.capture(window,'STORY-X','FLOW_REPAIR_REVIEW • paused','Story / ChatGPT Web / Google Flow')
             self.assertIn('FLOW_REPAIR_REVIEW', window._automation_error_log['text'])

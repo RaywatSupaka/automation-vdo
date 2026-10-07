@@ -43,6 +43,7 @@ function attachmentFixture({gemini=false,old=false,prove=true,count=1,limit=3,st
   function Input(){};Object.defineProperty(Input.prototype,'files',{set(value){this.files=value;}});
   const context=vm.createContext({activeCoverRequest:null,activeSourceReferenceLimit:limit,IS_GEMINI:gemini,AI_NAME:'AI',report:async()=>{},composer:()=>({closest:()=>shell}),
     sourceAttachmentPreviews:()=>attached||old?[node]:[],chatGPTComposerAttachmentState:()=>({count:old?1:0}),
+    chatGPTComposerShell:()=>shell,clearOwnedUnsentStoryReference:async()=>false,
     document:{querySelectorAll:()=>[]},preferredSourceFileInput:()=>input,userTurns:()=>[{}],
     sourceFile:async(url,index,name)=>{names.push(url);return{name,url};},DataTransfer:class{constructor(){this.files=[];this.items={add:file=>this.files.push(file)}}},
     HTMLInputElement:Input,Event:class{},sleep:async(ms)=>time+=ms,Date:{now:()=>time},

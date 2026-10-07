@@ -1,5 +1,15 @@
 # SmartFlow AI — Program Blueprint
 
+Runtime Extension 0.15.521 จับคู่กับ Desktop launcher 0.15.521.0; ตรวจการติดตั้งและผลจาก provider แยกจากการผ่านเทสต์ซอร์ส
+
+## Owned browser surface recheck before Story Send / 0.15.521
+
+After a trusted hover reaches the exact composer-owned Send target, Background checks that the same Chrome window remains visible and the owned tab stays active before writing the durable dispatch claim. It restores one changed surface, rechecks owner, readiness and target geometry, then requires a fresh trusted hover. A second change or missing tab stops before press with `send_surface_changed`; accepted and uncertain Sends are never replayed.
+
+## Late AI cover acceptance / 0.15.521
+
+After an uncertain cover Send, the content worker observes the same owned user turn and references for at most three minutes. Three stable acceptance observations continue to the existing image collector without another click or upload. If acceptance remains uncertain, the request stays in review; the worker does not retry a dispatched Send. The previous unsent-draft retry remains available only when dispatch did not occur.
+
 ## Desktop notification layout / 2026-10-07
 
 The shared `#notification-stack` owns bottom-right placement for transient toasts, minimized creation/posting progress and the version/update control. Its flex layout reserves space only for visible notices, constrains long progress text to the viewport and keeps the update dialog in the document body. `web_ui/notification_stack.css` loads after other component styles. Verify with `--feature notification-layout`; an active customer queue delays normal DEV window restart and activation proof.

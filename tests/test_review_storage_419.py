@@ -7,6 +7,8 @@ from core.cancellable_process import hidden_process_kwargs
 
 class ReviewStorage419Tests(unittest.TestCase):
     def test_native_storage_and_continuous_helper_rounds(self):
+        if not (Path(__file__).resolve().parents[1] / 'deliverables/SmartFlow_AI_Extension_0.15.418/background.js').is_file():
+            self.skipTest('Historical 418 Extension is not available in this checkout')
         result = subprocess.run(['node', 'tests/review_storage_419.cjs'],
                                 cwd=Path(__file__).resolve().parents[1],
                                 capture_output=True, text=True, encoding='utf-8', timeout=60,

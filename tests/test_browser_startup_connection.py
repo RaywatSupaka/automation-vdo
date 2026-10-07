@@ -255,8 +255,8 @@ class BrowserStartupConnectionTests(unittest.TestCase):
         self.assert_attention("Extension รุ่นไม่ตรง")
         self.assertIn(self.window.bridge.REQUIRED_EXTENSION_VERSION, self.window._browser_connection["message"])
         self.root.advance(120)
-        self.open_url.assert_called_once_with("about:blank")
-        self.assertEqual(len(self.threads), 1)
+        self.open_url.assert_not_called()
+        self.assertEqual(sum(thread.name == "smartflow-browser-connect" for thread in self.threads), 1)
 
     def test_isolated_test_data_root_skips_browser_startup(self):
         with patch.dict(os.environ, {"SMARTFLOW_TEST_DATA_ROOT": "isolated-fixture"}):

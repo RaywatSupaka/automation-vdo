@@ -2,6 +2,7 @@
 import queue
 import threading
 import unittest
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from ui.main_window import MainWindow
@@ -33,6 +34,7 @@ class PipelineEventOwnershipTests(unittest.TestCase):
         window._compatible_extension = Mock(return_value=({}, True))
         window._chrome_window_available = Mock(return_value=True)
         window.stories.get.return_value = {"scene_count": 6, "image_ai_provider": "gemini"}
+        window.stories.root = Path(__file__).parent / 'fixtures' / 'no-story-trace'
         return window
 
     @staticmethod
@@ -155,7 +157,7 @@ class PipelineEventOwnershipTests(unittest.TestCase):
     def test_story_recovery_timer_cannot_restart_same_job_after_cancel_and_resume(self):
         window = self.window()
         original = window._story_cancel_event
-        job = {"auto_recovery_attempts": 1, "scene_count": 6, "analysis_status": "ready", "image_ai_provider": "gemini"}
+        job = {"id": "STORY-SAME", "auto_recovery_attempts": 1, "scene_count": 6, "analysis_status": "ready", "image_ai_provider": "gemini"}
         window.stories.get.return_value = job
         window.stories.mark_recovering.return_value = job
         with patch("ui.main_window.story_provider_failover_action", return_value=None), patch("ui.main_window.story_recovery_action", return_value="resume_chatgpt"):

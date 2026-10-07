@@ -94,6 +94,15 @@ def _normalize_test_temp_path():
     tempfile.tempdir = None
 
 
+def _configure_local_node_dependencies():
+    """Expose the ignored local Playwright install to Node fixture subprocesses."""
+    local_modules = ROOT / "build" / "test-deps" / "node_modules"
+    if local_modules.is_dir():
+        current = os.environ.get("NODE_PATH", "")
+        paths = [str(local_modules), *([current] if current else [])]
+        os.environ["NODE_PATH"] = os.pathsep.join(paths)
+
+
 class ProgressResult(unittest.TextTestResult):
     """Show the active test and retain elapsed time for the final report."""
 
@@ -220,6 +229,7 @@ def main(argv=None):
         suite = unittest.defaultTestLoader.loadTestsFromNames(args.tests)
 
     _normalize_test_temp_path()
+    _configure_local_node_dependencies()
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(errors='backslashreplace')
     stream=io.StringIO()

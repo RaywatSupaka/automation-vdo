@@ -1,5 +1,11 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
+เวอร์ชัน Runtime ปัจจุบัน: `0.15.521`
+
+## 0.15.521 — owned surface recheck and passive cover acceptance
+
+After trusted input hover and before a durable Story dispatch claim, verify that the exact Chrome window is not minimized and its tab is active. Restore that owned surface at most once, then recheck owner, Send readiness, geometry and trusted input. Repeated change or tab loss stops before press with `send_surface_changed`. For an uncertain cover Send, observe the same owned user turn and references for a bounded three minutes; continue collection only after stable acceptance. A dispatched but unconfirmed request remains in review without a second Send.
+
 ## ChatGPT Send input delivery (0.15.519, 2026-10-06)
 
 The MAIN-world Send resolver records trusted `mousemove` delivery at the exact armed composer-owned button point. Before writing a Story dispatch latch or issuing `mousePressed`, Background probes with two harmless CDP moves and verifies the page event. A missing event triggers one owned-window/tab refocus, exact readiness/geometry recheck, and one final probe. Persistent loss reports `input_not_delivered` before dispatch; no uncertain or accepted Send is replayed. Existing post-press receipt and three read-only observations remain conservative. This addresses the observed 518 scene-2 press/release acknowledgement with zero captured page input events.

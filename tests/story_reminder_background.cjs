@@ -28,7 +28,7 @@ function reminderFixture(options={}){
   const sender={tab:{id:12,windowId:2,url:URL},documentId:DOC};
   let documentId=DOC,desktopActive=true,tabStatus='complete',tabUrl=URL,checks=0,readyCalls=0;
   const script=f.backend.chrome.scripting.executeScript;
-  f.backend.chrome.tabs.get=async()=>({id:12,status:tabStatus,url:tabUrl});
+  f.backend.chrome.tabs.get=async()=>({id:12,windowId:2,active:true,status:tabStatus,url:tabUrl});
   f.backend.storyRefreshDesktopRunActive=async(job,run)=>{
     assert.equal(job,JOB);assert.equal(run,RUN);checks++;return desktopActive;
   };

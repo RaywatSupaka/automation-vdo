@@ -172,6 +172,8 @@ class FlowDirectResume408Tests(unittest.TestCase):
         finally:bridge.stop()
 
     def test_actual_extension_missing_cache_and_old407_red(self):
+        if not (Path(__file__).resolve().parents[1] / 'deliverables/SmartFlow_AI_Extension_0.15.407/background.js').is_file():
+            self.skipTest('Historical 407 Extension is not available in this checkout')
         result=subprocess.run(['node','tests/flow_desktop_proof_408.cjs'],cwd=Path(__file__).resolve().parents[1],
             capture_output=True,text=True,encoding='utf-8',timeout=45,**hidden_process_kwargs())
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)

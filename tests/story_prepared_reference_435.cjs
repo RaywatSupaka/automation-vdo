@@ -180,6 +180,8 @@ function fixture(record = null, options = {}) {
     crypto: require('node:crypto').webcrypto,
     document: {querySelectorAll: () => []}, visible: () => true,
     composer: () => editor, composerText: () => draft,
+    retainedStoryReferenceReady: () => false, chatGPTComposerShell: () => shell,
+    setTimeout, clearTimeout,
     waitForComposer: async () => editor, waitForResponseIdle: async () => {}, setChatGPTImageTool: async () => {}, sleep: async () => {},
     userTurns: () => [], assistantTurns: () => [], lastUserTurnSignature: () => '',
     chatGPTConversationFrames: () => [], storyTurnNumber: () => -1,

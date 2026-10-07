@@ -41,6 +41,8 @@ class FailedSceneRestart411Tests(unittest.TestCase):
         return old
 
     def test_extension_new_scene_transaction_and_legacy_red(self):
+        if not (Path(__file__).resolve().parents[1] / 'deliverables/SmartFlow_AI_Extension_0.15.410/background.js').is_file():
+            self.skipTest('Historical 410 Extension is not available in this checkout')
         result = subprocess.run(['node', 'tests/flow_failed_scene_restart_411.cjs'],
                                 cwd=Path(__file__).resolve().parents[1], capture_output=True,
                                 text=True, encoding='utf-8', timeout=45, **hidden_process_kwargs())

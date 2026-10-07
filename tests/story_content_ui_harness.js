@@ -6,7 +6,7 @@ const source = fs.readFileSync(path.join(__dirname, '../web_ui/studio.js'), 'utf
 const start = source.indexOf('  function storyContentMarkup(');
 const end = source.indexOf('  function paintReview(', start);
 assert.ok(start >= 0 && end > start);
-const context = vm.createContext({escapeHtml:value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))});
+const context = vm.createContext({window:{smartflowSafeError:value=>value},escapeHtml:value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))});
 // The extracted renderer reads the same review state owned by the real modal.
 context.studio = {review: null};
 vm.runInContext(source.slice(start,end),context);

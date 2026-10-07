@@ -33,7 +33,7 @@ class AISendErrorLogTests(unittest.TestCase):
         }
         window = SimpleNamespace(
             bridge=SimpleNamespace(extension_status=lambda: {"clients": [client], "client": client}),
-            log=Mock(), _desktop_set_notice=Mock(),
+            log=Mock(), _desktop_set_notice=Mock(), stories=SimpleNamespace(root=ROOT / 'tests' / 'fixtures' / 'no-story-trace'),
         )
         self.capture(window, job_id, "Send failed", service)
         window._desktop_set_notice.assert_called_once()
@@ -64,7 +64,7 @@ class AISendErrorLogTests(unittest.TestCase):
         from core.meta_error_report import story_service_label
         service = story_service_label({'long_video':True, 'video_generation_mode':'meta_ai'})
         self.assertEqual(service, 'คลิปยาว / ChatGPT Web / Meta AI')
-        window = SimpleNamespace(stories=object(), log=Mock(), _desktop_set_notice=Mock(),
+        window = SimpleNamespace(stories=SimpleNamespace(root=ROOT / 'tests' / 'fixtures' / 'no-story-trace'), log=Mock(), _desktop_set_notice=Mock(),
             bridge=SimpleNamespace(extension_status=lambda:{'clients':[{
                 'ai_job_id':'STORY-TEST', 'ai_step':'complete', 'ai_message':'ส่งภาพครบ 23 ฉาก',
                 'ai_page_url':'https://chatgpt.com/c/old', 'ai_page_excerpt':'old-image-page'}]}))
@@ -79,7 +79,7 @@ class AISendErrorLogTests(unittest.TestCase):
             self.assertNotIn(stale, text)
 
     def test_meta_without_receipt_does_not_invent_scene_or_current_url(self):
-        window = SimpleNamespace(log=Mock(), _desktop_set_notice=Mock(),
+        window = SimpleNamespace(stories=SimpleNamespace(root=ROOT / 'tests' / 'fixtures' / 'no-story-trace'), log=Mock(), _desktop_set_notice=Mock(),
             bridge=SimpleNamespace(extension_status=lambda:{'client':{
                 'ai_step':'complete','ai_page_url':'https://chatgpt.com/c/old'}}))
         self.capture(window, 'STORY-TEST', 'META_VIDEO_REVIEW • failure', 'Meta AI')

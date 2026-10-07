@@ -548,7 +548,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.519-20261006.1";
+const FLOW_HELPER_BUILD = "flow-0.15.521-20261007.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";
@@ -8368,6 +8368,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           error.preflightReason = 'input_not_delivered';
           throw error;
         }
+        // A user can minimize Chrome or activate another tab after the hover
+        // proof. Restore only this owned surface, then prove input delivery
+        // again before writing the durable dispatch claim or pressing Send.
+        for (let surfaceAttempt = 0; surfaceAttempt < 2; surfaceAttempt++) {
+          const [ownedWindow, ownedTab] = await Promise.all([
+            chrome.windows.get(sender.tab.windowId).catch(() => null),
+            chrome.tabs.get(tabId).catch(() => null)
+          ]);
+          if (!ownedWindow || !ownedTab || ownedTab.windowId !== sender.tab.windowId) {
+            const error = new Error('แท็บหรือหน้าต่างของงานเปลี่ยนแล้ว • ยังไม่กดส่ง');
+            error.preflightReason = 'send_surface_changed';
+            throw error;
+          }
+          if (ownedWindow.state !== 'minimized' && ownedTab.active === true) break;
+          if (surfaceAttempt) {
+            const error = new Error('หน้าต่างหรือแท็บเปลี่ยนซ้ำหลังคืนโฟกัส • ยังไม่กดส่ง');
+            error.preflightReason = 'send_surface_changed';
+            throw error;
+          }
+          await chrome.windows.update(sender.tab.windowId,
+            ownedWindow.state === 'minimized' ? {state:'normal',focused:true} : {focused:true});
+          await chrome.tabs.update(tabId,{active:true});
+          await new Promise(resolve => setTimeout(resolve,350));
+          await assertSendOwner();
+          const surfaceReady = await sendReady();
+          if (surfaceReady?.ok !== true) {
+            const error = new Error('Send readiness เปลี่ยนหลังคืนหน้าต่าง • ยังไม่กดส่ง');
+            error.preflightReason = String(surfaceReady?.reason || 'readiness_changed');
+            throw error;
+          }
+          finalPoint = await inspectSendPoint(false,finalPoint.key);
+          const [startProbe] = await chrome.scripting.executeScript({target:sendTarget(),world:'MAIN',
+            args:['start',finalPoint],func:probeAiSendInputDelivery});
+          if (startProbe?.result?.ok !== true) {
+            const error = new Error('ตรวจอินพุตหลังคืนหน้าต่างไม่ได้ • ยังไม่กดส่ง');
+            error.preflightReason = 'input_not_delivered';
+            throw error;
+          }
+          for (const x of [Math.max(0,finalPoint.x-1),finalPoint.x])
+            await chrome.debugger.sendCommand(debuggee,'Input.dispatchMouseEvent',{
+              type:'mouseMoved',x,y:finalPoint.y,button:'none',buttons:0,pointerType:'mouse'});
+          const [surfaceProof] = await chrome.scripting.executeScript({target:sendTarget(),world:'MAIN',
+            args:['verify',finalPoint],func:probeAiSendInputDelivery});
+          if (surfaceProof?.result?.ok !== true) {
+            const error = new Error('หน้าเว็บไม่รับอินพุตหลังคืนหน้าต่าง • ยังไม่กดส่ง');
+            error.preflightReason = 'input_not_delivered';
+            throw error;
+          }
+        }
         finalPoint = await inspectSendPoint(false,finalPoint.key);
         if(storyClaim||reminderClaim){
           await assertSendOwner();
@@ -8458,7 +8507,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } catch (error) {
         if (gesturePhase !== 'not_started' || !canAttestNoDispatch) throw error;
         sendResponse({ok:false, error:String(error?.message || error), notDispatched:true,
-          diagnostics:{gesture_phase:'not_started', preflight_reason:['draft_mismatch','send_not_ready','send_target_ambiguous','response_active','composer_form_changed','capture_missing','target_changed','readiness_changed','target_blocked','input_not_delivered'].includes(error.preflightReason)?error.preflightReason:'rejected_before_press',
+          diagnostics:{gesture_phase:'not_started', preflight_reason:['draft_mismatch','send_not_ready','send_target_ambiguous','response_active','composer_form_changed','capture_missing','target_changed','readiness_changed','target_blocked','input_not_delivered','send_surface_changed'].includes(error.preflightReason)?error.preflightReason:'rejected_before_press',
             ...(error.preflightStage?{preflight_stage:error.preflightStage}:{}),
             preflight_rechecks:sendPreflightRechecks, preflight_reasons:sendPreflightReasons.slice(0,3)}});
         return;

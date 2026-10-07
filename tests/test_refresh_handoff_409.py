@@ -8,6 +8,8 @@ from core.cancellable_process import hidden_process_kwargs
 
 class RefreshHandoff409Tests(unittest.TestCase):
     def test_actual_extension_refresh_race_readiness_and_progress_channel(self):
+        if not (Path(__file__).resolve().parents[1] / 'deliverables/SmartFlow_AI_Extension_0.15.408/background.js').is_file():
+            self.skipTest('Historical 408 Extension is not available in this checkout')
         result=subprocess.run(['node','tests/refresh_handoff_409.cjs'],cwd=Path(__file__).resolve().parents[1],
                               capture_output=True,text=True,encoding='utf-8',timeout=30,**hidden_process_kwargs())
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)

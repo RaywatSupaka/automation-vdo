@@ -63,7 +63,7 @@ SUITES = {
     "ai-cover": {
         "python": ["test_ai_cover.py", "test_ai_cover_queue_gate.py"],
         "node": ["tests/cover_multiple_selection_450.cjs", "tests/cover_retry_reference_451.cjs",
-                 "tests/cover_stream_error_512.cjs"],
+                 "tests/cover_stream_error_512.cjs", "tests/cover_send_recovery.js"],
         "syntax": ["browser_extension/chatgpt.js"],
     },
     "story-prompt": {
@@ -298,6 +298,7 @@ FILE_SUITES = {
     "tests/test_low_impact_refactor.py": ("refactor",),
     "ui/creation_queue.py": ("ai-cover", "refactor"),
     "tests/test_ai_cover_queue_gate.py": ("ai-cover", "refactor"),
+    "tests/cover_send_recovery.js": ("ai-cover",),
     "tests/test_extension_modular_architecture.py": ("refactor",),
     "tests/gemini_discovery_harness.js": ("refactor",),
     "tests/result_readiness_392.cjs": ("refactor",),
