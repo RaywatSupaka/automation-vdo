@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>งานรอคุณ แบบสไลด์</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F17}
+a{color:#7DD3FC}a:hover{color:#BAE6FD}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:12px;font:600 16px 'IBM Plex Sans Thai',sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:background .15s ease}
+.btn-primary{background:#38BDF8;color:#04121C}
+.btn-primary:hover{background:#7DD3FC;color:#04121C}
+.btn-primary:disabled{background:#26304A;color:#6B7590;cursor:not-allowed}
+.btn-ghost{background:transparent;color:#E8ECF4;border-color:#33405F}
+.btn-ghost:hover{background:#182033;color:#E8ECF4}
+.btn-text{background:transparent;color:#A7B0C3;border:0;padding:0 12px}
+.btn-text:hover{color:#E8ECF4}
+.btn:focus-visible,.seg:focus-visible,.opt:focus-visible{outline:2px solid #7DD3FC;outline-offset:2px}
+.seg{cursor:pointer;border:0;padding:0;height:6px;border-radius:999px;flex:1}
+.opt{cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;text-align:left;color:#E8ECF4}
+.q{margin:0;font-size:30px;line-height:1.35;font-weight:700;color:#E8ECF4}
+.hint{margin:0;font-size:16px;line-height:1.65;color:#C9D1E0}
+.slide{display:flex;flex-direction:column;gap:22px;width:100%}
+.fwd{animation:inFwd .28s ease-out}
+.back{animation:inBack .28s ease-out}
+@keyframes inFwd{from{opacity:0;transform:translateX(48px)}to{opacity:1;transform:none}}
+@keyframes inBack{from{opacity:0;transform:translateX(-48px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.fwd,.back{animation:none}}
+.row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border-radius:12px;background:#121826;font-size:16px;line-height:1.6}
+.num{width:28px;height:28px;flex:none;border-radius:50%;background:#16263A;color:#7DD3FC;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.sc{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:32px;padding:0 8px;border-radius:8px;font-size:13px;font-weight:600}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#0B0F17;color:#E8ECF4;font-family:'IBM Plex Sans Thai',system-ui,sans-serif">
+
+<header style="display:flex;flex-direction:column;gap:14px;padding:20px 32px 0">
+<div style="display:flex;align-items:center;gap:16px">
+<a href="Jobs.dc.html" aria-label="ปิด กลับไปงานของฉัน" style="width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid #33405F;color:#A7B0C3">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</a>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#FCD34D"><span style="width:7px;height:7px;border-radius:50%;background:#FBBF24"></span>งานรอคุณ · {{jobKind}}</span>
+<span style="font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{jobTitle}}</span>
+</div>
+<span style="font-size:15px;color:#A7B0C3" aria-live="polite">ขั้น <strong style="color:#E8ECF4">{{step}}</strong> จาก 3 · {{stepName}}</span>
+</div>
+<nav aria-label="ความคืบหน้า" style="display:flex;gap:6px">
+<sc-for list="{{segs}}" as="g" hint-placeholder-count="3">
+<button class="seg" style="{{g.style}}" onClick="{{g.go}}" disabled="{{g.locked}}" aria-label="{{g.aria}}"></button>
+</sc-for>
+</nav>
+</header>
+
+<main style="flex:1;display:flex;align-items:center;justify-content:center;padding:28px 32px">
+<div style="width:100%;max-width:720px">
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ true }}">
+<section class="{{anim}}">
+<span style="font-size:14px;color:#A7B0C3;font-weight:600">เกิดอะไรขึ้น</span>
+<h1 class="q" style="color:#FDE68A">{{title}}</h1>
+<p class="hint">{{what}}</p>
+<div style="display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:12px;background:#0D2E24">
+<span style="color:#6EE7B7;font-weight:700" aria-hidden="true">✓</span>
+<span style="font-size:15px;line-height:1.6;color:#C7F0DF">{{saved}}</span>
+</div>
+<details style="border-top:1px solid #26304A;padding-top:14px">
+<summary style="cursor:pointer;font-size:14px;color:#A7B0C3">รายละเอียดสำหรับทีมช่วยเหลือ</summary>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px">
+<code style="flex:1 1 360px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A7B0C3;background:#121826;border:1px solid #26304A;border-radius:8px;padding:12px;line-height:1.6">{{code}}</code>
+<button class="btn btn-ghost" style="min-height:40px;font-size:14px">คัดลอก</button>
+</div>
+</details>
+</section>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<span style="font-size:14px;color:#A7B0C3;font-weight:600">สิ่งที่ต้องทำ</span>
+<h1 class="q">{{fixTitle}}</h1>
+<sc-if value="{{isSteps}}" hint-placeholder-val="{{ true }}">
+<ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{fixSteps}}" as="f" hint-placeholder-count="3">
+<li class="row"><span class="num">{{f.n}}</span><span style="padding-top:2px">{{f.text}}</span></li>
+</sc-for>
+</ol>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+<button class="btn btn-primary" onClick="{{openSite}}">{{openLabel}}</button>
+</div>
+<div style="{{detectStyle}}" aria-live="polite">
+<span style="{{detectDot}}"></span>
+<span style="flex:1 1 260px">{{detectText}}</span>
+<sc-if value="{{notFixed}}" hint-placeholder-val="{{ true }}"><button class="btn btn-text" onClick="{{markFixed}}">{{confirmLabel}}</button></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{isChoice}}" hint-placeholder-val="{{ false }}">
+<p class="hint">{{choiceHint}}</p>
+<div role="radiogroup" aria-label="เลือกวิธีแก้" style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{choices}}" as="c" hint-placeholder-count="2">
+<button class="opt" role="radio" aria-checked="{{c.on}}" onClick="{{c.pick}}" style="{{c.style}}"><span style="font-size:16px;font-weight:600">{{c.label}}</span><span style="font-size:14px;color:#A7B0C3;line-height:1.55">{{c.desc}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<span style="font-size:14px;color:#6EE7B7;font-weight:600">พร้อมทำต่อ</span>
+<h1 class="q">{{resumeTitle}}</h1>
+<p class="hint">{{resumeText}}</p>
+<div style="display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:12px;background:#121826">
+<span style="font-size:14px;color:#A7B0C3">{{chipsLabel}}</span>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="10">
+<span class="sc" style="{{c.style}}">{{c.text}}</span>
+</sc-for>
+</div>
+<span style="font-size:14px;color:#A7B0C3">ต่อจากนั้น: เสียงพากย์ → ประกอบวิดีโอ ซับ และเพลง → ปกและบันทึกลงคลัง</span>
+</div>
+</section>
+</sc-if>
+
+</div>
+</main>
+
+<footer style="border-top:1px solid #1E2740;padding:16px 32px;display:flex;align-items:center;gap:12px">
+<sc-if value="{{hasBack}}" hint-placeholder-val="{{ false }}"><button class="btn btn-ghost" onClick="{{back}}">ย้อนกลับ</button></sc-if>
+<span style="flex:1"></span>
+<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}">
+<a class="btn btn-text" href="Jobs.dc.html">ไว้ทีหลัง</a>
+<a class="btn btn-primary" href="Jobs.dc.html">{{resumeLabel}}</a>
+</sc-if>
+<sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}"><button class="btn btn-primary" onClick="{{next}}" disabled="{{nextDisabled}}">{{nextLabel}}</button></sc-if>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"reason":{"editor":"enum","options":["login","flow_terms","draft","uncertain","refused","credit"],"default":"login","section":"กรณีที่แสดง"},"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { step: 1, maxStep: 1, dir: 'fwd', fixed: false, choice: '' };
+}
+componentDidUpdate(prev) {
+if (prev.reason !== this.props.reason) this.setState({ step: 1, maxStep: 1, dir: 'fwd', fixed: false, choice: '' });
+}
+go(n) {
+const s = this.state;
+const step = Math.max(1, Math.min(3, n));
+this.setState({ step, dir: step >= s.step ? 'fwd' : 'back', maxStep: Math.max(s.maxStep, step) });
+}
+renderVals() {
+const s = this.state;
+const set = (p) => this.setState(p);
+const R = {
+login: {
+job: 'หมาที่รออยู่ตรงป้ายรถเมล์', kind: 'เรื่องเล่า Shorts', stage: 'ภาพ', at: 2, total: 10,
+title: 'ต้องเข้าสู่ระบบ ChatGPT ใน Chrome',
+what: 'ระหว่างสร้างภาพฉาก 2 ChatGPT ออกจากระบบ โปรแกรมเลยหยุดรอ และไม่ได้ส่งคำขอซ้ำ',
+saved: 'บท ชื่อเรื่อง และภาพฉาก 1 เก็บไว้ครบ ไม่ต้องเริ่มใหม่',
+code: 'STORY-20261005-7B9E37 · chatgpt · ฉาก 2 · AI_WEB_LOGIN_REQUIRED · ไม่มีคำขอค้าง',
+type: 'steps', fixTitle: 'เข้าสู่ระบบ ChatGPT อีกครั้ง',
+steps: ['กดปุ่มด้านล่าง Chrome จะเปิดหน้า ChatGPT ให้', 'เข้าสู่ระบบด้วยบัญชีเดิมที่ใช้กับงานนี้', 'ถ้าเจอหน้ายืนยันว่าไม่ใช่บอท ให้ติ๊กยืนยันด้วย'],
+open: 'เปิด Chrome ที่หน้า ChatGPT', waiting: 'ยังไม่พบการเข้าสู่ระบบ · ตรวจให้ทุก 5 วินาที', found: 'พบการเข้าสู่ระบบแล้ว ไปขั้นต่อไปได้เลย', confirm: 'ฉันเข้าสู่ระบบแล้ว',
+resumeTitle: 'ทำต่อจากภาพฉาก 2', resume: 'ทำต่อจากฉาก 2'
+},
+flow_terms: {
+job: 'หูฟังไร้สายตัดเสียงรบกวน', kind: 'คลิปสินค้า Shopee', stage: 'วิดีโอ', at: 2, total: 3,
+title: 'Google Flow ขอให้กดยอมรับเงื่อนไข',
+what: 'ก่อนสร้างวิดีโอฉาก 2 Google Flow แสดงหน้าให้ยืนยันสิทธิ์การใช้ภาพ ซึ่งโปรแกรมกดแทนคุณไม่ได้',
+saved: 'ภาพครบ 3 ฉาก และวิดีโอฉาก 1 เก็บไว้แล้ว เครดิต Flow ยังไม่ถูกหักสำหรับฉาก 2',
+code: 'STORY-20261006-A41C02 · flow · ฉาก 2 · FLOW_TERMS_REQUIRED',
+type: 'steps', fixTitle: 'กด "ฉันยอมรับ" ใน Google Flow',
+steps: ['กดปุ่มด้านล่าง Chrome จะสลับไปที่แท็บ Flow ของงานนี้', 'อ่านแล้วกด "ฉันยอมรับ"', 'ไม่ต้องกดสร้างวิดีโอเอง โปรแกรมจะทำต่อให้'],
+open: 'เปิดแท็บ Google Flow', waiting: 'ยังเห็นหน้ายืนยันอยู่ · ตรวจให้ทุก 5 วินาที', found: 'หน้ายืนยันหายแล้ว ไปขั้นต่อไปได้เลย', confirm: 'ฉันกดยอมรับแล้ว',
+resumeTitle: 'ทำวิดีโอฉาก 2 ต่อ', resume: 'ทำต่อจากฉาก 2'
+},
+draft: {
+job: 'คุณยายกับร้านก๋วยเตี๋ยวเรือ', kind: 'เรื่องเล่า Shorts', stage: 'ภาพ', at: 7, total: 10,
+title: 'ช่องพิมพ์ใน ChatGPT มีข้อความค้างอยู่',
+what: 'แท็บ ChatGPT ของงานนี้มีข้อความที่ยังไม่ได้ส่งค้างอยู่ในช่องพิมพ์ โปรแกรมไม่แน่ใจว่าเป็นของงานนี้หรือคุณพิมพ์ไว้ จึงยังไม่ลบเอง',
+saved: 'บท และภาพฉาก 1–6 เก็บไว้ครบ',
+code: 'STORY-20261004-55D1E9 · chatgpt · ฉาก 7 · AI_WEB_WAIT_REVIEW · draft_present',
+type: 'choice', fixTitle: 'ข้อความนั้นเป็นของใคร', choiceHint: 'ถ้าไม่แน่ใจ เลือก "เปิดดูก่อน"',
+choices: [
+{ id: 'ours', label: 'เป็นคำขอของงานนี้ ลบแล้วทำต่อ', desc: 'โปรแกรมจะลบเฉพาะข้อความนั้น แล้วส่งคำขอภาพฉาก 7 ใหม่' },
+{ id: 'look', label: 'เปิดดูก่อน', desc: 'สลับไปที่แท็บนั้น ให้คุณจัดการเอง แล้วกลับมากดทำต่อ' }
+],
+resumeTitle: 'ทำต่อจากภาพฉาก 7', resume: 'ทำต่อจากฉาก 7'
+},
+uncertain: {
+job: 'ร้านดอกไม้กับจดหมายที่ไม่มีชื่อผู้ส่ง', kind: 'เรื่องเล่า Shorts', stage: 'ภาพ', at: 4, total: 6,
+title: 'ส่งคำขอภาพฉาก 4 ไปแล้ว แต่ยังไม่รู้ผล',
+what: 'คำขอถูกส่งไปที่ ChatGPT แล้ว แต่โปรแกรมไม่เห็นภาพตอบกลับ ถ้าส่งซ้ำเองอาจได้ภาพซ้อนกันและเสียโควตา จึงหยุดให้คุณดูก่อน',
+saved: 'บท และภาพฉาก 1–3 เก็บไว้ครบ',
+code: 'STORY-20261005-0C77AA · chatgpt · ฉาก 4 · SEND_UNCERTAIN · receipt=dispatched',
+type: 'choice', fixTitle: 'ในแท็บ ChatGPT มีภาพฉาก 4 หรือยัง', choiceHint: 'สลับไปดูแท็บ ChatGPT ของงานนี้ แล้วเลือกตามที่เห็น',
+choices: [
+{ id: 'have', label: 'มีภาพแล้ว ใช้ภาพนั้น', desc: 'โปรแกรมจะเก็บภาพที่อยู่ในแท็บ โดยไม่ส่งคำขอใหม่' },
+{ id: 'none', label: 'ไม่มีภาพ อนุญาตให้ส่งใหม่ 1 ครั้ง', desc: 'ส่งคำขอฉาก 4 ใหม่ครั้งเดียว ถ้ายังไม่ได้ผล จะหยุดถามอีก' }
+],
+resumeTitle: 'ทำต่อจากภาพฉาก 4', resume: 'ทำต่อจากฉาก 4'
+},
+refused: {
+job: 'บ้านริมคลองที่ไม่มีใครกลับ · ตอน 3', kind: 'ละครสั้น', stage: 'ภาพ', at: 5, total: 10,
+title: 'ChatGPT ไม่ยอมสร้างภาพฉาก 5',
+what: 'ChatGPT ตอบว่าสร้างภาพตามคำขอนี้ไม่ได้ อาจเพราะคำบางคำในฉาก โปรแกรมจะไม่ส่งคำขอเดิมซ้ำ',
+saved: 'บท และภาพฉาก 1–4 เก็บไว้ครบ',
+code: 'DRAMA-EP3-91B2 · chatgpt · ฉาก 5 · STORY_IMAGE_REFUSED',
+type: 'choice', fixTitle: 'จะทำอย่างไรกับฉาก 5', choiceHint: 'คำขอเดิม: "แม่นวลยืนร้องไห้ข้างศพในเรือ กลางคืน ฝนตก"',
+choices: [
+{ id: 'soften', label: 'ให้ AI ปรับคำขอให้นุ่มลงแล้วลองใหม่', desc: 'เปลี่ยนเฉพาะคำที่อาจผิดกฎ เนื้อเรื่องเหมือนเดิม' },
+{ id: 'edit', label: 'แก้คำขอเอง', desc: 'เปิดหน้าตรวจภาพแต่ละฉาก แล้วพิมพ์คำขอฉาก 5 ใหม่' }
+],
+resumeTitle: 'สร้างภาพฉาก 5 ใหม่', resume: 'สร้างฉาก 5 แล้วทำต่อ'
+},
+credit: {
+job: 'ครีมกันแดดสูตรน้ำ 50 มล.', kind: 'คลิปสินค้า Shopee', stage: 'วิดีโอ', at: 3, total: 5,
+title: 'เครดิต Google Flow หมด',
+what: 'Flow แจ้งว่าบัญชีนี้ใช้เครดิตครบแล้ว วิดีโอฉาก 3 ยังไม่ถูกสร้าง และยังไม่ถูกหักเครดิต',
+saved: 'ภาพครบ 5 ฉาก และวิดีโอฉาก 1–2 เก็บไว้แล้ว',
+code: 'STORY-20261007-3F0D11 · flow · ฉาก 3 · FLOW_CREDIT_EXHAUSTED',
+type: 'choice', fixTitle: 'จะทำฉากที่เหลืออย่างไร', choiceHint: 'เหลืออีก 3 ฉาก (ฉาก 3–5)',
+choices: [
+{ id: 'switch', label: 'เปลี่ยนบัญชี Google แล้วทำต่อด้วย Flow', desc: 'เข้าสู่ระบบบัญชีที่ยังมีเครดิตในแท็บ Flow แล้วกดทำต่อ' },
+{ id: 'motion', label: 'ทำฉากที่เหลือเป็นภาพเคลื่อนไหว', desc: 'เสร็จเร็ว ไม่ใช้เครดิต คลังวิดีโอจะระบุว่าคลิปนี้ผสม Flow 2 ฉาก กับภาพเคลื่อนไหว 3 ฉาก' }
+],
+resumeTitle: 'ทำต่อจากวิดีโอฉาก 3', resume: 'ทำต่อจากฉาก 3'
+}
+};
+const r = R[this.props.reason] || R.login;
+const isSteps = r.type === 'steps';
+const fixed = isSteps ? s.fixed : !!s.choice;
+const names = ['เกิดอะไรขึ้น', 'แก้ไข', 'ทำต่อ'];
+const segs = names.map((n, i) => {
+const k = i + 1;
+return { aria: 'ไปขั้น ' + n, locked: k > s.maxStep || (k === 3 && !fixed), go: () => this.go(k), style: 'background:' + (k <= s.step ? '#38BDF8' : k <= s.maxStep ? '#2B4A63' : '#26304A') + ';' };
+});
+const fixSteps = (r.steps || []).map((t, i) => ({ n: i + 1, text: t }));
+const choices = (r.choices || []).map((c) => {
+const on = c.id === s.choice;
+return { ...c, on: on ? 'true' : 'false', pick: () => set({ choice: c.id }), style: 'display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:14px;background:' + (on ? '#16263A' : '#121826') + ';border:2px solid ' + (on ? '#38BDF8' : '#26304A') + ';' };
+});
+const chips = [];
+for (let i = 1; i <= r.total; i++) {
+const done = i < r.at;
+const here = i === r.at;
+chips.push({ text: done ? i + ' ✓' : String(i), style: done ? 'background:#0D2E24;color:#6EE7B7;' : here ? 'background:#0E2A3B;color:#7DD3FC;outline:1px solid #38BDF8;' : 'background:#1A2236;color:#8A94AA;' });
+}
+const st = s.step;
+return {
+segs, fixSteps, choices, chips,
+jobTitle: r.job, jobKind: r.kind,
+step: st, stepName: names[st - 1], anim: 'slide ' + s.dir,
+s1: st === 1, s2: st === 2, s3: st === 3,
+title: r.title, what: r.what, saved: r.saved, code: r.code,
+fixTitle: r.fixTitle, isSteps, isChoice: !isSteps, choiceHint: r.choiceHint || '',
+openLabel: r.open || '', confirmLabel: r.confirm || '',
+openSite: () => {},
+notFixed: !s.fixed, markFixed: () => set({ fixed: true }),
+detectText: s.fixed ? r.found : r.waiting,
+detectStyle: 'display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;font-size:15px;' + (s.fixed ? 'background:#0D2E24;color:#C7F0DF;' : 'background:#121826;color:#C9D1E0;border:1px dashed #33405F;'),
+detectDot: 'width:10px;height:10px;border-radius:50%;flex:none;background:' + (s.fixed ? '#34D399' : '#FBBF24') + ';',
+resumeTitle: r.resumeTitle,
+resumeText: 'งานจะกลับเข้าคิวตามลำดับเดิม ถ้าคิวพักไว้เพราะงานนี้ คิวจะเดินต่อเองด้วย',
+chipsLabel: r.stage + 'แต่ละฉาก · เริ่มต่อที่ฉาก ' + r.at,
+resumeLabel: r.resume,
+hasBack: st > 1, isLast: st === 3, notLast: st < 3,
+nextLabel: st === 1 ? 'วิธีแก้' : 'ถัดไป',
+nextDisabled: st === 2 && !fixed,
+back: () => this.go(st - 1), next: () => this.go(st + 1)
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>สร้างงานใหม่ แบบสไลด์</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F17}
+a{color:#7DD3FC}a:hover{color:#BAE6FD}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:12px;font:600 16px 'IBM Plex Sans Thai',sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:background .15s ease}
+.btn-primary{background:#38BDF8;color:#04121C}
+.btn-primary:hover{background:#7DD3FC;color:#04121C}
+.btn-primary:disabled{background:#26304A;color:#6B7590;cursor:not-allowed}
+.btn-ghost{background:transparent;color:#E8ECF4;border-color:#33405F}
+.btn-ghost:hover{background:#182033;color:#E8ECF4}
+.btn-text{background:transparent;color:#A7B0C3;border:0;padding:0 12px}
+.btn-text:hover{color:#E8ECF4}
+.btn:focus-visible,.opt:focus-visible,.seg:focus-visible,.chip:focus-visible,.input:focus-visible{outline:2px solid #7DD3FC;outline-offset:2px}
+.opt{cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;text-align:left;color:#E8ECF4;transition:border-color .15s ease,background .15s ease}
+.seg{cursor:pointer;border:0;padding:0;height:6px;border-radius:999px;flex:1}
+.chip{cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;background:#121826;border:1px solid #26304A;color:#C9D1E0;font:500 13px 'IBM Plex Sans Thai',sans-serif;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip:hover{border-color:#38BDF8}
+.input{width:100%;box-sizing:border-box;background:#0B0F17;border:1px solid #33405F;border-radius:12px;color:#E8ECF4;font:400 18px 'IBM Plex Sans Thai',sans-serif;padding:16px 18px}
+.q{margin:0;font-size:30px;line-height:1.35;font-weight:700;color:#E8ECF4}
+.hint{margin:0;font-size:15px;line-height:1.6;color:#A7B0C3}
+.slide{display:flex;flex-direction:column;gap:22px;width:100%}
+.fwd{animation:inFwd .28s ease-out}
+.back{animation:inBack .28s ease-out}
+@keyframes inFwd{from{opacity:0;transform:translateX(48px)}to{opacity:1;transform:none}}
+@keyframes inBack{from{opacity:0;transform:translateX(-48px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.fwd,.back{animation:none}}
+.chk{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:#121826;font-size:15px}
+.tog{cursor:pointer;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 16px;border-radius:12px;font:500 15px 'IBM Plex Sans Thai',sans-serif}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#0B0F17;color:#E8ECF4;font-family:'IBM Plex Sans Thai',system-ui,sans-serif">
+
+<header style="display:flex;flex-direction:column;gap:14px;padding:20px 32px 0">
+<div style="display:flex;align-items:center;gap:16px">
+<a href="Home.dc.html" aria-label="ปิดและกลับหน้าแรก" style="width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid #33405F;color:#A7B0C3">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</a>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<span style="font-size:13px;color:#8A94AA">สร้างงานใหม่</span>
+<span style="font-size:17px;font-weight:600">{{kindLabel}}</span>
+</div>
+<span style="font-size:15px;color:#A7B0C3" aria-live="polite">ขั้น <strong style="color:#E8ECF4">{{step}}</strong> จาก {{total}} · {{stepName}}</span>
+</div>
+<nav aria-label="ความคืบหน้า" style="display:flex;gap:6px">
+<sc-for list="{{segs}}" as="g" hint-placeholder-count="6">
+<button class="seg" style="{{g.style}}" onClick="{{g.go}}" disabled="{{g.locked}}" aria-label="{{g.aria}}"></button>
+</sc-for>
+</nav>
+</header>
+
+<main style="flex:1;display:flex;align-items:center;justify-content:center;padding:28px 32px">
+<div style="width:100%;max-width:760px">
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ true }}">
+<section class="{{anim}}">
+<h1 class="q">อยากสร้างอะไร</h1>
+<p class="hint">เลือกแล้วจะไปข้อต่อไปทันที</p>
+<div role="radiogroup" aria-label="ประเภทงาน" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+<sc-for list="{{kinds}}" as="k" hint-placeholder-count="4">
+<button class="opt" role="radio" aria-checked="{{k.on}}" onClick="{{k.pick}}" style="{{k.style}}">
+<span style="{{k.iconStyle}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.icon}}"></path></svg></span>
+<span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:18px;font-weight:600">{{k.label}}</span><span style="font-size:14px;color:#A7B0C3;line-height:1.5">{{k.desc}}</span></span>
+</button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">{{q2}}</h1>
+<p class="hint">{{h2}}</p>
+<sc-if value="{{isProduct}}" hint-placeholder-val="{{ false }}">
+<label for="links" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">ลิงก์สินค้า Shopee</label>
+<textarea id="links" class="input" rows="3" placeholder="https://s.shopee.co.th/…" value="{{main}}" onInput="{{setMain}}"></textarea>
+</sc-if>
+<sc-if value="{{notProduct}}" hint-placeholder-val="{{ true }}">
+<label for="topic" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">{{q2}}</label>
+<input id="topic" class="input" placeholder="{{placeholder2}}" value="{{main}}" onInput="{{setMain}}">
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<span style="font-size:13px;color:#8A94AA">ลองไอเดีย:</span>
+<sc-for list="{{ideas}}" as="i" hint-placeholder-count="3">
+<button class="chip" onClick="{{i.use}}">{{i.text}}</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{isDrama}}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:12px;background:#121826">
+<span style="flex:1;font-size:16px">จำนวนตอน</span>
+<button class="btn btn-ghost" style="width:48px;padding:0" onClick="{{epsDown}}" aria-label="ลดจำนวนตอน">−</button>
+<span style="font-size:22px;font-weight:700;min-width:36px;text-align:center" aria-live="polite">{{eps}}</span>
+<button class="btn btn-ghost" style="width:48px;padding:0" onClick="{{epsUp}}" aria-label="เพิ่มจำนวนตอน">+</button>
+</div>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">ใครเป็นคนพูดในคลิป</h1>
+<p class="hint">ไม่แน่ใจก็ใช้ค่าที่เลือกไว้ได้เลย หรือกด "ข้ามข้อนี้"</p>
+<div role="radiogroup" aria-label="ใครเป็นคนพูด" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+<sc-for list="{{voices}}" as="v" hint-placeholder-count="4">
+<button class="opt" role="radio" aria-checked="{{v.on}}" onClick="{{v.pick}}" style="{{v.style}}">
+<span style="font-size:16px;font-weight:600">{{v.label}}</span>
+<span style="font-size:13px;color:{{v.noteColor}}">{{v.note}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">ทำภาพให้เคลื่อนไหวด้วยอะไร</h1>
+<div role="radiogroup" aria-label="วิธีทำวิดีโอ" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+<sc-for list="{{videos}}" as="v" hint-placeholder-count="3">
+<button class="opt" role="radio" aria-checked="{{v.on}}" onClick="{{v.pick}}" style="{{v.style}}">
+<span style="font-size:16px;font-weight:600">{{v.label}}</span>
+<span style="font-size:13px;color:#A7B0C3;line-height:1.5">{{v.desc}}</span>
+</button>
+</sc-for>
+</div>
+<div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:12px;background:#121826">
+<span style="flex:1;display:flex;flex-direction:column"><span style="font-size:16px">จำนวนฉาก</span><span style="font-size:13px;color:#A7B0C3">ยาวราว {{seconds}} วินาที</span></span>
+<button class="btn btn-ghost" style="width:48px;padding:0" onClick="{{scDown}}" aria-label="ลดจำนวนฉาก">−</button>
+<span style="font-size:22px;font-weight:700;min-width:36px;text-align:center" aria-live="polite">{{scenes}}</span>
+<button class="btn btn-ghost" style="width:48px;padding:0" onClick="{{scUp}}" aria-label="เพิ่มจำนวนฉาก">+</button>
+</div>
+<sc-if value="{{needsFlowWarn}}" hint-placeholder-val="{{ false }}">
+<p class="hint" style="color:#FCD34D">ตัวละครพูดเองต้องใช้ Google Flow หรือ Meta AI ถึงจะมีเสียงพูดจากคลิป</p>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{s5}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">เสียงและการตกแต่ง</h1>
+<p class="hint">เลือกไว้ให้ตามค่าเริ่มต้นแล้ว แตะเพื่อเปิดหรือปิดเฉพาะงานนี้</p>
+<div role="radiogroup" aria-label="เสียงหลัก" style="display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:#121826;align-self:flex-start;flex-wrap:wrap">
+<sc-for list="{{audios}}" as="a" hint-placeholder-count="3">
+<button class="opt" role="radio" aria-checked="{{a.on}}" onClick="{{a.pick}}" style="{{a.style}}">{{a.label}}</button>
+</sc-for>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<sc-for list="{{extras}}" as="x" hint-placeholder-count="6">
+<button class="opt tog" role="switch" aria-checked="{{x.on}}" onClick="{{x.toggle}}" style="{{x.style}}"><span style="{{x.boxStyle}}">{{x.mark}}</span>{{x.label}}</button>
+</sc-for>
+</div>
+<p class="hint" style="font-size:13px">อยากเปลี่ยนค่าเริ่มต้นของทุกงาน ไปที่ <a href="Settings.dc.html">ตั้งค่า</a></p>
+</section>
+</sc-if>
+
+<sc-if value="{{s6}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">{{readyTitle}}</h1>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="chk"><span style="color:#34D399" aria-hidden="true">✓</span>เชื่อมต่อ Chrome แล้ว</div>
+<div class="chk"><span style="color:#34D399" aria-hidden="true">✓</span>เข้าสู่ระบบ ChatGPT แล้ว</div>
+<sc-if value="{{needFlow}}" hint-placeholder-val="{{ false }}">
+<div class="chk"><span style="color:#34D399" aria-hidden="true">✓</span>เข้าสู่ระบบ Google Flow แล้ว</div>
+</sc-if>
+<sc-if value="{{voiceMissing}}" hint-placeholder-val="{{ true }}">
+<div class="chk" style="background:#1F1A0C;border:1px solid #5A4512;flex-wrap:wrap"><span style="color:#FCD34D;font-weight:700" aria-hidden="true">!</span><span style="flex:1 1 240px;color:#FDE68A">เสียงพากย์ AI ยังไม่มีเสียงต้นแบบ</span><button class="btn btn-ghost" style="min-height:40px" onClick="{{fixVoice}}">เลือกเสียง "นุ่ม"</button></div>
+</sc-if>
+<sc-if value="{{voiceOk}}" hint-placeholder-val="{{ false }}">
+<div class="chk"><span style="color:#34D399" aria-hidden="true">✓</span>เสียงพากย์ AI พร้อม · เสียงต้นแบบ "นุ่ม"</div>
+</sc-if>
+</div>
+<p class="hint" style="font-size:14px">ระหว่างทำงาน Chrome จะเปิดแท็บ ChatGPT เอง ห้ามพิมพ์หรือปิดแท็บนั้น ส่วนหน้าต่างนี้ปิดได้</p>
+</section>
+</sc-if>
+
+</div>
+</main>
+
+<div style="padding:0 32px 14px;display:flex;justify-content:center">
+<div aria-label="คำตอบที่เลือกแล้ว" style="width:100%;max-width:760px;display:flex;flex-wrap:wrap;gap:8px;min-height:36px">
+<sc-for list="{{answers}}" as="c" hint-placeholder-count="3">
+<button class="chip" onClick="{{c.go}}" title="แก้ข้อนี้"><span style="color:#8A94AA">{{c.k}}</span>{{c.v}}</button>
+</sc-for>
+</div>
+</div>
+
+<footer style="border-top:1px solid #1E2740;padding:16px 32px;display:flex;align-items:center;gap:12px">
+<sc-if value="{{hasBack}}" hint-placeholder-val="{{ false }}"><button class="btn btn-ghost" onClick="{{back}}">ย้อนกลับ</button></sc-if>
+<span style="flex:1"></span>
+<sc-if value="{{canSkip}}" hint-placeholder-val="{{ false }}"><button class="btn btn-text" onClick="{{next}}">ข้ามข้อนี้</button></sc-if>
+<sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}"><button class="btn btn-primary" onClick="{{next}}" disabled="{{nextDisabled}}">ถัดไป</button></sc-if>
+<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}">
+<button class="btn btn-ghost">เพิ่มเข้าคิวไว้ก่อน</button>
+<button class="btn btn-primary" disabled="{{voiceMissing}}">เริ่มสร้างเลย</button>
+</sc-if>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { step: 1, maxStep: 1, dir: 'fwd', kind: 'story', main: '', eps: 3, speaker: 'narrator', video: 'motion', scenes: 10, audio: 'ai', voiceFixed: false, extras: { sub: true, music: false, cover: true, presenter: false, green: false, intro: false } };
+}
+go(n) {
+const s = this.state;
+const step = Math.max(1, Math.min(6, n));
+this.setState({ step, dir: step >= s.step ? 'fwd' : 'back', maxStep: Math.max(s.maxStep, step) });
+}
+renderVals() {
+const s = this.state;
+const set = (p) => this.setState(p);
+const names = ['ประเภทงาน', 'เนื้อหา', 'คนพูด', 'ภาพและวิดีโอ', 'เสียงและตกแต่ง', 'ตรวจแล้วเริ่ม'];
+const segs = names.map((n, i) => {
+const k = i + 1;
+const on = k <= s.step;
+return { aria: 'ไปขั้น ' + k + ' ' + n, locked: k > s.maxStep, go: () => this.go(k), style: 'background:' + (on ? '#38BDF8' : k <= s.maxStep ? '#2B4A63' : '#26304A') + ';' };
+});
+const kindDefs = [
+{ id: 'product', label: 'คลิปสินค้า Shopee', desc: 'วางลิงก์ ได้คลิปพร้อมตะกร้า', icon: 'M6 7h12l-1 13H7L6 7zM9 7a3 3 0 0 1 6 0', c: '#7DD3FC', b: '#0E2A3B' },
+{ id: 'story', label: 'เรื่องเล่า Shorts', desc: 'ใส่หัวข้อ ได้เรื่องเล่าหลายฉาก', icon: 'M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2zM8 7h6', c: '#C4B5FD', b: '#1E1A3A' },
+{ id: 'drama', label: 'ละครสั้นหลายตอน', desc: 'ตัวละครชุดเดิม เล่าต่อหลายตอน', icon: 'M3 8h18v12H3zM3 8l3-5M9 8l3-5M15 8l3-5', c: '#F0ABFC', b: '#2A1730' },
+{ id: 'long', label: 'คลิปยาว', desc: 'แนวนอน 16:9 ยาว 3–10 นาที', icon: 'M2 6h20v12H2zM10 9.5l4 2.5-4 2.5z', c: '#6EE7B7', b: '#0D2E24' }
+];
+const kinds = kindDefs.map((k) => {
+const on = k.id === s.kind && s.maxStep > 1;
+return {
+...k, on: on ? 'true' : 'false',
+pick: () => this.setState({ kind: k.id, scenes: k.id === 'product' ? 3 : 10, speaker: 'narrator', step: 2, dir: 'fwd', maxStep: Math.max(s.maxStep, 2) }),
+style: 'display:flex;align-items:center;gap:16px;padding:22px;min-height:110px;border-radius:16px;background:' + (on ? '#16263A' : '#121826') + ';border:2px solid ' + (on ? '#38BDF8' : '#26304A') + ';',
+iconStyle: 'width:48px;height:48px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;background:' + k.b + ';color:' + k.c + ';'
+};
+});
+const kind = kindDefs.find((k) => k.id === s.kind);
+const isProduct = s.kind === 'product';
+const q2 = { product: 'วางลิงก์สินค้า Shopee', story: 'อยากเล่าเรื่องอะไร', drama: 'ละครเรื่องนี้ชื่ออะไร', long: 'คลิปยาวนี้เกี่ยวกับอะไร' }[s.kind];
+const h2 = { product: 'วางได้ 1–10 ลิงก์ บรรทัดละลิงก์ ถ้ามีหลายลิงก์ จะเข้าคิวแยกกันลิงก์ละ 1 คลิป', story: 'พิมพ์หัวข้อสั้น ๆ พอ ที่เหลือ AI คิดให้', drama: 'ตั้งชื่อแล้วเลือกจำนวนตอน ตัวละคร AI สร้างให้ได้ หรือกำหนดเองทีหลัง', long: 'พิมพ์หัวข้อหรือประเด็นหลัก' }[s.kind];
+const ideaList = ['หมาที่รออยู่ตรงป้ายรถเมล์', 'คุณยายกับร้านก๋วยเตี๋ยวเรือ', 'จดหมายที่ไม่มีชื่อผู้ส่ง'];
+const ideas = ideaList.map((t) => ({ text: t, use: () => set({ main: t }) }));
+const voiceDefs = [
+{ id: 'narrator', label: 'ผู้บรรยายเล่าเรื่อง', note: 'แนะนำ · ใช้ได้กับทุกแบบ', flow: false },
+{ id: 'self', label: 'ตัวละครพูดเอง', note: 'ต้องใช้ Google Flow หรือ Meta AI', flow: true },
+{ id: 'dialog', label: 'ตัวละครคุยกัน', note: 'ต้องใช้ Google Flow หรือ Meta AI', flow: true },
+{ id: 'visual', label: 'เล่าด้วยภาพ ไม่มีเสียงพูด', note: 'มีแค่เพลงและซับไตเติล', flow: false }
+];
+const voices = voiceDefs.map((v) => {
+const on = v.id === s.speaker;
+return { ...v, on: on ? 'true' : 'false', noteColor: v.flow ? '#FCD34D' : '#A7B0C3',
+pick: () => set({ speaker: v.id, video: v.flow && s.video === 'motion' ? 'flow' : s.video, audio: v.id === 'visual' ? 'none' : v.flow ? 'clip' : 'ai' }),
+style: 'display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:14px;background:' + (on ? '#16263A' : '#121826') + ';border:2px solid ' + (on ? '#38BDF8' : '#26304A') + ';' };
+});
+const videoDefs = [
+{ id: 'motion', label: 'ภาพเคลื่อนไหว', desc: 'เร็ว ไม่ใช้เครดิต Flow' },
+{ id: 'flow', label: 'Google Flow', desc: 'วิดีโอจริง ใช้เครดิต Flow' },
+{ id: 'meta', label: 'Meta AI', desc: 'ทดลอง ต้องเข้าสู่ระบบ Meta' }
+];
+const videos = videoDefs.map((v) => {
+const on = v.id === s.video;
+return { ...v, on: on ? 'true' : 'false', pick: () => set({ video: v.id }), style: 'display:flex;flex-direction:column;gap:4px;padding:18px;min-height:96px;border-radius:14px;background:' + (on ? '#16263A' : '#121826') + ';border:2px solid ' + (on ? '#38BDF8' : '#26304A') + ';' };
+});
+const audioDefs = [{ id: 'ai', label: 'เสียงพากย์ AI' }, { id: 'clip', label: 'เสียงจากคลิป' }, { id: 'none', label: 'ไม่มีเสียงพูด' }];
+const audios = audioDefs.map((a) => {
+const on = a.id === s.audio;
+return { ...a, on: on ? 'true' : 'false', pick: () => set({ audio: a.id }), style: 'min-height:44px;padding:0 18px;border-radius:9px;border:0;font-size:15px;font-weight:600;background:' + (on ? '#38BDF8' : 'transparent') + ';color:' + (on ? '#04121C' : '#A7B0C3') + ';' };
+});
+const extraDefs = [{ id: 'sub', label: 'ซับไตเติล' }, { id: 'music', label: 'เพลงพื้นหลัง' }, { id: 'cover', label: 'ปกด้วย AI' }, { id: 'presenter', label: 'ผู้บรรยายในคลิป' }, { id: 'green', label: 'กรีนสกรีน / แสง' }, { id: 'intro', label: 'อินโทร' }];
+const extras = extraDefs.map((x) => {
+const on = !!s.extras[x.id];
+return { ...x, on: on ? 'true' : 'false', mark: on ? '✓' : '',
+toggle: () => set({ extras: { ...s.extras, [x.id]: !on } }),
+style: 'background:' + (on ? '#16263A' : '#121826') + ';border:1px solid ' + (on ? '#38BDF8' : '#26304A') + ';color:#E8ECF4;',
+boxStyle: 'width:22px;height:22px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;' + (on ? 'background:#38BDF8;color:#04121C;' : 'border:1.5px solid #4B5675;') };
+});
+const videoLabel = videoDefs.find((v) => v.id === s.video).label;
+const audioLabel = audioDefs.find((a) => a.id === s.audio).label;
+const onExtras = extraDefs.filter((x) => s.extras[x.id]).map((x) => x.label);
+const voiceMissing = s.audio === 'ai' && !s.voiceFixed;
+const answers = [];
+if (s.maxStep > 1) answers.push({ k: 'ประเภท', v: kind.label, go: () => this.go(1) });
+if (s.main) answers.push({ k: isProduct ? 'ลิงก์' : 'เรื่อง', v: s.main, go: () => this.go(2) });
+if (s.maxStep > 3) answers.push({ k: 'คนพูด', v: voiceDefs.find((v) => v.id === s.speaker).label, go: () => this.go(3) });
+if (s.maxStep > 4) answers.push({ k: 'วิดีโอ', v: videoLabel + ' · ' + s.scenes + ' ฉาก', go: () => this.go(4) });
+if (s.maxStep > 5) answers.push({ k: 'เสียง', v: audioLabel + (onExtras.length ? ' · ' + onExtras.join(' · ') : ''), go: () => this.go(5) });
+const minSc = isProduct ? 3 : 6;
+return {
+segs, kinds, ideas, voices, videos, audios, extras, answers,
+step: s.step, total: 6, stepName: names[s.step - 1],
+kindLabel: s.maxStep > 1 ? kind.label : 'ยังไม่ได้เลือกประเภท',
+anim: 'slide ' + s.dir,
+s1: s.step === 1, s2: s.step === 2, s3: s.step === 3, s4: s.step === 4, s5: s.step === 5, s6: s.step === 6,
+isProduct, notProduct: !isProduct, isDrama: s.kind === 'drama',
+q2, h2, placeholder2: s.kind === 'drama' ? 'เช่น บ้านริมคลองที่ไม่มีใครกลับ' : 'เช่น หมาที่รออยู่ตรงป้ายรถเมล์',
+main: s.main, setMain: (e) => set({ main: e.target.value }),
+eps: s.eps, epsUp: () => set({ eps: Math.min(20, s.eps + 1) }), epsDown: () => set({ eps: Math.max(1, s.eps - 1) }),
+scenes: s.scenes, seconds: s.scenes * 5,
+scUp: () => set({ scenes: Math.min(15, s.scenes + 1) }), scDown: () => set({ scenes: Math.max(minSc, s.scenes - 1) }),
+needsFlowWarn: (s.speaker === 'self' || s.speaker === 'dialog') && s.video === 'motion',
+needFlow: s.video === 'flow',
+voiceMissing, voiceOk: s.audio === 'ai' && s.voiceFixed,
+fixVoice: () => set({ voiceFixed: true }),
+readyTitle: voiceMissing ? 'เหลืออีก 1 อย่างก่อนเริ่ม' : 'พร้อมเริ่มแล้ว',
+hasBack: s.step > 1, notLast: s.step < 6, isLast: s.step === 6,
+canSkip: s.step === 3 || s.step === 5,
+nextDisabled: s.step === 2 && !s.main.trim(),
+back: () => this.go(s.step - 1), next: () => this.go(s.step + 1)
+};
+}
+}
+</script>
+</body>
+</html>

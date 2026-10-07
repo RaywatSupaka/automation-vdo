@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ตั้งค่า</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F17}
+a{color:#7DD3FC}a:hover{color:#BAE6FD}
+.card{background:#121826;border:1px solid #26304A;border-radius:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font:600 15px 'IBM Plex Sans Thai',sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent}
+.btn-primary{background:#38BDF8;color:#04121C}
+.btn-primary:hover{background:#7DD3FC}
+.btn-ghost{background:transparent;color:#E8ECF4;border-color:#33405F}
+.btn-ghost:hover{background:#182033}
+.muted{color:#A7B0C3}
+.tab{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-size:15px;color:#A7B0C3;text-decoration:none}
+.tab:hover{background:#182033;color:#E8ECF4}
+.label{font-size:15px;font-weight:600}
+.input{width:100%;box-sizing:border-box;background:#0B0F17;border:1px solid #33405F;border-radius:10px;color:#E8ECF4;font:400 15px 'IBM Plex Sans Thai',sans-serif;padding:11px 14px}
+.seg{min-height:40px;padding:0 16px;border-radius:8px;font:500 14px 'IBM Plex Sans Thai',sans-serif;cursor:pointer;border:0}
+.theme{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;background:#182033;border:2px solid transparent;cursor:pointer;font:500 14px 'IBM Plex Sans Thai',sans-serif;color:#E8ECF4}
+.group{display:flex;flex-direction:column;gap:14px;padding-top:20px;border-top:1px solid #26304A}
+</style>
+</helmet>
+<div style="display:flex;flex-wrap:wrap;min-height:100%;background:#0B0F17;color:#E8ECF4;font-family:'IBM Plex Sans Thai',system-ui,sans-serif">
+<dc-import name="Sidebar" active="settings" hint-size="248px,860px"></dc-import>
+<main style="flex:999 1 560px;min-width:0;padding:28px 36px 48px;display:flex;flex-direction:column;gap:22px">
+
+<header style="display:flex;flex-direction:column;gap:6px">
+<h1 style="margin:0;font-size:28px;font-weight:700">ตั้งค่า</h1>
+<p class="muted" style="margin:0;font-size:15px">ค่าเริ่มต้นทุกอย่างอยู่ที่นี่ที่เดียว ใช้กับงานใหม่ทุกงาน ถ้าอยากต่างไปเฉพาะงานไหน ปรับได้ตอนสร้างงาน</p>
+</header>
+
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+
+<nav aria-label="หมวดตั้งค่า" class="card" style="flex:1 1 220px;max-width:280px;padding:10px;display:flex;flex-direction:column;gap:2px">
+<a class="tab" href="Setup.dc.html">เสียงพากย์</a>
+<a class="tab" href="Settings.dc.html" aria-current="page" style="background:#16263A;color:#E8ECF4;box-shadow:inset 3px 0 0 #38BDF8">ซับไตเติล</a>
+<a class="tab" href="Settings.dc.html">เพลงและเสียงประกอบ</a>
+<a class="tab" href="Settings.dc.html">โลโก้</a>
+<a class="tab" href="Settings.dc.html">อินโทรและกรีนสกรีน</a>
+<a class="tab" href="Settings.dc.html">คุณภาพวิดีโอ</a>
+<a class="tab" href="Settings.dc.html">Google Flow</a>
+<div style="height:1px;background:#26304A;margin:8px 4px"></div>
+<a class="tab" href="Setup.dc.html">บัญชีและการเชื่อมต่อ</a>
+</nav>
+
+<section class="card" style="flex:4 1 520px;min-width:0;padding:26px;display:flex;flex-wrap:wrap;gap:28px">
+<div style="flex:3 1 380px;min-width:0;display:flex;flex-direction:column;gap:20px">
+
+<div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:12px;background:#182033">
+<span style="flex:1;display:flex;flex-direction:column;gap:2px"><span class="label">ใส่ซับไตเติลทุกงาน</span><span class="muted" style="font-size:13px">สวิตช์เดียว แทนที่ 3 จุดเดิม ซึ่งอาจตั้งค่าไว้ไม่ตรงกัน</span></span>
+<label style="position:relative;display:inline-flex;width:52px;height:30px;cursor:pointer"><input type="checkbox" checked aria-label="ใส่ซับไตเติลทุกงาน" style="position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer"><span style="width:52px;height:30px;border-radius:999px;background:#38BDF8;display:flex;align-items:center;justify-content:flex-end;padding:3px;box-sizing:border-box"><span style="width:24px;height:24px;border-radius:50%;background:#04121C"></span></span></label>
+</div>
+
+<div class="group">
+<span class="label">ธีม</span>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+<button class="theme" style="border-color:#38BDF8"><span style="height:44px;border-radius:8px;background:#0B0F17;display:flex;align-items:center;justify-content:center;font-weight:700;color:#FFFFFF;-webkit-text-stroke:1px #000">สวัสดี</span>คลาสสิก</button>
+<button class="theme"><span style="height:44px;border-radius:8px;background:#0B0F17;display:flex;align-items:center;justify-content:center;font-weight:700;color:#FDE047">สวัสดี</span>ไฮไลต์เหลือง</button>
+<button class="theme"><span style="height:44px;border-radius:8px;background:#0B0F17;display:flex;align-items:center;justify-content:center"><span style="background:#FFFFFF;color:#111;padding:2px 8px;border-radius:4px;font-weight:700">สวัสดี</span></span>กล่องขาว</button>
+<button class="theme"><span style="height:44px;border-radius:8px;background:#0B0F17;display:flex;align-items:center;justify-content:center;font-weight:700;color:#F0ABFC">สวัสดี</span>สุ่มทุกงาน</button>
+</div>
+</div>
+
+<div class="group">
+<span class="label">ตัวอักษร</span>
+<div style="display:flex;flex-wrap:wrap;gap:14px">
+<div style="flex:2 1 200px;display:flex;flex-direction:column;gap:6px"><label for="font" class="muted" style="font-size:14px">แบบอักษร</label><select id="font" class="input"><option>Kanit Bold</option><option>Prompt SemiBold</option><option>อัปโหลดฟอนต์ของฉัน…</option></select></div>
+<div style="flex:1 1 140px;display:flex;flex-direction:column;gap:6px"><label for="fsize" class="muted" style="font-size:14px">ขนาด: 42</label><input id="fsize" type="range" min="14" max="72" value="42" style="accent-color:#38BDF8"></div>
+</div>
+<details><summary class="muted" style="cursor:pointer;font-size:14px">ปรับละเอียด: ระยะสระ–วรรณยุกต์ · ขอบตัวอักษร · พยางค์ต่อช่วง</summary>
+<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px">
+<div style="flex:1 1 160px;display:flex;flex-direction:column;gap:6px"><label for="mark" class="muted" style="font-size:14px">ระยะสระ–วรรณยุกต์: 14%</label><input id="mark" type="range" min="0" max="20" value="14" style="accent-color:#38BDF8"></div>
+<div style="flex:1 1 160px;display:flex;flex-direction:column;gap:6px"><label for="outline" class="muted" style="font-size:14px">ขอบตัวอักษร: 3 px</label><input id="outline" type="range" min="0" max="8" value="3" style="accent-color:#38BDF8"></div>
+<div style="flex:1 1 160px;display:flex;flex-direction:column;gap:6px"><label for="syl" class="muted" style="font-size:14px">พยางค์ต่อช่วง: 3</label><input id="syl" type="range" min="1" max="5" value="3" style="accent-color:#38BDF8"></div>
+</div>
+</details>
+</div>
+
+<div class="group">
+<span class="label">ตำแหน่ง</span>
+<div role="radiogroup" aria-label="ตำแหน่งซับไตเติล" style="display:inline-flex;gap:4px;padding:4px;border-radius:10px;background:#0B0F17;align-self:flex-start">
+<button class="seg" role="radio" aria-checked="false" style="background:transparent;color:#A7B0C3">บน</button>
+<button class="seg" role="radio" aria-checked="false" style="background:transparent;color:#A7B0C3">กลาง</button>
+<button class="seg" role="radio" aria-checked="true" style="background:#16263A;color:#E8ECF4">ล่าง</button>
+</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-top:20px;border-top:1px solid #26304A">
+<button class="btn btn-primary">บันทึกเป็นค่าเริ่มต้น</button>
+<span class="muted" style="font-size:13px;flex:1 1 260px">มีผลกับงานใหม่ งานที่อยู่ในคิวแล้วใช้ค่าที่บันทึกไว้ตอนเพิ่ม ถ้าอยากใช้ค่านี้กับวิดีโอที่เสร็จแล้ว ไปที่คลังวิดีโอ แล้วกด "ทำวิดีโอนี้ใหม่ด้วยค่าล่าสุด"</span>
+</div>
+</div>
+
+<aside style="flex:2 1 220px;min-width:0;display:flex;flex-direction:column;gap:10px;align-items:center">
+<span class="muted" style="font-size:13px;align-self:flex-start">พรีวิวจริงจากตัวเรนเดอร์</span>
+<div style="width:100%;max-width:240px;aspect-ratio:9/16;border-radius:14px;background:linear-gradient(180deg,#24324F,#121826);position:relative;overflow:hidden;border:1px solid #33405F">
+<span style="position:absolute;left:12px;top:12px;font-size:12px;color:#A7B0C3">ภาพฉากตัวอย่าง</span>
+<span style="position:absolute;left:0;right:0;bottom:18%;text-align:center;font-weight:700;font-size:22px;color:#FFFFFF;-webkit-text-stroke:1.5px #000;padding:0 12px;line-height:1.4">หมาตัวนั้นยังรออยู่</span>
+</div>
+<span class="muted" style="font-size:13px">9:16 · Kanit Bold 42 · ล่าง</span>
+</aside>
+</section>
+</div>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

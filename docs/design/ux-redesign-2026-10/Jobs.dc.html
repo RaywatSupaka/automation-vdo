@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>งานของฉัน</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F17}
+a{color:#7DD3FC}a:hover{color:#BAE6FD}
+.card{background:#121826;border:1px solid #26304A;border-radius:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font:600 15px 'IBM Plex Sans Thai',sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.btn-primary{background:#38BDF8;color:#04121C}
+.btn-primary:hover{background:#7DD3FC;color:#04121C}
+.btn-ghost{background:transparent;color:#E8ECF4;border-color:#33405F}
+.btn-ghost:hover{background:#182033;color:#E8ECF4}
+.btn-warn{background:#FBBF24;color:#1A1405}
+.btn-warn:hover{background:#FCD34D;color:#1A1405}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:transparent;border:1px solid #33405F;color:#A7B0C3;cursor:pointer}
+.chip{cursor:pointer;font:500 14px 'IBM Plex Sans Thai',sans-serif;min-height:40px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;gap:8px}
+.btn:focus-visible,.chip:focus-visible,.icon-btn:focus-visible{outline:2px solid #7DD3FC;outline-offset:2px}
+.muted{color:#A7B0C3}
+</style>
+</helmet>
+<div style="display:flex;flex-wrap:wrap;min-height:100%;background:#0B0F17;color:#E8ECF4;font-family:'IBM Plex Sans Thai',system-ui,sans-serif">
+<dc-import name="Sidebar" active="jobs" hint-size="248px,860px"></dc-import>
+<main style="flex:999 1 560px;min-width:0;padding:28px 36px 48px;display:flex;flex-direction:column;gap:20px">
+
+<header style="display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+<div style="flex:1 1 300px">
+<h1 style="margin:0;font-size:28px;font-weight:700">งานของฉัน</h1>
+<p class="muted" style="margin:4px 0 0;font-size:15px">คิว งานค้าง และโปรเจกต์ละคร อยู่รวมกันในหน้านี้</p>
+</div>
+<a class="btn btn-primary" href="Create.dc.html">+ สร้างงานใหม่</a>
+</header>
+
+<section aria-live="polite" style="{{bannerStyle}}">
+<span style="{{bannerDot}}"></span>
+<div style="flex:1 1 320px;display:flex;flex-direction:column;gap:2px">
+<span style="font-size:16px;font-weight:600">{{bannerTitle}}</span>
+<span style="font-size:14px;color:#C9D1E0">{{bannerText}}</span>
+</div>
+<button class="btn btn-ghost" onClick="{{togglePause}}">{{pauseLabel}}</button>
+<button class="icon-btn" aria-label="จัดการคิว: ยกเลิกทั้งหมด ล้างสถานะค้าง">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+</button>
+</section>
+
+<div role="tablist" aria-label="กรองตามสถานะ" style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+<button class="chip" role="tab" aria-selected="{{f.on}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}<span style="{{f.countStyle}}">{{f.count}}</span></button>
+</sc-for>
+</div>
+
+<section style="display:flex;flex-direction:column;gap:12px">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<article class="card" style="{{r.cardStyle}}">
+<div style="width:56px;height:72px;flex:none;border-radius:8px;background:{{r.thumb}}"></div>
+<div style="flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+<span style="{{r.pillStyle}}"><span style="{{r.dotStyle}}"></span>{{r.status}}</span>
+<span class="muted" style="font-size:13px">{{r.kind}}</span>
+</div>
+<span style="font-size:17px;font-weight:600">{{r.title}}</span>
+<span style="font-size:14px;color:#C9D1E0;line-height:1.55">{{r.detail}}</span>
+<sc-if value="{{r.hasBar}}" hint-placeholder-val="{{ false }}">
+<div style="height:6px;border-radius:999px;background:#26304A;overflow:hidden;max-width:420px"><div style="{{r.barStyle}}"></div></div>
+</sc-if>
+</div>
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<a class="{{r.btnClass}}" href="{{r.href}}">{{r.action}}</a>
+<button class="icon-btn" aria-label="ตัวเลือกเพิ่มเติมของงานนี้">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+</button>
+</div>
+</article>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+<div class="card" style="padding:40px;text-align:center;color:#A7B0C3;font-size:15px">ไม่มีงานในสถานะนี้</div>
+</sc-if>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1100}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { filter: 'open', paused: true };
+}
+renderVals() {
+const s = this.state;
+const tone = {
+wait: { bg: '#3A2E0B', fg: '#FCD34D', dot: '#FBBF24', label: 'รอคุณ' },
+run: { bg: '#0E2A3B', fg: '#7DD3FC', dot: '#38BDF8', label: 'กำลังสร้าง' },
+queue: { bg: '#1A2236', fg: '#C9D1E0', dot: '#8A94AA', label: 'รอคิว' },
+fail: { bg: '#3B1518', fg: '#FCA5A5', dot: '#F87171', label: 'สะดุด · ทำต่อได้' },
+stop: { bg: '#1F2433', fg: '#A7B0C3', dot: '#64748B', label: 'หยุดไว้' },
+done: { bg: '#0D2E24', fg: '#6EE7B7', dot: '#34D399', label: 'เสร็จแล้ว' }
+};
+const data = [
+{ t: 'wait', kind: 'เรื่องเล่า Shorts', title: 'หมาที่รออยู่ตรงป้ายรถเมล์', detail: 'ต้องเข้าสู่ระบบ ChatGPT ใน Chrome · ภาพฉาก 1 จาก 10 บันทึกไว้แล้ว', action: 'ดูวิธีแก้', href: 'Recovery.dc.html', btn: 'btn btn-warn', pct: 10, thumb: '#1E2A44' },
+{ t: 'run', kind: 'เรื่องเล่า Shorts', title: 'ร้านดอกไม้กับจดหมายที่ไม่มีชื่อผู้ส่ง', detail: 'กำลังสร้างภาพ 4 จาก 6 · อัปเดต 12 วินาทีที่แล้ว', action: 'ดูความคืบหน้า', href: 'Jobs.dc.html', btn: 'btn btn-ghost', pct: 58, thumb: '#2A2140' },
+{ t: 'queue', kind: 'คลิปสินค้า Shopee', title: 'ครีมกันแดดสูตรน้ำ 50 มล.', detail: 'ลำดับที่ 1 · Google Flow · 3 ฉาก · เสียงพากย์ AI', action: 'แก้ไข', href: 'Create.dc.html', btn: 'btn btn-ghost', thumb: '#16302A' },
+{ t: 'queue', kind: 'ละครสั้น · ตอน 3 จาก 3', title: 'บ้านริมคลองที่ไม่มีใครกลับ', detail: 'ลำดับที่ 2 · ตอน 1–2 เสร็จแล้ว · ตัวละคร: แม่นวล, ต้นข้าว', action: 'เปิดโปรเจกต์', href: 'Jobs.dc.html', btn: 'btn btn-ghost', thumb: '#2A1730' },
+{ t: 'fail', kind: 'คลิปสินค้า Shopee', title: 'หูฟังไร้สายตัดเสียงรบกวน', detail: 'Google Flow ไม่ตอบกลับภายใน 3 นาที ระหว่างทำวิดีโอฉาก 2 · ภาพครบ 3 ฉาก และวิดีโอฉาก 1 บันทึกไว้แล้ว', action: 'ทำต่อจากจุดเดิม', href: 'Jobs.dc.html', btn: 'btn btn-primary', pct: 45, thumb: '#1E2A44' },
+{ t: 'stop', kind: 'เรื่องเล่า Shorts', title: 'คุณยายกับร้านก๋วยเตี๋ยวเรือ', detail: 'คุณหยุดไว้เมื่อวาน 19:40 · บทกับภาพ 6 จาก 10 ฉากบันทึกไว้แล้ว', action: 'ทำต่อ', href: 'Jobs.dc.html', btn: 'btn btn-ghost', pct: 60, thumb: '#16302A' },
+{ t: 'done', kind: 'เรื่องเล่า Shorts', title: 'ร้านดอกไม้ริมทาง ตอนพิเศษ', detail: 'เสร็จเมื่อ 2/10 19:34 · 6 ฉาก · 15.4 MB', action: 'ดูวิดีโอ', href: 'Home.dc.html', btn: 'btn btn-ghost', thumb: '#2A2140' }
+];
+const groups = {
+open: (t) => t !== 'done',
+wait: (t) => t === 'wait' || t === 'fail',
+run: (t) => t === 'run' || t === 'queue',
+stop: (t) => t === 'stop',
+done: (t) => t === 'done'
+};
+const filterDefs = [
+{ id: 'open', label: 'ยังไม่เสร็จ' },
+{ id: 'wait', label: 'ต้องจัดการ' },
+{ id: 'run', label: 'กำลังทำ / รอคิว' },
+{ id: 'stop', label: 'หยุดไว้' },
+{ id: 'done', label: 'เสร็จแล้ว' }
+];
+const filters = filterDefs.map((f) => {
+const on = f.id === s.filter;
+const count = data.filter((d) => groups[f.id](d.t)).length;
+return {
+...f, count, on: on ? 'true' : 'false',
+pick: () => this.setState({ filter: f.id }),
+style: on ? 'background:#16263A;color:#E8ECF4;border:1px solid #38BDF8;' : 'background:#121826;color:#A7B0C3;border:1px solid #26304A;',
+countStyle: 'font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;' + (f.id === 'wait' ? 'background:#3A2E0B;color:#FCD34D;' : 'background:#1A2236;color:#A7B0C3;')
+};
+});
+const rows = data.filter((d) => groups[s.filter](d.t)).map((d) => {
+const c = tone[d.t];
+return {
+...d, status: c.label, btnClass: d.btn,
+hasBar: typeof d.pct === 'number',
+barStyle: 'height:100%;width:' + (d.pct || 0) + '%;background:' + c.dot + ';',
+pillStyle: 'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600;background:' + c.bg + ';color:' + c.fg + ';',
+dotStyle: 'width:7px;height:7px;border-radius:50%;background:' + c.dot + ';',
+cardStyle: 'display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:16px 18px;' + (d.t === 'wait' ? 'border-color:#5A4512;' : '')
+};
+});
+const paused = s.paused;
+return {
+filters, rows, empty: rows.length === 0,
+togglePause: () => this.setState({ paused: !paused }),
+pauseLabel: paused ? 'เดินคิวต่อ' : 'พักหลังจบงานนี้',
+bannerTitle: paused ? 'คิวพักไว้ชั่วคราว' : 'คิวกำลังทำงาน · เหลือ 2 งาน',
+bannerText: paused ? 'เพราะงาน "หมาที่รออยู่ตรงป้ายรถเมล์" รอให้คุณเข้าสู่ระบบ ChatGPT เมื่อแก้แล้ว คิวจะเดินต่อเอง' : 'งานถัดไป: ครีมกันแดดสูตรน้ำ 50 มล. · ปิดหน้าต่างนี้ได้ งานยังทำต่อ',
+bannerStyle: 'display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;border:1px solid ' + (paused ? '#5A4512;background:#1F1A0C;' : '#1E3A52;background:#0F1D2B;'),
+bannerDot: 'width:12px;height:12px;border-radius:50%;flex:none;background:' + (paused ? '#FBBF24' : '#38BDF8') + ';'
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>หน้าแรก</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F17}
+a{color:#7DD3FC}a:hover{color:#BAE6FD}
+.card{background:#121826;border:1px solid #26304A;border-radius:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font:600 15px 'IBM Plex Sans Thai',sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent}
+.btn-primary{background:#38BDF8;color:#04121C}
+.btn-primary:hover{background:#7DD3FC;color:#04121C}
+.btn-ghost{background:transparent;color:#E8ECF4;border-color:#33405F}
+.btn-ghost:hover{background:#182033;color:#E8ECF4}
+.btn-warn{background:#FBBF24;color:#1A1405}
+.btn-warn:hover{background:#FCD34D;color:#1A1405}
+.sec{margin:0;font-size:20px;font-weight:600;color:#E8ECF4}
+.muted{color:#A7B0C3}
+.tile{display:flex;flex-direction:column;gap:10px;padding:20px;text-decoration:none;color:#E8ECF4}
+.tile:hover{border-color:#38BDF8;color:#E8ECF4}
+</style>
+</helmet>
+<div style="display:flex;flex-wrap:wrap;min-height:100%;background:#0B0F17;color:#E8ECF4;font-family:'IBM Plex Sans Thai',system-ui,sans-serif">
+<dc-import name="Sidebar" active="home" hint-size="248px,860px"></dc-import>
+<main style="flex:999 1 560px;min-width:0;padding:28px 36px 48px;display:flex;flex-direction:column;gap:28px">
+
+<header style="display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+<div style="flex:1 1 300px">
+<h1 style="margin:0;font-size:28px;font-weight:700">หน้าแรก</h1>
+<p class="muted" style="margin:4px 0 0;font-size:15px">เครดิตเสียงพากย์ 796,387 · เครดิตซับไตเติล 300</p>
+</div>
+<a class="btn btn-primary" href="Create.dc.html">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+สร้างงานใหม่
+</a>
+</header>
+
+<section aria-label="งานที่รอคุณ" class="card" style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 20px;background:#1F1A0C;border-color:#5A4512">
+<span style="width:40px;height:40px;border-radius:50%;background:#3A2E0B;display:flex;align-items:center;justify-content:center;color:#FCD34D;flex:none">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5M12 16.5h.01M10.3 3.9L2.5 17.5A2 2 0 0 0 4.2 20.5h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+</span>
+<div style="flex:1 1 320px;display:flex;flex-direction:column;gap:2px">
+<span style="font-size:16px;font-weight:600;color:#FDE68A">มี 1 งานรอคุณอยู่</span>
+<span style="font-size:15px;color:#E8DCC0">"หมาที่รออยู่ตรงป้ายรถเมล์" ต้องเข้าสู่ระบบ ChatGPT ใน Chrome ก่อน งานถึงจะทำต่อได้ ภาพ 1 จาก 10 ฉากบันทึกไว้แล้ว</span>
+</div>
+<a class="btn btn-warn" href="Recovery.dc.html">ดูวิธีแก้</a>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:14px">
+<h2 class="sec">เริ่มงานใหม่</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+<a class="card tile" href="Create.dc.html">
+<span style="width:40px;height:40px;border-radius:10px;background:#0E2A3B;color:#7DD3FC;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7zM9 7a3 3 0 0 1 6 0"></path></svg></span>
+<span style="font-size:17px;font-weight:600">คลิปสินค้า Shopee</span>
+<span class="muted" style="font-size:14px;line-height:1.55">วางลิงก์สินค้า แล้วโปรแกรมจะทำภาพ วิดีโอ และเสียงพากย์ให้จนจบ</span>
+</a>
+<a class="card tile" href="Create.dc.html">
+<span style="width:40px;height:40px;border-radius:10px;background:#1E1A3A;color:#C4B5FD;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2zM8 7h6"></path></svg></span>
+<span style="font-size:17px;font-weight:600">เรื่องเล่า Shorts</span>
+<span class="muted" style="font-size:14px;line-height:1.55">ใส่หัวข้อเรื่อง แล้วได้คลิปแนวตั้ง 6–15 ฉาก</span>
+</a>
+<a class="card tile" href="Create.dc.html">
+<span style="width:40px;height:40px;border-radius:10px;background:#2A1730;color:#F0ABFC;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h18v12H3zM3 8l3-5M9 8l3-5M15 8l3-5"></path></svg></span>
+<span style="font-size:17px;font-weight:600">ละครสั้นหลายตอน</span>
+<span class="muted" style="font-size:14px;line-height:1.55">กำหนดตัวละครครั้งเดียว แล้วสร้างได้ 1–20 ตอนต่อเนื่อง</span>
+</a>
+<a class="card tile" href="Create.dc.html">
+<span style="width:40px;height:40px;border-radius:10px;background:#0D2E24;color:#6EE7B7;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h20v12H2zM10 9.5l4 2.5-4 2.5z"></path></svg></span>
+<span style="font-size:17px;font-weight:600">คลิปยาว</span>
+<span class="muted" style="font-size:14px;line-height:1.55">แนวนอน 16:9 ยาว 3–10 นาที</span>
+</a>
+</div>
+</section>
+
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<section class="card" style="flex:3 1 460px;min-width:0;padding:20px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:12px">
+<h2 class="sec" style="flex:1">กำลังทำอยู่</h2>
+<a href="Jobs.dc.html" style="font-size:14px">ดูงานทั้งหมด</a>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:12px;background:#182033">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#0E2A3B;color:#7DD3FC;font-size:13px;font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:#38BDF8"></span>กำลังสร้าง</span>
+<span class="muted" style="font-size:13px">เรื่องเล่า Shorts</span>
+</div>
+<span style="font-size:17px;font-weight:600">ร้านดอกไม้กับจดหมายที่ไม่มีชื่อผู้ส่ง</span>
+<div style="height:8px;border-radius:999px;background:#26304A;overflow:hidden"><div style="width:58%;height:100%;background:#38BDF8"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:14px">
+<span style="color:#6EE7B7">✓ เขียนบท</span><span class="muted">→</span>
+<span style="color:#7DD3FC;font-weight:600">สร้างภาพ 4/6</span><span class="muted">→</span>
+<span class="muted">เสียงพากย์</span><span class="muted">→</span>
+<span class="muted">ประกอบวิดีโอ</span>
+</div>
+<span class="muted" style="font-size:13px">อัปเดตล่าสุด 12 วินาทีที่แล้ว · ปิดหน้าต่างนี้ได้ งานยังทำต่อ</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:0">
+<span class="muted" style="font-size:14px;padding-bottom:8px">ถัดไปในคิว · 2 งาน</span>
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #26304A;font-size:15px"><span class="muted" style="width:20px">1</span><span style="flex:1">ครีมกันแดดสูตรน้ำ 50 มล.</span><span class="muted" style="font-size:13px">คลิปสินค้า</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #26304A;font-size:15px"><span class="muted" style="width:20px">2</span><span style="flex:1">คุณยายกับร้านก๋วยเตี๋ยวเรือ</span><span class="muted" style="font-size:13px">เรื่องเล่า Shorts</span></div>
+</div>
+</section>
+
+<section class="card" style="flex:2 1 320px;min-width:0;padding:20px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:12px">
+<h2 class="sec" style="flex:1">เสร็จล่าสุด</h2>
+<a href="Home.dc.html" style="font-size:14px">เปิดคลัง</a>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="aspect-ratio:9/16;border-radius:10px;background:#1E2A44;display:flex;align-items:flex-end;padding:8px;font-size:12px;color:#A7B0C3">ภาพปก</div><span style="font-size:13px;line-height:1.4">ร้านดอกไม้กับจดหมาย…</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="aspect-ratio:9/16;border-radius:10px;background:#2A2140;display:flex;align-items:flex-end;padding:8px;font-size:12px;color:#A7B0C3">ภาพปก</div><span style="font-size:13px;line-height:1.4">หูฟังไร้สายตัดเสียง</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="aspect-ratio:9/16;border-radius:10px;background:#16302A;display:flex;align-items:flex-end;padding:8px;font-size:12px;color:#A7B0C3">ภาพปก</div><span style="font-size:13px;line-height:1.4">ละคร EP 3</span></div>
+</div>
+</section>
+</div>
+
+<section class="card" style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:16px 20px">
+<div style="flex:1 1 320px;display:flex;flex-direction:column;gap:4px">
+<span style="font-size:15px;font-weight:600">ตั้งค่าครบ 5 จาก 6 ข้อ</span>
+<span class="muted" style="font-size:14px">ข้อที่เหลือไม่บังคับ: จับคู่มือถือ สำหรับโพสต์ Shopee อัตโนมัติ</span>
+</div>
+<a class="btn btn-ghost" href="Setup.dc.html">ดูรายการตั้งค่า</a>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

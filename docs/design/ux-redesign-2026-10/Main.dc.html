@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แผนออกแบบ UX ใหม่</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F17}
+a{color:#7DD3FC}a:hover{color:#BAE6FD}
+.card{background:#121826;border:1px solid #26304A;border-radius:14px;padding:22px}
+.h2{margin:0;font-size:26px;font-weight:700;color:#E8ECF4}
+.lead{margin:0;font-size:15px;line-height:1.65;color:#A7B0C3}
+.num{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#7DD3FC}
+.t{margin:0;font-size:17px;font-weight:600;color:#E8ECF4}
+.p{margin:0;font-size:14px;line-height:1.65;color:#A7B0C3}
+.ev{margin:0;font-size:13px;line-height:1.55;color:#8A94AA;font-family:'IBM Plex Mono',monospace}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:14px;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;border-top:1px solid #26304A}
+.cell{padding:12px 16px;font-size:14px;color:#C9D1E0;line-height:1.5}
+.old{color:#8A94AA;text-decoration:line-through;text-decoration-color:#4B5675}
+</style>
+</helmet>
+<div style="background:#0B0F17;color:#E8ECF4;font-family:'IBM Plex Sans Thai',system-ui,sans-serif;min-height:100%">
+<div style="max-width:1240px;margin:0 auto;padding:56px 32px 80px;display:flex;flex-direction:column;gap:56px">
+
+<header style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<span class="pill" style="background:#0E2A3B;color:#7DD3FC">SmartFlow AI</span>
+<span class="pill" style="background:#1A2236;color:#A7B0C3">ข้อเสนอออกแบบ ยังไม่ได้แก้โค้ด</span>
+</div>
+<h1 style="margin:0;font-size:44px;line-height:1.25;font-weight:700;max-width:900px">ทำให้ SmartFlow ใช้ง่ายขึ้น: เริ่มงานแรกได้โดยไม่ต้องเดา และรู้ทุกครั้งว่างานถึงไหนแล้ว ต้องทำอะไรต่อ</h1>
+<p class="lead" style="max-width:860px;font-size:17px">ข้อสรุปมาจากการไล่โค้ดของทุก flow ได้แก่ คลิปสินค้า, เรื่องเล่า Shorts, ละครสั้นหลายตอน, คิว, คลังวิดีโอ, ตั้งค่า และการเชื่อมต่อ Chrome การออกแบบนี้เปลี่ยนเฉพาะชั้นหน้าจอ ไม่แตะลอจิกงาน, Checkpoint, การกันส่งซ้ำ หรือ endpoint เดิม</p>
+</header>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<h2 class="h2">1. ปัญหาที่พบในโปรแกรมตอนนี้</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">01</span><p class="t">เมนูเยอะ แต่หน้าสำคัญกลับหาไม่เจอ</p><p class="p">มี 22 หน้า เมนูข้าง 16 รายการ แต่หน้าเสียงพากย์ ซับไตเติล เพลง โลโก้ และคู่มือ ไม่อยู่ในเมนู ต้องเข้าผ่านปุ่มลัดเท่านั้น</p><p class="ev">index.html:41-73</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">02</span><p class="t">ตัวเลือกสำคัญถูกพับซ่อน หรือกองรวมกัน</p><p class="p">หน้าสินค้าพับเสียง, Flow, ปก AI และกรีนสกรีนไว้ใต้หัวข้อ "เลือก AI และโมเดล" ส่วนขั้น "วิดีโอ" ของ Story มีกล่องซ้อนกันราว 7 กล่องก่อนถึงจำนวนฉาก</p><p class="ev">product_continue.js:15 · media_audio.js</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">03</span><p class="t">ตั้งค่าเดียวกันอยู่หลายที่</p><p class="p">สวิตช์ซับไตเติลมี 3 จุด ซึ่งอาจเป็นคนละค่ากัน ผู้บรรยายมี 2 หน้าบวก checkbox อีกอัน ส่วนค่าเริ่มต้นกระจายอยู่ราว 8 หน้า แต่ละหน้ามีปุ่มบันทึกที่ความหมายไม่ตรงกัน</p><p class="ev">app.js:1095 vs 1168</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">04</span><p class="t">สถานะเดียวกัน แต่ใช้คำต่างกันในแต่ละหน้า</p><p class="p">งานที่ล้มเหลวหน้าคิวเรียก "ต้องตรวจสอบ" หน้า Story เรียก "หยุดที่ขั้นหนึ่ง" หน้าละครเรียก "ผิดพลาด" หรือโชว์คำดิบ needs_attention และเมื่อคิวหยุดเองก็ไม่บอกเหตุผล</p><p class="ev">creation_queue.js:4,353</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">05</span><p class="t">สิ่งที่ต้องเตรียมไปรู้ตอนกำลังทำงาน</p><p class="p">การเข้าสู่ระบบ ChatGPT/Flow, ติ๊กยืนยันว่าไม่ใช่บอท, กด "ฉันยอมรับ" ใน Flow และคีย์เสียงพากย์ จะรู้ตอนกดเริ่มหรือตอนงานหยุดกลางทางเท่านั้น</p><p class="ev">main_window.py:11804 · story_pipeline.py:171</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">06</span><p class="t">ศัพท์ระบบและข้อความผิดพลาดดิบ</p><p class="p">มีคำอย่าง Checkpoint, Local Bridge, Product Job, reference_id, Token SOT, UI Hierarchy และ "คัดลอก Log สำหรับ Codex" ส่วนข้อความแจ้งผิดพลาดจะหายเองภายใน 4.2 วินาที</p><p class="ev">app.js:270-279</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">07</span><p class="t">ทางกู้งานกระจายอยู่ 5 ที่</p><p class="p">ได้แก่ แท็บงานเดิม, หน้าคิว, หน้าต่างโปรเจกต์ละคร, Storyboard และหน้าต่างข้อผิดพลาด ปุ่มก็ชื่อไม่เหมือนกัน เช่น "ทำต่อจากเดิม", "ทำต่อคิวที่สะดุด", "กู้คืนไฟล์"</p><p class="ev">story_recovery.py · creation_queue.js:406</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="num">08</span><p class="t">หน้าตาไม่เป็นระบบ และตัวหนังสือเล็กเกินไป</p><p class="p">มีไฟล์ CSS 27 ไฟล์, ชุดสีที่ขัดกัน 2 ชุด, ค่าสีเขียนตายตัว 640 จุด และกฎขนาดตัวอักษร 6–9px อีก 155 จุด ทำให้อ่านภาษาไทยยาก</p><p class="ev">styles.css · ux_2026.css</p></div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<h2 class="h2">2. หลักการออกแบบใหม่</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+<div class="card" style="display:flex;flex-direction:column;gap:8px;border-color:#1E3A52"><p class="t">หนึ่งหน้า หนึ่งปุ่มหลัก</p><p class="p">ทุกหน้ามีปุ่มเด่นแค่ปุ่มเดียว ปุ่มลบแยกไปไว้ในเมนู "จัดการ"</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px;border-color:#1E3A52"><p class="t">ตั้งครั้งเดียว ใช้ทุกงาน</p><p class="p">ค่าเริ่มต้นอยู่ที่ "ตั้งค่า" ที่เดียว ฟอร์มสร้างงานแสดงเป็นสรุปพร้อมปุ่ม "ปรับเฉพาะงานนี้"</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px;border-color:#1E3A52"><p class="t">บอกก่อนเริ่ม ไม่ใช่กลางทาง</p><p class="p">ตรวจความพร้อมทุกข้อก่อนกดเริ่ม และแก้ได้จากตรงนั้นเลย</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px;border-color:#1E3A52"><p class="t">สถานะชุดเดียวทั้งแอป</p><p class="p">มี 6 สถานะ ทุกสถานะบอกว่า "ต้องทำอะไรต่อ" และมีปุ่มเดียวให้ทำสิ่งนั้น</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px;border-color:#1E3A52"><p class="t">ใช้ภาษาของคนใช้</p><p class="p">ศัพท์ระบบและข้อความดิบพับไว้ใต้ "รายละเอียดสำหรับทีมช่วยเหลือ"</p></div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<h2 class="h2">3. โครงสร้างเมนู: จาก 16 + 5 หน้าที่ซ่อนอยู่ เหลือ 7</h2>
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<div class="card" style="flex:1 1 360px;display:flex;flex-direction:column;gap:6px">
+<p class="t" style="margin-bottom:8px">ตอนนี้</p>
+<p class="p old">ภาพรวม</p>
+<p class="p old">สร้างคลิปสินค้า · เล่าเรื่อง Shorts · คลิปยาว · ละครสั้น AI · ตัวละครผู้บรรยาย</p>
+<p class="p old">คิวสร้างคลิป · คลังวิดีโอ · AI Chat (DEV)</p>
+<p class="p old">นายแบบ/นางแบบสินค้า · อินโทรคลิป · กรีนสกรีน/แสง · ตั้งค่าผู้บรรยาย · เสียง ซับ โลโก้ และคุณภาพ</p>
+<p class="p old">Auto Post Facebook · โพสนายหน้า Shopee · ระบบและ Log</p>
+<p class="p old">ไม่อยู่ในเมนู: เสียงพากย์ · ซับไตเติล · เพลง · โลโก้ · คู่มือ</p>
+</div>
+<div class="card" style="flex:1 1 520px;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden">
+<div class="row" style="border-top:0;background:#182033"><div class="cell" style="font-weight:600;color:#E8ECF4">เมนูใหม่</div><div class="cell" style="font-weight:600;color:#E8ECF4">รวมของเดิม</div></div>
+<div class="row"><div class="cell" style="color:#E8ECF4">หน้าแรก</div><div class="cell">ภาพรวม + คู่มือ + ความพร้อมของระบบ</div></div>
+<div class="row"><div class="cell" style="color:#E8ECF4">สร้างงานใหม่</div><div class="cell">สินค้า · Story · ละครสั้น · คลิปยาว (เลือกประเภทในหน้าเดียว)</div></div>
+<div class="row"><div class="cell" style="color:#E8ECF4">งานของฉัน</div><div class="cell">คิวสร้างคลิป + งานเดิม/งานค้าง + โปรเจกต์ละคร + Storyboard</div></div>
+<div class="row"><div class="cell" style="color:#E8ECF4">คลังวิดีโอ</div><div class="cell">คลังวิดีโอ + แก้ปกคลิป</div></div>
+<div class="row"><div class="cell" style="color:#E8ECF4">เผยแพร่</div><div class="cell">โพสนายหน้า Shopee + Auto Post Facebook + จับคู่มือถือ</div></div>
+<div class="row"><div class="cell" style="color:#E8ECF4">ตัวละคร</div><div class="cell">ผู้บรรยาย + ตั้งค่าผู้บรรยาย + นายแบบ/นางแบบ</div></div>
+<div class="row"><div class="cell" style="color:#E8ECF4">ตั้งค่า</div><div class="cell">เสียงพากย์ · ซับ · เพลง · โลโก้ · อินโทร · กรีนสกรีน · คุณภาพ · Flow · บัญชี</div></div>
+<div class="row"><div class="cell" style="color:#8A94AA">ล่างสุดของเมนู</div><div class="cell" style="color:#8A94AA">สถานะการเชื่อมต่อจุดเดียว · ช่วยเหลือและบันทึกระบบ · เครื่องมือนักพัฒนา (DEV เท่านั้น)</div></div>
+</div>
+</div>
+<p class="p">DEV กับ prod ใช้หน้าจอชุดเดียวกัน ต่างกันแค่ป้าย "โหมดนักพัฒนา" และเมนู "เครื่องมือนักพัฒนา" (AI Chat) ที่แสดงเฉพาะ DEV จึงไม่ต้องออกแบบแยกสองชุด</p>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<h2 class="h2">4. สถานะกลาง 6 แบบ ใช้คำเดียวกันทุกหน้า</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px">
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="pill" style="background:#1A2236;color:#C9D1E0;align-self:flex-start"><span class="dot" style="background:#8A94AA"></span>รอคิว</span><p class="p">รอคิวทำตามลำดับ กดเลื่อนลำดับหรือแก้ได้</p><p class="ev">queued</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="pill" style="background:#0E2A3B;color:#7DD3FC;align-self:flex-start"><span class="dot" style="background:#38BDF8"></span>กำลังสร้าง</span><p class="p">บอกขั้นตอนที่กำลังทำ เช่น "ภาพ 3/10" และเวลาที่อัปเดตล่าสุด</p><p class="ev">running</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:#5A4512"><span class="pill" style="background:#3A2E0B;color:#FCD34D;align-self:flex-start"><span class="dot" style="background:#FBBF24"></span>รอคุณ</span><p class="p">โปรแกรมทำต่อเองไม่ได้ เช่น ต้องเข้าสู่ระบบ, ยืนยันว่าไม่ใช่บอท หรือตรวจภาพ จะบอกขั้นตอนเป็นข้อ ๆ พร้อมปุ่ม "ทำแล้ว ทำต่อ"</p><p class="ev">action_required · needs_attention · AI_WEB_WAIT_REVIEW · startup_review</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="pill" style="background:#3B1518;color:#FCA5A5;align-self:flex-start"><span class="dot" style="background:#F87171"></span>สะดุด · ทำต่อได้</span><p class="p">เกิดข้อผิดพลาด แต่สิ่งที่ทำไปแล้วยังเก็บไว้ บอกสาเหตุเป็นภาษาคน และมีปุ่มเดียวคือ "ทำต่อจากจุดเดิม"</p><p class="ev">failed · job_needs_attention · dispatch_error</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="pill" style="background:#1F2433;color:#A7B0C3;align-self:flex-start"><span class="dot" style="background:#64748B"></span>หยุดไว้</span><p class="p">หยุดเพราะคุณกด หรือพักคิวไว้ งานยังอยู่ครบและกดทำต่อได้</p><p class="ev">cancelled (มีงานค้าง) · paused</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px"><span class="pill" style="background:#0D2E24;color:#6EE7B7;align-self:flex-start"><span class="dot" style="background:#34D399"></span>เสร็จแล้ว</span><p class="p">มีวิดีโอในคลังแล้ว กดดูหรือส่งไปเผยแพร่ได้เลย</p><p class="ev">completed</p></div>
+</div>
+<p class="p">เมื่อคิวหยุดเอง ให้แสดงแถบเหตุผลไว้บนสุดของ "งานของฉัน" ทุกครั้ง เช่น "คิวพักไว้ เพราะต้องอัปเดต Extension" แทนข้อความกลาง ๆ อย่าง "พักคิว • รอเริ่ม"</p>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<h2 class="h2">5. คำที่จะเปลี่ยน</h2>
+<div class="card" style="padding:0;overflow:hidden">
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr))">
+<div class="row"><div class="cell old">Checkpoint</div><div class="cell">บันทึกความคืบหน้าแล้ว</div></div>
+<div class="row"><div class="cell old">Local Bridge / Chrome Extension</div><div class="cell">การเชื่อมต่อ Chrome</div></div>
+<div class="row"><div class="cell old">Product Job</div><div class="cell">งาน</div></div>
+<div class="row"><div class="cell old">reference_id</div><div class="cell">เสียงต้นแบบ</div></div>
+<div class="row"><div class="cell old">Token SOT</div><div class="cell">รหัสเชื่อมต่อบริการซับไตเติล</div></div>
+<div class="row"><div class="cell old">เสียงพากย์ API SmartSub</div><div class="cell">เสียงพากย์ AI</div></div>
+<div class="row"><div class="cell old">Final</div><div class="cell">วิดีโอที่เสร็จแล้ว</div></div>
+<div class="row"><div class="cell old">Storyboard</div><div class="cell">ตรวจภาพแต่ละฉาก</div></div>
+<div class="row"><div class="cell old">Character Bible</div><div class="cell">ข้อมูลตัวละคร</div></div>
+<div class="row"><div class="cell old">Hook</div><div class="cell">จุดชวนดูตอนต่อไป</div></div>
+<div class="row"><div class="cell old">คัดลอก Log สำหรับ Codex</div><div class="cell">คัดลอกรายละเอียดให้ทีมช่วยเหลือ</div></div>
+<div class="row"><div class="cell old">AUTOMATION READY / ENGINE OFFLINE</div><div class="cell">พร้อมทำงาน / โปรแกรมเบื้องหลังหยุดทำงาน</div></div>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<h2 class="h2">6. ชุดสีและตัวอักษร: ใช้ชุดเดียว แทน 2 ชุดเดิม</h2>
+<div style="display:flex;flex-wrap:wrap;gap:20px">
+<div class="card" style="flex:2 1 520px;display:flex;flex-direction:column;gap:16px">
+<p class="t">สี</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#0B0F17;border:1px solid #26304A"></div><span class="ev">พื้นหลัง #0B0F17</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#121826;border:1px solid #26304A"></div><span class="ev">พื้นการ์ด #121826</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#182033;border:1px solid #26304A"></div><span class="ev">พื้นยกสูง #182033</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#26304A"></div><span class="ev">เส้นขอบ #26304A</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#38BDF8"></div><span class="ev">หลัก #38BDF8</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#A78BFA"></div><span class="ev">แบรนด์รอง #A78BFA</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#E8ECF4"></div><span class="ev">ข้อความ #E8ECF4</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="height:56px;border-radius:10px;background:#A7B0C3"></div><span class="ev">ข้อความรอง #A7B0C3</span></div>
+</div>
+<p class="p">ยังใช้โทนกรมท่าและฟ้าของแบรนด์เดิม แต่ลดการไล่สีและแสงเรือง ใช้ไล่สีเฉพาะโลโก้ ปุ่มหลักเป็นสีฟ้าทึบ ตัวอักษรบนปุ่มเป็นสีเข้ม คอนทราสต์เกิน 4.5:1</p>
+</div>
+<div class="card" style="flex:1 1 320px;display:flex;flex-direction:column;gap:12px">
+<p class="t">ตัวอักษร</p>
+<p style="margin:0;font-size:28px;font-weight:700">หัวข้อหน้า 28</p>
+<p style="margin:0;font-size:20px;font-weight:600">หัวข้อส่วน 20</p>
+<p style="margin:0;font-size:15px">เนื้อหาและฟอร์ม 15</p>
+<p style="margin:0;font-size:13px;color:#A7B0C3">ข้อความกำกับ 13 · เล็กสุดที่ยอมให้ใช้</p>
+<p class="p">ใช้ IBM Plex Sans Thai โดยฝังไฟล์ไว้ในโปรแกรม เพราะโปรแกรมต้องใช้แบบออฟไลน์ได้ และยกเลิกขนาด 6–9px ทั้งหมด</p>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:20px">
+<h2 class="h2">7. ลำดับการลงมือ (ทีละขั้น ไม่ทำพร้อมกัน)</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+<div class="card" style="display:flex;flex-direction:column;gap:8px"><span class="num">ขั้น 1</span><p class="t">ชุดสี + เมนู + คำสถานะ</p><p class="p">รวม token เหลือชุดเดียว จัดเมนู 7 รายการ ใช้คำสถานะชุดเดียว ความเสี่ยงต่ำ เพราะแก้เฉพาะหน้าจอ</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px"><span class="num">ขั้น 2</span><p class="t">งานของฉัน</p><p class="p">รวมคิว, งานค้าง และโปรเจกต์ละครไว้ในหน้าเดียว พร้อมแถบเหตุผลเมื่อคิวหยุด</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px"><span class="num">ขั้น 3</span><p class="t">สร้างงานใหม่ + ตรวจก่อนเริ่ม</p><p class="p">สไลด์หน้าละ 1 คำถาม 6 ขั้น พร้อมแถบความคืบหน้า ใช้ร่วมกันทุกประเภทงาน แทนสคริปต์ที่แทรก DOM ราว 12 ตัว ส่วน "ตั้งค่าครั้งแรก" และ "งานรอคุณ" ใช้สไลด์แบบเดียวกัน</p></div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px"><span class="num">ขั้น 4</span><p class="t">ตั้งค่ารวมที่เดียว + ตั้งค่าครั้งแรก</p><p class="p">ย้ายค่าเริ่มต้นจากหน้าต่าง ๆ มารวมไว้ เหลือสวิตช์ซับไตเติลค่าเดียว</p></div>
+</div>
+<div class="card" style="display:flex;flex-direction:column;gap:8px;border-color:#5A4512">
+<p class="t">ข้อจำกัดที่ต้องรักษา</p>
+<p class="p">ไม่เปลี่ยนชื่อ action, endpoint, โครงสร้างงาน, การกันส่งซ้ำ หรือ Checkpoint · ตอนนี้ web_ui/index.html, creation_queue.js และ updates.js มีงานค้างที่ยังไม่ commit ต้องเก็บไว้ · คิวของเจ้าของยังรันอยู่ใน DEV ห้ามรีสตาร์ตหน้าต่างจนกว่าจะว่าง · ทุกขั้นต้องมี focused test (เช่น story-setup-ui) และต้องเปิดหน้าต่างใหม่ยืนยันตามกติกาใน AGENTS.md</p>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":3600}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>ตั้งค่าครั้งแรก แบบสไลด์</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F17}
+a{color:#7DD3FC}a:hover{color:#BAE6FD}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:12px;font:600 16px 'IBM Plex Sans Thai',sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:background .15s ease}
+.btn-primary{background:#38BDF8;color:#04121C}
+.btn-primary:hover{background:#7DD3FC;color:#04121C}
+.btn-primary:disabled{background:#26304A;color:#6B7590;cursor:not-allowed}
+.btn-ghost{background:transparent;color:#E8ECF4;border-color:#33405F}
+.btn-ghost:hover{background:#182033;color:#E8ECF4}
+.btn-sm{min-height:40px;padding:0 16px;font-size:14px}
+.btn-text{background:transparent;color:#A7B0C3;border:0;padding:0 12px}
+.btn-text:hover{color:#E8ECF4}
+.btn:focus-visible,.seg:focus-visible,.opt:focus-visible,.input:focus-visible{outline:2px solid #7DD3FC;outline-offset:2px}
+.seg{cursor:pointer;border:0;padding:0;height:6px;border-radius:999px;flex:1}
+.opt{cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;text-align:left;color:#E8ECF4}
+.input{width:100%;box-sizing:border-box;background:#0B0F17;border:1px solid #33405F;border-radius:12px;color:#E8ECF4;font:400 17px 'IBM Plex Sans Thai',sans-serif;padding:14px 16px}
+.q{margin:0;font-size:30px;line-height:1.35;font-weight:700;color:#E8ECF4}
+.hint{margin:0;font-size:15px;line-height:1.6;color:#A7B0C3}
+.slide{display:flex;flex-direction:column;gap:22px;width:100%}
+.fwd{animation:inFwd .28s ease-out}
+.back{animation:inBack .28s ease-out}
+@keyframes inFwd{from{opacity:0;transform:translateX(48px)}to{opacity:1;transform:none}}
+@keyframes inBack{from{opacity:0;transform:translateX(-48px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.fwd,.back{animation:none}}
+.row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:#121826;font-size:16px;flex-wrap:wrap}
+.num{width:28px;height:28px;flex:none;border-radius:50%;background:#16263A;color:#7DD3FC;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.ok{width:28px;height:28px;flex:none;border-radius:50%;background:#0D2E24;color:#6EE7B7;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.wait{width:28px;height:28px;flex:none;border-radius:50%;border:1.5px dashed #4B5675}
+.done-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#0D2E24;color:#6EE7B7;font-size:14px;font-weight:600;align-self:flex-start}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;background:#0B0F17;color:#E8ECF4;font-family:'IBM Plex Sans Thai',system-ui,sans-serif">
+
+<header style="display:flex;flex-direction:column;gap:14px;padding:20px 32px 0">
+<div style="display:flex;align-items:center;gap:16px">
+<a href="Home.dc.html" aria-label="ปิด ไว้ตั้งค่าต่อทีหลัง" style="width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid #33405F;color:#A7B0C3">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</a>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<span style="font-size:13px;color:#8A94AA">ตั้งค่าครั้งแรก · ทำครั้งเดียว ประมาณ 10 นาที</span>
+<span style="font-size:17px;font-weight:600">{{stepName}}</span>
+</div>
+<span style="font-size:15px;color:#A7B0C3" aria-live="polite">{{counter}}</span>
+</div>
+<nav aria-label="ความคืบหน้า" style="display:flex;gap:6px">
+<sc-for list="{{segs}}" as="g" hint-placeholder-count="6">
+<button class="seg" style="{{g.style}}" onClick="{{g.go}}" aria-label="{{g.aria}}"></button>
+</sc-for>
+</nav>
+</header>
+
+<main style="flex:1;display:flex;align-items:center;justify-content:center;padding:28px 32px">
+<div style="width:100%;max-width:720px">
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ true }}">
+<section class="{{anim}}">
+<span class="done-badge"><span aria-hidden="true">✓</span>เข้าสู่ระบบแล้ว</span>
+<h1 class="q">ยินดีต้อนรับสู่ SmartFlow AI</h1>
+<p class="hint" style="font-size:17px">ก่อนเริ่มงานแรก ต้องเตรียม 5 อย่าง ทำทีละข้อ ข้อไหนพร้อมอยู่แล้วโปรแกรมจะติ๊กให้เอง และข้ามข้อที่ไม่จำเป็นไปก่อนได้</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{overview}}" as="o" hint-placeholder-count="5">
+<div class="row"><span class="{{o.cls}}">{{o.mark}}</span><span style="flex:1">{{o.label}}</span><span style="font-size:13px;color:#8A94AA">{{o.note}}</span></div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">ติดตั้งส่วนเสริม SmartFlow ใน Chrome</h1>
+<p class="hint">ส่วนเสริมนี้ทำให้โปรแกรมสั่ง ChatGPT, Gemini และ Google Flow ใน Chrome ของคุณได้ ไม่ต้องใช้คีย์ API</p>
+<ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+<li class="row"><span class="num">1</span><span style="flex:1 1 300px">เปิดหน้าส่วนเสริมของ Chrome แล้วเปิด "โหมดนักพัฒนา" มุมขวาบน</span><button class="btn btn-ghost btn-sm">เปิดหน้าส่วนเสริม</button></li>
+<li class="row"><span class="num">2</span><span style="flex:1 1 300px">กด "โหลดส่วนเสริมที่แตกไฟล์แล้ว" แล้วเลือกโฟลเดอร์นี้</span><button class="btn btn-ghost btn-sm">คัดลอกที่อยู่โฟลเดอร์</button></li>
+<li class="row"><span class="num">3</span><span style="flex:1 1 300px">กลับมาที่นี่ โปรแกรมจะตรวจการเชื่อมต่อให้เอง</span></li>
+</ol>
+<div style="{{extBoxStyle}}" aria-live="polite">
+<span style="{{extDotStyle}}"></span>
+<span style="flex:1">{{extText}}</span>
+<sc-if value="{{extNotOk}}" hint-placeholder-val="{{ true }}"><button class="btn btn-ghost btn-sm" onClick="{{connectExt}}">ตรวจอีกครั้ง</button></sc-if>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">เข้าสู่ระบบเว็บที่ใช้สร้างงาน</h1>
+<p class="hint">เข้าสู่ระบบใน Chrome ตัวเดียวกับที่ติดตั้งส่วนเสริม โปรแกรมไม่เห็นและไม่เก็บรหัสผ่านของคุณ</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{sites}}" as="w" hint-placeholder-count="4">
+<div class="row"><span class="{{w.cls}}">{{w.mark}}</span><span style="flex:1 1 220px;display:flex;flex-direction:column"><span>{{w.label}}</span><span style="font-size:13px;color:#8A94AA">{{w.note}}</span></span><sc-if value="{{w.notDone}}" hint-placeholder-val="{{ true }}"><button class="btn btn-ghost btn-sm" onClick="{{w.open}}">เปิดและเข้าสู่ระบบ</button></sc-if></div>
+</sc-for>
+</div>
+<p class="hint" style="font-size:13px">ตรวจสถานะใหม่ทุกครั้งที่กลับมาหน้านี้</p>
+</section>
+</sc-if>
+
+<sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">ตั้งค่าเสียงพากย์ AI</h1>
+<p class="hint">ใช้พากย์เสียงคลิปทุกประเภท ถ้ายังไม่มีคีย์ ข้ามไปก่อนได้ แต่จะสร้างได้แค่คลิปที่ไม่มีเสียงพูด หรือใช้เสียงจากคลิป Flow</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label for="vkey" style="font-size:15px;font-weight:600">คีย์บริการเสียง</label>
+<input id="vkey" class="input" type="password" placeholder="วางคีย์ที่ได้จากผู้ให้บริการ" value="{{vkey}}" onInput="{{setKey}}">
+<span style="font-size:13px;color:#8A94AA">เก็บไว้ใน Windows Credential Manager เท่านั้น</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:15px;font-weight:600">เสียงต้นแบบ</span>
+<div role="radiogroup" aria-label="เสียงต้นแบบ" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+<sc-for list="{{voices}}" as="v" hint-placeholder-count="4">
+<button class="opt" role="radio" aria-checked="{{v.on}}" onClick="{{v.pick}}" style="{{v.style}}"><span style="font-size:15px;font-weight:600">{{v.label}}</span><span style="font-size:13px;color:#A7B0C3">{{v.sub}}</span></button>
+</sc-for>
+</div>
+<button class="btn btn-text" style="align-self:flex-start;padding:0">หรืออัปโหลดเสียงของฉัน (5–30 วินาที)</button>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{s5}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<h1 class="q">เชื่อมต่อซับไตเติลอัตโนมัติ</h1>
+<p class="hint">ใส่รหัสเชื่อมต่อที่ได้จากบริการซับไตเติล ใส่ครั้งเดียว โปรแกรมจะจำเครื่องนี้ไว้</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<label for="sub" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">รหัสเชื่อมต่อบริการซับไตเติล</label>
+<input id="sub" class="input" type="password" placeholder="รหัสเชื่อมต่อ" style="flex:1 1 300px" value="{{subCode}}" onInput="{{setSub}}">
+<button class="btn btn-ghost" onClick="{{connectSub}}" disabled="{{subEmpty}}">เชื่อมต่อ</button>
+</div>
+<sc-if value="{{subOk}}" hint-placeholder-val="{{ false }}"><span class="done-badge"><span aria-hidden="true">✓</span>เชื่อมต่อแล้ว · เครดิตคงเหลือ 300</span></sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{s6}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}">
+<span style="font-size:13px;color:#8A94AA;font-weight:600">ไม่บังคับ</span>
+<h1 class="q">จับคู่มือถือสำหรับโพสต์ Shopee</h1>
+<p class="hint">ใช้เฉพาะตอนจะให้โปรแกรมโพสต์คลิปลง Shopee ผ่านมือถือ ถ้ายังไม่ใช้ ข้ามได้เลย ทำทีหลังได้ที่เมนู "เผยแพร่"</p>
+<ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px">
+<li class="row"><span class="num">1</span><span>บนมือถือ Android 11 ขึ้นไป เปิด "ตัวเลือกสำหรับนักพัฒนา" แล้วเปิด "การแก้ไขข้อบกพร่องผ่าน Wi-Fi"</span></li>
+<li class="row"><span class="num">2</span><span>กด "จับคู่อุปกรณ์ด้วยรหัส" แล้วกรอกข้อมูลที่มือถือแสดงลงด้านล่าง</span></li>
+</ol>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+<input class="input" placeholder="IP และพอร์ต เช่น 192.168.1.20:37123" aria-label="IP และพอร์ต">
+<input class="input" placeholder="รหัส 6 หลัก" aria-label="รหัสจับคู่ 6 หลัก" inputmode="numeric">
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{s7}}" hint-placeholder-val="{{ false }}">
+<section class="{{anim}}" style="align-items:flex-start">
+<span style="width:64px;height:64px;border-radius:50%;background:#0D2E24;color:#6EE7B7;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700" aria-hidden="true">✓</span>
+<h1 class="q">{{finishTitle}}</h1>
+<p class="hint" style="font-size:17px">{{finishText}}</p>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<a class="btn btn-primary" href="Create.dc.html">สร้างงานแรก</a>
+<a class="btn btn-ghost" href="Home.dc.html">ไปหน้าแรก</a>
+</div>
+</section>
+</sc-if>
+
+</div>
+</main>
+
+<footer style="border-top:1px solid #1E2740;padding:16px 32px;display:flex;align-items:center;gap:12px">
+<sc-if value="{{hasBack}}" hint-placeholder-val="{{ false }}"><button class="btn btn-ghost" onClick="{{back}}">ย้อนกลับ</button></sc-if>
+<span style="flex:1"></span>
+<sc-if value="{{canSkip}}" hint-placeholder-val="{{ false }}"><button class="btn btn-text" onClick="{{next}}">ข้ามไปก่อน</button></sc-if>
+<sc-if value="{{showNext}}" hint-placeholder-val="{{ true }}"><button class="btn btn-primary" onClick="{{next}}" disabled="{{nextDisabled}}">{{nextLabel}}</button></sc-if>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":860}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { step: 1, dir: 'fwd', ext: false, sites: { chatgpt: true, gemini: false, flow: false, shopee: false }, vkey: '', voice: '', subCode: '', subOk: false };
+}
+go(n) {
+const s = this.state;
+const step = Math.max(1, Math.min(7, n));
+this.setState({ step, dir: step >= s.step ? 'fwd' : 'back' });
+}
+renderVals() {
+const s = this.state;
+const set = (p) => this.setState(p);
+const names = ['เริ่มต้น', 'ส่วนเสริม Chrome', 'เข้าสู่ระบบเว็บ', 'เสียงพากย์ AI', 'ซับไตเติล', 'มือถือ (ไม่บังคับ)', 'เสร็จแล้ว'];
+const sitesOk = s.sites.chatgpt && s.sites.flow;
+const voiceOk = !!s.vkey.trim() && !!s.voice;
+const doneMap = { 2: s.ext, 3: sitesOk, 4: voiceOk, 5: s.subOk };
+const segs = names.slice(0, 6).map((n, i) => {
+const k = i + 1;
+const done = k === 1 || !!doneMap[k];
+const cur = k === s.step;
+return { aria: 'ไปข้อ ' + n, go: () => this.go(k), style: 'background:' + (cur ? '#38BDF8' : done ? '#2E7D63' : k < s.step ? '#2B4A63' : '#26304A') + ';' + (cur ? 'box-shadow:0 0 0 2px #0B0F17,0 0 0 3px #38BDF8;' : '') };
+});
+const required = [s.ext, sitesOk, voiceOk, s.subOk];
+const readyCount = required.filter(Boolean).length;
+const overviewDefs = [
+{ label: 'ส่วนเสริม SmartFlow ใน Chrome', ok: s.ext, note: 'จำเป็น' },
+{ label: 'เข้าสู่ระบบ ChatGPT และ Google Flow', ok: sitesOk, note: 'จำเป็น' },
+{ label: 'เสียงพากย์ AI', ok: voiceOk, note: 'จำเป็นถ้าจะใช้เสียงพากย์' },
+{ label: 'ซับไตเติลอัตโนมัติ', ok: s.subOk, note: 'จำเป็นถ้าจะใส่ซับ' },
+{ label: 'มือถือสำหรับโพสต์ Shopee', ok: false, note: 'ไม่บังคับ' }
+];
+const overview = overviewDefs.map((o, i) => ({ ...o, cls: o.ok ? 'ok' : 'num', mark: o.ok ? '✓' : String(i + 1) }));
+const siteDefs = [
+{ id: 'chatgpt', label: 'ChatGPT', note: 'สร้างบทและภาพ · จำเป็น' },
+{ id: 'flow', label: 'Google Flow', note: 'สร้างวิดีโอ · จำเป็นถ้าใช้ Flow' },
+{ id: 'gemini', label: 'Gemini', note: 'ไม่บังคับ · ใช้แทน ChatGPT ได้' },
+{ id: 'shopee', label: 'Shopee Affiliate', note: 'ดึงข้อมูลสินค้า · จำเป็นสำหรับคลิปสินค้า' }
+];
+const sites = siteDefs.map((w) => {
+const ok = !!s.sites[w.id];
+return { ...w, cls: ok ? 'ok' : 'wait', mark: ok ? '✓' : '', notDone: !ok, note: ok ? 'เข้าสู่ระบบแล้ว' : w.note, open: () => set({ sites: { ...s.sites, [w.id]: true } }) };
+});
+const voiceDefs = [{ id: 'soft', label: 'นุ่ม', sub: 'ผู้หญิง' }, { id: 'bright', label: 'สดใส', sub: 'ผู้หญิง' }, { id: 'deep', label: 'ทุ้ม', sub: 'ผู้ชาย' }, { id: 'tell', label: 'เล่าเรื่อง', sub: 'ผู้ชาย' }];
+const voices = voiceDefs.map((v) => {
+const on = v.id === s.voice;
+return { ...v, on: on ? 'true' : 'false', pick: () => set({ voice: v.id }), style: 'display:flex;flex-direction:column;gap:2px;padding:14px;border-radius:12px;background:' + (on ? '#16263A' : '#121826') + ';border:2px solid ' + (on ? '#38BDF8' : '#26304A') + ';' };
+});
+const st = s.step;
+const nextLabels = { 1: 'เริ่มตั้งค่า', 2: 'ถัดไป', 3: 'ถัดไป', 4: 'บันทึกแล้วไปต่อ', 5: 'ถัดไป', 6: 'เสร็จสิ้น' };
+const allReady = readyCount === 4;
+return {
+segs, overview, sites, voices,
+stepName: names[st - 1],
+counter: st === 7 ? 'พร้อม ' + readyCount + ' จาก 4 ข้อที่จำเป็น' : st === 1 ? 'พร้อมแล้ว ' + readyCount + ' จาก 4' : 'ข้อ ' + (st - 1) + ' จาก 5',
+anim: 'slide ' + s.dir,
+s1: st === 1, s2: st === 2, s3: st === 3, s4: st === 4, s5: st === 5, s6: st === 6, s7: st === 7,
+extNotOk: !s.ext,
+connectExt: () => set({ ext: true }),
+extText: s.ext ? 'เชื่อมต่อแล้ว · รุ่นตรงกับโปรแกรม' : 'ยังไม่พบส่วนเสริม · กำลังตรวจทุก 3 วินาที',
+extBoxStyle: 'display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;font-size:15px;flex-wrap:wrap;' + (s.ext ? 'background:#0D2E24;color:#C7F0DF;' : 'background:#121826;color:#C9D1E0;border:1px dashed #33405F;'),
+extDotStyle: 'width:10px;height:10px;border-radius:50%;flex:none;background:' + (s.ext ? '#34D399' : '#FBBF24') + ';',
+vkey: s.vkey, setKey: (e) => set({ vkey: e.target.value }),
+subCode: s.subCode, setSub: (e) => set({ subCode: e.target.value }),
+subEmpty: !s.subCode.trim(), subOk: s.subOk, connectSub: () => set({ subOk: true }),
+finishTitle: allReady ? 'พร้อมสร้างงานแล้ว' : 'เกือบพร้อมแล้ว',
+finishText: allReady ? 'ทุกอย่างที่จำเป็นตั้งค่าเรียบร้อย เริ่มสร้างงานแรกได้เลย' : 'ยังเหลือ ' + (4 - readyCount) + ' ข้อที่ข้ามไว้ หน้าแรกจะเตือนไว้ให้ และตอนสร้างงาน โปรแกรมจะบอกก่อนเริ่มถ้างานนั้นต้องใช้ข้อที่ขาด',
+hasBack: st > 1 && st < 7,
+canSkip: st >= 2 && st <= 6,
+showNext: st < 7,
+nextLabel: nextLabels[st] || 'ถัดไป',
+nextDisabled: (st === 2 && !s.ext) || (st === 4 && !voiceOk),
+back: () => this.go(st - 1), next: () => this.go(st + 1)
+};
+}
+}
+</script>
+</body>
+</html>
