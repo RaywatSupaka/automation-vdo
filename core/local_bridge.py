@@ -16,7 +16,7 @@ from core.bridge_diagnostics import safe_ai_send_diagnostics, safe_ai_image_obse
 
 
 class LocalBridge:
-    REQUIRED_EXTENSION_VERSION = "0.15.530"
+    REQUIRED_EXTENSION_VERSION = "0.15.531"
     COMMAND_LEASE_SECONDS = 180
     FLOW_RUN_ACTIONS = {
         "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow",
@@ -26,7 +26,7 @@ class LocalBridge:
     AI_RUN_ACTIONS = {
         "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt",
         "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt",
-        "focus_ai_web",
+        "focus_ai_web", "clear_story_bootstrap_draft",
     }
 
     def __init__(
@@ -675,7 +675,7 @@ class LocalBridge:
             self._extension_runs[key] = {"run_id": run_id, "updated_at": now}
         return run_id
 
-    def queue_extension_command(self, action, job_id="", shot_index=0, provider_hint="", run_id="", preserve_checkpoint=False, _meta_sequence=None):
+    def queue_extension_command(self, action, job_id="", shot_index=0, provider_hint="", run_id="", preserve_checkpoint=False, _meta_sequence=None, target_tab_id=0):
         if _meta_sequence is not None:
             if (action != 'open_meta_video' or not job_id.startswith('STORY-')
                     or not re.fullmatch(r'CMD-[A-F0-9]{10}', str(_meta_sequence.get('id') or ''))
@@ -689,7 +689,7 @@ class LocalBridge:
                     return dict(existing)
         if action == 'focus_browser' and job_id:
             raise ValueError('คำสั่งเปิดหน้าต่างไม่เปลี่ยนงาน')
-        allowed_actions = {"read_flow_settings", "capture_shopee_product", "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web", "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow", "resume_flow_workspace", "approve_flow_credit", "stop_flow_generation", "open_flow_result", "download_flow_result", "inspect_flow_result_dom", "close_automation_browser"}
+        allowed_actions = {"read_flow_settings", "capture_shopee_product", "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web", "clear_story_bootstrap_draft", "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow", "resume_flow_workspace", "approve_flow_credit", "stop_flow_generation", "open_flow_result", "download_flow_result", "inspect_flow_result_dom", "close_automation_browser"}
         allowed_actions.add('focus_browser')
         allowed_actions.add('open_meta_video')
         if action not in allowed_actions:
@@ -697,6 +697,28 @@ class LocalBridge:
         shot_index = int(shot_index or 0)
         if shot_index < 0 or shot_index > 50:
             raise ValueError("ลำดับช็อตไม่ถูกต้อง")
+        if action == "clear_story_bootstrap_draft":
+            tab_id = int(target_tab_id or 0)
+            requested_run = self._normalise_run_id(run_id)
+            if (not re.fullmatch(r"STORY-[0-9]{8}-[A-F0-9]{6}", str(job_id or ""))
+                    or shot_index or tab_id <= 0 or not requested_run
+                    or str(provider_hint or "chatgpt").lower() != "chatgpt" or not self.stories):
+                raise ValueError("STORY_BOOTSTRAP_DRAFT_REVIEW • ระบุงาน รอบ และแท็บ ChatGPT เดิมให้ครบ")
+            job = self.stories.get(job_id)
+            if job.get("status") != "error":
+                raise ValueError("STORY_BOOTSTRAP_DRAFT_REVIEW • งานยังไม่หยุดตรวจสอบ")
+            trace_path = Path(self.stories.root) / job_id / "logs" / "extension_trace.jsonl"
+            try:
+                rows = [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines()[-200:] if line.strip()]
+            except (OSError, ValueError):
+                rows = []
+            proof = [row for row in rows if isinstance(row, dict)
+                     and row.get("action") == "story_bootstrap_review"
+                     and row.get("run_id") == requested_run and row.get("tab_id") == tab_id
+                     and isinstance(row.get("detail"), dict) and row["detail"].get("reason") == "draft_present"]
+            if not proof or any(row.get("run_id") == requested_run and row.get("action") in {
+                    "ai_send_dispatched", "ai_send_accepted", "image_prompt_ready"} for row in rows if isinstance(row, dict)):
+                raise ValueError("STORY_BOOTSTRAP_DRAFT_REVIEW • ไม่มีหลักฐานร่างก่อนส่งของแท็บนี้")
         flow_shot_actions = {
             "focus_flow_web", "open_flow", "inspect_flow", "resume_flow_workspace",
             "approve_flow_credit", "stop_flow_generation", "open_flow_result",
@@ -710,7 +732,7 @@ class LocalBridge:
         ai_provider = requested_provider or "chatgpt"
         if ai_provider not in {"chatgpt", "gemini"}:
             raise ValueError("ผู้ให้บริการ AI Web ไม่ถูกต้อง")
-        if job_id and action in {"open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web"}:
+        if job_id and action in {"open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web", "clear_story_bootstrap_draft"}:
             if job_id.startswith("PRESENTER-"):
                 if not self.presenters: raise ValueError("ยังไม่ได้เปิดคลังตัวละคร")
                 ai_package = self.presenters.plugin_request(job_id)
@@ -785,6 +807,8 @@ class LocalBridge:
             "provider": 'meta_ai' if action == 'open_meta_video' else ai_provider,
             "run_id": resolved_run_id,
         }
+        if action == "clear_story_bootstrap_draft":
+            command["target_tab_id"] = int(target_tab_id)
         if job_id.startswith('STORY-') and shot_index and (action in flow_shot_actions or action == 'open_meta_video'):
             from core.scene_video_plan import enabled, package_binding, assert_binding
             with self.stories._manifest_lock:
@@ -2036,6 +2060,7 @@ class LocalBridge:
                             int(body.get("shot_index") or 0),
                             provider_hint=str(body.get("provider") or ""),
                             run_id=str(body.get("run_id") or ""),
+                            target_tab_id=int(body.get("tab_id") or 0),
                         )
                         self._send({"ok": True, "command": command})
                     else:

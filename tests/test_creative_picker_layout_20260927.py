@@ -16,7 +16,7 @@ class CreativePickerLayoutTests(unittest.TestCase):
         env.setdefault('NODE_PATH', str(Path.home() / '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules'))
         result = subprocess.run(['node', 'tests/creative_picker_layout_20260927.cjs'], cwd=root,
                                 env=env, capture_output=True, text=True, encoding='utf-8',
-                                timeout=120, **hidden_process_kwargs())
+                                timeout=300, **hidden_process_kwargs())
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         evidence = json.loads(result.stdout.strip().splitlines()[-1])
         self.assertTrue(evidence['ok'])

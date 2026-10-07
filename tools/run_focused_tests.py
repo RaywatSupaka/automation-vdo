@@ -77,6 +77,11 @@ SUITES = {
                  "tests/ai_web_resume_345_harness.js", "tests/ai_send_acceptance_harness.js"],
         "syntax": ["browser_extension/background.js", "browser_extension/chatgpt.js"],
     },
+    "story-bootstrap-clear": {
+        "python": ["test_story_bootstrap_draft_clear.py"],
+        "node": ["tests/story_bootstrap_draft_clear_531.cjs"],
+        "syntax": ["browser_extension/background.js"],
+    },
     "story-progress-stall": {
         "python": ["test_story_image_progress_stall.py"],
         "node": ["tests/story_pre_send_stall_518.cjs"],

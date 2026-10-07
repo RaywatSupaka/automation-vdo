@@ -24,7 +24,7 @@ const production=fs.readFileSync('browser_extension/single_answer.js','utf8')+
     let ticks=0,sends=0,cancelled=false;const reports=[];
     globalThis.visible=()=>true;
     globalThis.composer=()=>document.querySelector('textarea');
-    globalThis.composerText=editor=>SmartFlowSingleAnswer.canonical((editor||composer())?.value||'').trim();
+    globalThis.composerText=(editor,raw=false)=>raw?String((editor||composer())?.value||''):SmartFlowSingleAnswer.canonical((editor||composer())?.value||'').trim();
     composer().value=SmartFlowSingleAnswer.wrap(prompt);
     globalThis.stopButtonVisible=()=>mode==='stop_only';
     globalThis.assertNotCancelled=()=>{if(cancelled)throw Object.assign(Error('cancelled'),{name:'AbortError'});};

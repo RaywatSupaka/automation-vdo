@@ -55,6 +55,7 @@ function fixture(outcomes = []) {
   vm.runInContext(section('  function storyContentMismatch(', '  function largeAssistantImages('), context);
   vm.runInContext(section('  async function generateOneImage(', '  function productImageFailureKind('), context);
   vm.runInContext(section('  function normalizeOptionalCover(', '  function visible('), context);
+  vm.runInContext(section('  function skipLegacyConversationScan(', '  async function recordStoryImageRequest('), context);
   vm.runInContext(section('  async function runJob(', '  chrome.runtime.onMessage.addListener('), context);
   return { context, sent, reports, messages, analysisRequests,
     run: (result = analysis(), req = request(), packageOverrides = {}) => context.runJob({

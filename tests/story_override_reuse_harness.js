@@ -44,6 +44,7 @@ function fixture(provider = 'gemini') {
   });
   vm.runInContext(section('  function storyContentMismatch(', '  function largeAssistantImages('), context);
   vm.runInContext(section('  function normalizeOptionalCover(', '  function visible('), context);
+  vm.runInContext(section('  function skipLegacyConversationScan(', '  async function recordStoryImageRequest('), context);
   vm.runInContext(section('  async function runJob(', '  chrome.runtime.onMessage.addListener('), context);
   context.storySceneContent = () => 'Current scene visual direction';
   const pkg = {

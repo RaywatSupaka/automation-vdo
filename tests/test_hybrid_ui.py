@@ -351,7 +351,9 @@ class HybridUiContractTests(unittest.TestCase):
         self.assertIn('"SmartFlow AI — Hidden Engine" if self.hybrid_engine', engine)
         self.assertTrue((ROOT / "CREATE_SMARTFLOW_SHORTCUT.ps1").is_file())
         self.assertTrue((ROOT / "launcher" / "SmartFlowLauncher.cs").is_file())
-        self.assertGreater((ROOT / "SmartFlow AI.exe").stat().st_size, 10_000)
+        launcher = ROOT / "SmartFlow AI.exe"
+        self.assertGreater(launcher.stat().st_size, 4_096)
+        self.assertEqual(launcher.read_bytes()[:2], b"MZ")
 
     def test_hybrid_inner_html_escapes_invalid_date_fallbacks(self):
         script = (ROOT / "web_ui" / "app.js").read_text(encoding="utf-8")

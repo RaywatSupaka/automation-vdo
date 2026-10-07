@@ -8,8 +8,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("SmartFlow AI development launcher")]
 [assembly: AssemblyCompany("SmartFlow AI")]
 [assembly: AssemblyProduct("SmartFlow AI - AI Clip Creator")]
-[assembly: AssemblyVersion("0.15.530.0")]
-[assembly: AssemblyFileVersion("0.15.530.0")]
+[assembly: AssemblyVersion("0.15.531.0")]
+[assembly: AssemblyFileVersion("0.15.531.0")]
 
 internal static class Program
 {

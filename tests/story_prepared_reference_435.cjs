@@ -172,7 +172,7 @@ function fixture(record = null, options = {}) {
     assert.equal(snapshot.source_count, 1);
     assert.equal(snapshot.source_attachment_count, 1);
     assert.match(snapshot.prompt, /ภาพฉากก่อนหน้าที่บันทึกแล้ว/);
-    return {ok: true};
+    return {ok: true, audit_persisted: true};
   };
   Object.assign(integrated.context, {
     IS_GEMINI: false, AI_NAME: 'ChatGPT Web', activeJobId: jobId,

@@ -21,7 +21,7 @@ export const ACTIONS = Object.freeze({
   [PLATFORM.SHOPEE]: ["capture_shopee_product"],
   [PLATFORM.AI_WEB]: [
     "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt",
-    "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web"
+    "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web", "clear_story_bootstrap_draft"
   ],
   [PLATFORM.GOOGLE_FLOW]: [
     "read_flow_settings",

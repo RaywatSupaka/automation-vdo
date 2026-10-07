@@ -1,10 +1,10 @@
 # SmartFlow AI — Codex Quick Blueprint
 
-รุ่นซอร์ส `0.15.530`: ตรวจหลักฐาน audit ก่อนกดส่งและคำสั่งเริ่ม Story ซ้ำ อ่านหัวข้อ 0.15.530 ใน `PROGRAM_BLUEPRINT.md` และ `EXTENSION_BLUEPRINT.md` และสถานะล่าสุดบนสุดของ `PROJECT_STATE.md`. งาน 7A98CB หยุดก่อนส่งภาพและคิวสามรายการพักไว้; ห้ามส่งคำขอที่รับแล้วหรือยังไม่แน่ชัดซ้ำ
+รุ่นซอร์ส `0.15.531`: กู้คืนร่าง ChatGPT ที่เจ้าของอนุญาตให้ล้างเฉพาะงาน/รอบ/แท็บที่มีหลักฐาน อ่านหัวข้อ 0.15.531 ใน `PROGRAM_BLUEPRINT.md` และ `EXTENSION_BLUEPRINT.md` และสถานะล่าสุดบนสุดของ `PROJECT_STATE.md`. งาน 7A98CB ยังมีสถานะการส่งไม่แน่ชัด ห้ามส่งซ้ำ; งานใหม่ A22FCE หยุดก่อนส่งเพราะร่างเดิมคืนมาในแท็บใหม่
 
 รุ่นซอร์ส `0.15.529`: ตรวจแชตเดิมแบบอ่านอย่างเดียวเมื่อ content worker หลุดหลังเตรียมคำขอภาพ และกู้ต่อเฉพาะใบรับคำขอที่ยังไม่เริ่มส่ง อ่านหัวข้อ 0.15.529 ใน `PROGRAM_BLUEPRINT.md` และ `EXTENSION_BLUEPRINT.md` และสถานะล่าสุดบนสุดของ `PROJECT_STATE.md`. งาน 7A98CB และคิวสามรายการรอทำต่อ; ห้ามส่งคำขอที่รับแล้วซ้ำ
 
-รุ่น Runtime `0.15.530`: root EXE และ Chrome Extension ID เดิมเชื่อมต่อด้วยคู่เวอร์ชัน 530 แล้ว งาน Story 7A98CB และคิวสามรายการยังหยุดรอการตรวจว่ามีการกดส่งด้วยตนเองในช่วง 529 หรือไม่; อ่านหัวข้อ 0.15.530 ในพิมพ์เขียวทั้งสองไฟล์ก่อนแก้เส้นทางนี้
+รุ่น Runtime เป้าหมาย `0.15.531`: ต้องสร้างและเปิด root EXE พร้อม Reload Chrome Extension ID เดิม ก่อนใช้คำสั่งล้างร่างที่ได้รับอนุญาต งาน A22FCE หยุดก่อนส่งและคิวอีกสองรายการพักไว้; อ่านหัวข้อ 0.15.531 ในพิมพ์เขียวทั้งสองไฟล์ก่อนแก้เส้นทางนี้
 
 The earlier isolated 0.15.520 candidate is superseded by root 521. Root EXE 521.0 and the original Chrome Extension ID are connected at 521 in DEV MODE, with four queued rows paused and zero running. Read the top of `PROJECT_STATE.md` for source, package, audit and activation evidence. New provider output under 521 remains unverified.
 

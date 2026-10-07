@@ -16,7 +16,7 @@ function acceptance({acceptedAt=Infinity,cleared=false,strict=true}={}) {
     assertNotCancelled:()=>{},report:async(...a)=>reports.push(a),sleep:async()=>{ticks++;},
     chrome:{runtime:{sendMessage:async message=>{if(message.type==='MEMBERSHIP_AUTHORIZE')return {ok:true};sends++;return {ok:true,method:'single_trusted_ai_send'};}}}};
   // Keep initial expected draft nonempty, then simulate a cleared composer if needed.
-  let reads=0;c.composerText=()=>ticks>=acceptedAt || cleared&&reads++>0?'':request;
+  let reads=0;c.composerText=(_node,raw)=>raw?editor.innerText:(ticks>=acceptedAt || cleared&&reads++>0?'':request);
   vm.createContext(c);
   vm.runInContext(fs.readFileSync('browser_extension/single_answer.js','utf8'),c);
   c.HTMLTextAreaElement=class{};editor.innerText=c.SmartFlowSingleAnswer.wrap(request);

@@ -27,7 +27,7 @@ class ChatGPTSubmitContract(unittest.TestCase):
         self.assertTrue(result.stdout.strip(), result.stderr)
         proof = json.loads(result.stdout)
         self.assertTrue(proof['nativeDom'])
-        self.assertEqual(proof['scenarios'], 19)
+        self.assertEqual(proof['scenarios'], 20)
         self.assertEqual(proof['fulfilledDocuments'], proof['scenarios'])
         self.assertEqual(proof['blockedRequests'], 0)
         self.assertEqual(proof['providerNetworkRequests'], 0)

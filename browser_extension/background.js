@@ -177,6 +177,66 @@ async function clearOwnedChatGPTRootDraft(tabId,documentId) {
     return result?.cleared===true?result:{cleared:false,reason:String(result?.reason||'clear_failed')};
   }catch {return {cleared:false,reason:'clear_failed'};}
 }
+async function storyBootstrapDraftFingerprint(tabId,documentId) {
+  if(!documentId)return null;
+  try {
+    const rows=await chrome.scripting.executeScript({target:{tabId,documentIds:[documentId]},func:async()=>{
+      if(location.hostname!=='chatgpt.com' || location.pathname!=='/')return null;
+      const shown=el=>!!el && el.isConnected && el.getClientRects().length>0;
+      const editors=[...document.querySelectorAll('#prompt-textarea,[contenteditable="true"][role="textbox"]')].filter(shown);
+      const editor=editors.length===1?editors[0]:null;
+      if(!editor?.closest('form'))return null;
+      const draft=String(editor.innerText||editor.textContent||editor.value||'').trim();
+      if(!draft)return null;
+      const bytes=new TextEncoder().encode(draft);
+      const digest=await crypto.subtle.digest('SHA-256',bytes);
+      return {length:draft.length,digest:[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('')};
+    }});
+    return rows?.find(row=>row.documentId===documentId)?.result||null;
+  }catch {return null;}
+}
+async function clearAuthorizedStoryBootstrapDraft(command) {
+  const targetId=Number(command.target_tab_id||0);
+  if(!Number.isInteger(targetId)||targetId<=0||!/^STORY-[0-9]{8}-[A-F0-9]{6}$/.test(command.job_id||''))
+    throw Error('STORY_BOOTSTRAP_DRAFT_REVIEW • งานหรือแท็บไม่ถูกต้อง');
+  const target=await inspectChatGPTRootDocument(targetId);
+  if(target.reason!=='draft_present'||!target.documentId)
+    throw Error('STORY_BOOTSTRAP_DRAFT_REVIEW • แท็บต้นทางไม่ใช่ร่างเดิมก่อนส่ง');
+  const signature=await storyBootstrapDraftFingerprint(targetId,target.documentId);
+  if(!signature?.digest||!signature.length)
+    throw Error('STORY_BOOTSTRAP_DRAFT_REVIEW • อ่านลายนิ้วมือร่างไม่ได้');
+  const tabs=(await chrome.tabs.query({})).filter(tab=>{
+    try { const url=new URL(tab.url||'');return url.hostname==='chatgpt.com'&&url.pathname==='/'; }
+    catch {return false;}
+  });
+  const matches=[];
+  for(const tab of tabs){
+    const proof=await inspectChatGPTRootDocument(tab.id);
+    if(proof.reason!=='draft_present'||!proof.documentId)continue;
+    const candidate=await storyBootstrapDraftFingerprint(tab.id,proof.documentId);
+    if(candidate?.length===signature.length&&candidate.digest===signature.digest)
+      matches.push({tabId:tab.id,documentId:proof.documentId});
+  }
+  if(!matches.some(row=>row.tabId===targetId)||matches.length>8)
+    throw Error('STORY_BOOTSTRAP_DRAFT_REVIEW • รายการแท็บเปลี่ยนหรือมีร่างซ้ำมากเกินไป');
+  for(const row of matches){
+    const current=await inspectChatGPTRootDocument(row.tabId);
+    const currentSignature=current.documentId===row.documentId&&current.reason==='draft_present'
+      ?await storyBootstrapDraftFingerprint(row.tabId,row.documentId):null;
+    if(currentSignature?.length!==signature.length||currentSignature.digest!==signature.digest)
+      throw Error('STORY_BOOTSTRAP_DRAFT_REVIEW • ร่างหรือเอกสารเปลี่ยนระหว่างตรวจ');
+    const cleared=await clearOwnedChatGPTRootDraft(row.tabId,row.documentId);
+    if(!cleared.cleared)throw Error(`STORY_BOOTSTRAP_DRAFT_REVIEW • ล้างร่างไม่สำเร็จ (${cleared.reason})`);
+    await new Promise(resolve=>setTimeout(resolve,1500));
+    const verified=await waitForCleanChatGPTRoot(row.tabId,row.documentId);
+    if(!verified.empty||verified.documentId!==row.documentId)
+      throw Error('STORY_BOOTSTRAP_DRAFT_REVIEW • ร่างกลับมาหลังล้าง');
+  }
+  await reportExtensionTrace({service:'chatgpt',action:'story_bootstrap_draft_cleared',
+    jobId:command.job_id,runId:command.run_id,tabId:targetId,level:'info',
+    message:'ล้างร่างที่เจ้าของอนุญาตแล้วและยืนยันแท็บว่าง',detail:{tab_count:matches.length,verified:true}});
+  return {cleared:true,tab_count:matches.length};
+}
 async function showStoryBootstrapReview(tabId,message) {
   try {
     await chrome.scripting.executeScript({target:{tabId,frameIds:[0]},args:[message],func:(notice)=>{
@@ -548,7 +608,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.530-20261007.1";
+const FLOW_HELPER_BUILD = "flow-0.15.531-20261007.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";
@@ -773,7 +833,7 @@ async function ensureMetaRedesign(pkg) {
 }
 const AI_RUN_ACTIONS = new Set([
   "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt",
-  "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web"
+  "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web", "clear_story_bootstrap_draft"
 ]);
 
 function flowRunStorageKey(jobId, shotIndex = 0) {
@@ -5180,6 +5240,8 @@ async function pollCommands() {
         await startAIWebJob(command.job_id, true, command.provider, true, command.run_id);
       } else if (command.action === "recover_stalled_story_image") {
         await recoverStalledStoryPreSend(command.job_id, command.run_id);
+      } else if (command.action === "clear_story_bootstrap_draft") {
+        await clearAuthorizedStoryBootstrapDraft(command);
       } else if (command.action === "inspect_chatgpt") {
         await inspectChatGPTPage(command.job_id, command.provider);
       } else if (command.action === 'focus_browser') {

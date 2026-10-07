@@ -7,7 +7,7 @@ const source = fs.readFileSync(path.join(__dirname, '../browser_extension/chatgp
 const start = source.indexOf('  async function recordStoryImageRequest(');
 const end = source.indexOf('  async function submitImagePrompt(', start);
 assert(start >= 0 && end > start);
-function fixture({ gemini = false, attachments = 0, expanded = false, ack = {ok:true}, failure = false, cancel = false } = {}) {
+function fixture({ gemini = false, attachments = 0, expanded = false, ack = {ok:true,audit_persisted:true}, failure = false, cancel = false } = {}) {
   const events = [], messages = [];
   const editor = { closest: () => ({querySelectorAll: () => []}) };
   const context = vm.createContext({
@@ -43,7 +43,7 @@ function fixture({ gemini = false, attachments = 0, expanded = false, ack = {ok:
   for(const options of [{ack:null},{ack:{ok:false}},{ack:{ok:true,ignored:true}},{failure:true}]) {
     const f = fixture(options);
     await assert.rejects(f.run(),{code:'STORY_IMAGE_AUDIT_UNCONFIRMED'});
-    assert.equal(f.messages.length,1); cases++;
+    assert.equal(f.messages.length,2); cases++;
   }
   for(const options of [{attachments:1},{expanded:true},{gemini:true,expanded:true}]) {
     const f = fixture(options);

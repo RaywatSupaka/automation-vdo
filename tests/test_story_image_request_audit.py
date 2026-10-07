@@ -146,7 +146,7 @@ class StoryImageRequestAuditTests(unittest.TestCase):
         node=shutil.which('node')
         if not node: self.skipTest('Node required')
         result=subprocess.run([node,str(ROOT/'tests/story_image_request_audit_harness.js')],capture_output=True,text=True,timeout=20)
-        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertEqual(result.returncode,0,(result.stdout or '')+(result.stderr or ''))
         self.assertEqual(json.loads(result.stdout)['cases'],14)
 
 

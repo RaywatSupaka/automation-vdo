@@ -1,6 +1,10 @@
 # SmartFlow AI — Program Blueprint
 
-Runtime Extension 0.15.530 จับคู่กับ Desktop launcher 0.15.530.0; root EXE และ Extension ID เดิมเชื่อมต่อและรายงาน compatible แล้ว ผลจาก provider ยังต้องตรวจแยกต่างหาก
+Runtime Extension 0.15.531 จับคู่กับ Desktop launcher 0.15.531.0; ต้องยืนยันการเปิดคู่เวอร์ชันนี้ก่อนสั่งกู้คืนร่าง ผลจาก provider ต้องตรวจแยกต่างหาก
+
+## Owner-authorized Story bootstrap draft recovery / 0.15.531
+
+เมื่อ Story ใหม่หยุดก่อนส่งเพราะ ChatGPT คืนร่างเดิมในแท็บ root และเจ้าของอนุญาตให้ล้างร่างนั้น Bridge รับคำสั่ง `clear_story_bootstrap_draft` เฉพาะ Job ที่ failed พร้อม run และ tab ID ที่ตรงกับ trace `story_bootstrap_review` เหตุผล `draft_present` เท่านั้น หาก trace รอบนั้นมีหลักฐานส่งคำขอหรือเตรียมส่งภาพ จะปฏิเสธคำสั่ง คำสั่งนี้ไม่เปลี่ยน Job/queue และไม่กด Send; หลังยืนยันการล้างแล้วต้องใช้การ Retry ที่รักษา Job เดิม คิวที่เหลือยังหยุดอยู่จนกว่าจะเริ่มอีกครั้ง
 
 ## Durable Story image audit / 0.15.530
 

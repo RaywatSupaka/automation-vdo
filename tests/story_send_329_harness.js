@@ -20,7 +20,7 @@ const part=(a,b)=>{const i=source.indexOf(a),j=source.indexOf(b,i+a.length);asse
  const report=async(...args)=>events.push(args),stopButtonVisible=()=>busy,stopButton=()=>({click:()=>stops++});
  const stopStalledChatGPTGeneration=async()=>{stops++;return false;};
  const composer=()=>document.querySelector('#prompt-textarea');
- const composerText=(e=composer())=>SmartFlowSingleAnswer.canonical(String(e?.textContent||'')).trim().replace(/\\s+/g,' ');
+ const composerText=(e=composer(),raw=false)=>raw?String(e?.textContent||''):SmartFlowSingleAnswer.canonical(String(e?.textContent||'')).trim().replace(/\\s+/g,' ');
  const waitForComposer=async()=>composer(),waitForResponseIdle=async()=>{},setChatGPTImageTool=async()=>{};
  const setComposerText=async(e,text)=>{e.textContent=SmartFlowSingleAnswer.wrap(text);return e;};
  const sendButton=()=>document.querySelector('#send');
