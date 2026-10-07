@@ -4,6 +4,9 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 // The real current menu/chip was separately verified in an idle Chrome tab.
 class Element {
   constructor(tag,attributes={}){this.tag=tag;this.attributes={...attributes};this.children=[];this.parentElement=null;this.disabled=false;this.hidden=false;this.text='';}
+  get nodeType(){return 1;}
+  get tagName(){return this.tag.toUpperCase();}
+  get childNodes(){return [...(this.text?[{nodeType:3,nodeValue:this.text}]:[]),...this.children];}
   get isConnected(){return this.tag==='document'||Boolean(this.parentElement?.isConnected);}
   get form(){
     if(!['button','input','textarea','select','fieldset','object','output'].includes(this.tag))return undefined;
@@ -16,6 +19,7 @@ class Element {
   setAttribute(key,value){this.attributes[key]=String(value);}
   removeAttribute(key){delete this.attributes[key];}
   append(child){child.parentElement=this;this.children.push(child);}
+  cloneNode(deep=false){const copy=new Element(this.tag,this.attributes);copy.text=this.text;copy.disabled=this.disabled;copy.hidden=this.hidden;if(deep)for(const child of this.children)copy.append(child.cloneNode(true));return copy;}
   remove(){if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(child=>child!==this);this.parentElement=null;}
   click(){this.onclick?.();}
   closest(tag){for(let e=this;e;e=e.parentElement)if(e.tag===tag)return e;return null;}
@@ -55,8 +59,11 @@ function modeFixture(config={}){
   const events=[];
   editor.textContent=config.draft||'';
   const chip=()=>{
-    const b=document.createElement('button');b.setAttribute('aria-label',config.english?'Remove Create image':'ลบ สร้างรูปภาพ');
-    b.textContent='สร้างรูปภาพ';b.onclick=()=>{removes++;if(!config.noRemove)b.remove();};scope.append(b);
+    if(!config.inlineOnly){
+      const b=document.createElement('button');b.setAttribute('aria-label',config.english?'Remove Create image':'ลบ สร้างรูปภาพ');
+      b.textContent='สร้างรูปภาพ';b.onclick=()=>{removes++;if(!config.noRemove)b.remove();};scope.append(b);
+    }
+    if(config.inlineTool||config.inlineOnly){const inline=document.createElement('span');inline.setAttribute('contenteditable','false');inline.textContent='สร้างรูปภาพ';editor.append(inline);}
   };
   if(config.selected)chip();
   opener.disabled=Boolean(config.disabled);
@@ -81,11 +88,11 @@ function modeFixture(config={}){
     editor=document.createElement('div');editor.setAttribute('contenteditable','true');editor.textContent=draft;scope.append(editor);
   };
   const c=vm.createContext({document,IS_GEMINI:Boolean(config.gemini),String,Boolean,Error,
-    composer:()=>editor,composerText:e=>e?.textContent||'',waitForComposer:async()=>editor,
+    HTMLTextAreaElement:class {},composer:()=>editor,waitForComposer:async()=>editor,
     visible:e=>Boolean(e?.isConnected)&&!e.hidden,stopButtonVisible:()=>busy,
     assertNotCancelled:()=>{if(cancelled)throw Object.assign(Error('cancelled'),{name:'AbortError'});},
     sleep:async ms=>{time+=ms;config.onSleep?.(api);},report:async(...args)=>events.push(args)});
-  vm.runInContext(modeCode,c);
+  vm.runInContext(part('  function composerText(', '  function explicitAnalysisRefusal(')+modeCode,c);
   const api={c,document,events,get editor(){return editor;},get scope(){return scope;},get opener(){return opener;},
     get opens(){return opens;},get choices(){return choices;},get removes(){return removes;},get time(){return time;},
     setBusy:v=>busy=v,cancel:()=>cancelled=true,addChip:chip,addMenuOption:menuOption,remount};
@@ -110,6 +117,33 @@ async function modeTests(){
   f=modeFixture();await assert.rejects(f.c.setChatGPTImageTool(true,0,'',()=>false));cases++;eq(f.opens,0,'owner veto');
   f=modeFixture();f.cancel();await assert.rejects(f.c.setChatGPTImageTool(true),e=>e.name==='AbortError');cases++;eq(f.opens,0);
   f=modeFixture({english:true});await f.c.setChatGPTImageTool(true);eq(f.choices,1);eq(Boolean(f.c.chatGPTImageToolChip()),true);
+  f=modeFixture({selected:true,inlineTool:true});eq(f.c.composerText(f.editor),'','selected inline tool is not a draft');
+  await f.c.setChatGPTImageTool(true);eq(f.opens,0,'selected inline tool does not reopen menu');
+  f=modeFixture({selected:true,inlineOnly:true});eq(f.c.composerText(f.editor),'','inline-only tool is not a draft');
+  await f.c.setChatGPTImageTool(true);eq(f.opens,0,'inline-only tool does not select twice');
+  await assert.rejects(f.c.setChatGPTImageTool(false),e=>e.toolReason==='inline_tool_unremovable');cases++;
+  eq(f.editor.textContent,'สร้างรูปภาพ','unknown inline removal is not attempted');
+  f=modeFixture({inlineTool:true});await f.c.setChatGPTImageTool(true);
+  eq(f.c.composerText(f.editor),'','new inline tool label is not a draft');eq(f.choices,1);
+  f=modeFixture({selected:true,inlineTool:true,draft:'foreign draft'});
+  await assert.rejects(f.c.setChatGPTImageTool(true),e=>e.toolReason==='draft_changed');cases++;
+  eq(f.editor.textContent,'foreign draftสร้างรูปภาพ','real foreign draft preserved');
+  f=modeFixture({draft:'สร้างรูปภาพ'});
+  await assert.rejects(f.c.setChatGPTImageTool(true),e=>e.toolReason==='draft_changed');cases++;
+  eq(f.choices,0,'editable words identical to tool label remain a draft');
+  const prompt='Create one scene image';
+  const transport='\n\n[transport instruction]';
+  f=modeFixture({selected:true,draft:prompt+transport});
+  f.c.SmartFlowSingleAnswer={canonical:value=>String(value).replace(transport,'')};
+  eq(f.c.composerText(f.editor),prompt,'draft reader removes transport instruction');
+  await f.c.setChatGPTImageTool(true,0,prompt);
+  eq(f.choices,0,'canonical owned prompt is accepted without selecting the tool twice');
+  eq(source.includes('await setChatGPTImageTool(true, completedCount, text);'),true,
+    'Story recheck passes canonical prompt to the draft guard');
+  eq(source.includes('await setChatGPTImageTool(true,completedCount,repair.image_request);'),true,
+    'visual repair recheck passes canonical prompt');
+  eq(source.includes('await setChatGPTImageTool(true,0,coverPrompt);'),true,
+    'cover recheck passes canonical prompt');
   f=modeFixture({gemini:true});await f.c.setChatGPTImageTool(true);eq(f.opens,0,'Gemini untouched');
   eq(source.includes('await setChatGPTImageTool(false, completedCount, text);'),true,'text/JSON clears image-only tool');
   eq(source.includes('await setChatGPTImageTool(true, completedCount, repair.image_request);'),true,'visual repair covered');
@@ -184,6 +218,7 @@ async function generationTests(){
   const events=[],image={src:'https://chatgpt.com/backend-api/estuary/content?id=result',currentSrc:'https://chatgpt.com/backend-api/estuary/content?id=result',complete:true,naturalWidth:941,naturalHeight:1672};
   const editor={},proof={prompt:'scene',conversation_url:'https://chatgpt.com/c/fixture'};
   const c=vm.createContext({Date:{now:()=>time},Set,String,Boolean,Math,Number,Error,
+    SmartFlowSingleAnswer:{wrap:value=>value},
     IS_GEMINI:false,AI_NAME:'ChatGPT Web',CHATGPT_IMAGE_STALL_WARNING_MS:90000,CHATGPT_IMAGE_STALL_ABORT_MS:180000,
     assertNotCancelled:()=>{},waitForResponseIdle:async()=>{},setChatGPTImageTool:async()=>toolSelections++,
     waitForComposer:async()=>editor,userTurns:()=>[],assistantTurns:()=>[],lastUserTurnSignature:()=>'',
@@ -199,7 +234,7 @@ async function generationTests(){
   vm.runInContext(part('  async function submitImagePrompt(', '  async function imageData('),c);
   const result=await c.submitImagePrompt('scene',[],0,'',{scene_index:1});
   eq(result,image);eq(sends,1,'one accepted request while slow image generates');eq(stops,0,'no Stop even after old45s preview grace');
-  eq(time>=150000,true,'wait for provider idle, not progressively decoded preview');eq(toolSelections,1);
+  eq(time>=150000,true,'wait for provider idle, not progressively decoded preview');eq(toolSelections,2,'tool verified before and after editor replacement');
   eq(events.some(e=>e[0]==='image_ready_before_idle'),false);
   // Actual compatibility helper must now passively wait rather than click Stop.
   time=0;busy=true;stops=0;

@@ -1,6 +1,42 @@
 # SmartFlow AI — Program Blueprint
 
-Runtime Extension 0.15.521 จับคู่กับ Desktop launcher 0.15.521.0; ตรวจการติดตั้งและผลจาก provider แยกจากการผ่านเทสต์ซอร์ส
+Runtime Extension 0.15.530 จับคู่กับ Desktop launcher 0.15.530.0; root EXE และ Extension ID เดิมเชื่อมต่อและรายงาน compatible แล้ว ผลจาก provider ยังต้องตรวจแยกต่างหาก
+
+## Durable Story image audit / 0.15.530
+
+ก่อนกดส่งภาพ ChatGPT Extension ต้องได้รับ ACK ว่า Bridge บันทึก `image_prompt_ready` ลง trace ของ Job แล้ว การตอบแบบ buffered, ignored, timeout หรือ transport error ไม่อนุญาตให้กดส่ง; ลองยืนยันซ้ำได้อีกหนึ่งครั้งโดยไม่แตะ provider. คำสั่ง Start ซ้ำของ Job และ run เดียวกันรับสถานะ collector ที่ทำงานอยู่ ส่วน run อื่นยังปฏิเสธ. งาน 7A98CB หยุดก่อน Send ในรอบ 529 และคิวพักไว้จนยืนยันเจ้าของร่างได้.
+
+## Idle Story pre-Send reader / 0.15.529
+
+After 528 prepared an image prompt, the three-minute watchdog found the same tab and durable pre-Send receipt but the content worker no longer owned its run. The recovery probe may now read the exact conversation from an idle content reader. Background still requires the same job, run, scene, registered tab, prepared receipt with no nonce or dispatch marker, and two stable page probes. Each probe checks the conversation URL, user-turn count and signature, absence of the request or active response, exact draft and source attachments. A different active owner, cancellation, changed page or any uncertain Send stays in review. Claiming the document fences new Starts until its exact tab reload completes.
+
+## MAIN-world inline tool preflight / 0.15.528
+
+The trusted Send controller compares the full wrapped wire prompt against editable text only, excluding an exact non-editable Create image token inside the ChatGPT composer. Missing wrapper text or a changed editable draft still vetoes the click. The 527 audited first-image prompt followed by `gesture_phase:not_started` and `preflight_reason:draft_mismatch` is a bounded pre-Send proof for the saved prepared receipt; a later image Send or unknown state invalidates it.
+
+## Inline image-tool suffix and checkpoint tab continuation / 0.15.527
+
+The ChatGPT Send preflight reads editable composer text and excludes a non-editable Create image token. This keeps the required single-answer suffix visible when the tool token renders after it; an actually missing suffix still blocks Send. A Story package with a saved analysis checkpoint resumes the registered job tab, including its unsent draft, instead of treating a repeated Open command as a fresh root. The exact 526 `image_prompt_ready` plus adjacent `AI_SEND_NOT_READY` and `AI_RESPONSE_FORMAT_NOT_READY` trace authorizes skipping the legacy whole-chat image scan and recovering only a prepared receipt. Unknown or accepted dispatch remains review-only.
+
+## Latest first-image pre-Send proof / 0.15.526
+
+If a previously resumed first image stops again before dispatch, the Story package chooses the latest exact `AI_SEND_NOT_READY` image-tool failure. The adjacent attempt, run, page, safe intervening trace, no accepted result and bounded receipt creation window must match. This permits skipping legacy conversation scanning and transferring only that latest prepared receipt; an accepted or uncertain Send remains protected by both trace checks and the scene receipt's durable dispatch check.
+
+## Canonical owned draft for image-tool recheck / 0.15.525
+
+The ChatGPT post-insertion tool check receives the canonical prompt because `composerText()` strips the single-answer transport instruction from the editor. Passing `wrap(prompt)` made the Extension reject its own inserted draft before Send. Story image, visual repair and cover use the same canonical comparison. A foreign or changed draft still stops before Send, and failure diagnostics record only structural lengths and node types, not prompt content.
+
+## Proven prepared receipt transfer / 0.15.524
+
+The exact 521 first-image no-dispatch trace also binds the old prepared receipt to its run, Extension ID, original conversation and creation time. If a later resume opens a different ChatGPT conversation, the content worker may release only that pre-Send receipt when no durable dispatch value, send nonce, result proof, image, active generation or foreign draft exists. The next `begin()` writes the current run's receipt before a new Send. Missing or conflicting evidence still stops at `STORY_IMAGE_RECEIPT_REVIEW`.
+
+## Proven first-image pre-Send recovery / 0.15.523
+
+When a saved Story analysis has no image checkpoint, a resumed ChatGPT run ordinarily checks legacy images in the whole conversation. The exact 0.15.521 first-image tool-preflight failure proves no image Send occurred only when the same run has the adjacent non-retryable attempt and `dispatch_completed=false`, no previous image attempt, and no later image work. The Story package exposes scoped proof for that case. The Extension skips the page-wide legacy scan and continues to the scene receipt, which still checks any uncertain or accepted request before a new Send. Missing or conflicting proof keeps ordinary recovery behavior.
+
+## Inline ChatGPT image-tool draft guard / 0.15.522
+
+After Story analysis is saved, ChatGPT may render a selected Create image token inside the editor; its label must not be treated as user draft text. Only an exact non-editable UI token is excluded, and an editable user draft still stops before Send. The image tool is rechecked after Story image, visual repair and AI cover prompt insertion because replacing editor contents can drop that tool selection. No accepted or uncertain provider Send is replayed; the exact failed Story remains paused until its saved analysis and image pre-Send ownership are verified.
 
 ## Owned browser surface recheck before Story Send / 0.15.521
 

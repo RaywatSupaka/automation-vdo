@@ -210,6 +210,28 @@ async function relationshipChanged(page,which) {
 const cases=[
   ['thai_submit_native_acceptance',page=>nativeAcceptance(page,'thai')],
   ['bare_owned_submit_native_acceptance',page=>nativeAcceptance(page,'bare')],
+  ['inline_image_tool_keeps_exact_wire_draft',async page=>{
+    await setup(page);
+    await page.evaluate(()=>{
+      const old=document.querySelector('#prompt-textarea');
+      const editor=document.createElement('div');
+      editor.id='prompt-textarea';editor.contentEditable='true';
+      editor.style.cssText='position:fixed;left:20px;top:650px;width:260px;min-height:100px;max-height:100px;overflow:hidden';
+      editor.textContent=__fixtureWire;
+      const chip=document.createElement('span');chip.contentEditable='false';chip.textContent='สร้างรูปภาพ';
+      editor.append(chip);old.replaceWith(editor);
+    });
+    const initial=await point(page,{initial:true,focus:true});
+    equal(initial.ok,true,'inline image token after transport suffix leaves exact wire draft ready');
+    await page.evaluate(()=>{
+      const editor=document.querySelector('#prompt-textarea');
+      editor.firstChild.nodeValue='Synthetic offline contract request. Return one small JSON object.';
+    });
+    const missing=await point(page,{initial:true,focus:true});
+    equal(missing.ok,false,'missing transport suffix still blocks Background Send');
+    equal(missing.reason,'draft_mismatch','missing suffix reports draft mismatch');
+    equal(await page.evaluate(()=>__fixtureEvents.length),0,'no input on either preflight');
+  }],
   ['class_submit',page=>selectedOwned(page,'class')],
   ['title_submit',page=>selectedOwned(page,'title')],
   ['aria_substring_submit',page=>selectedOwned(page,'aria_substring')],

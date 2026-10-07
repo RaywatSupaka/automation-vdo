@@ -90,6 +90,7 @@ const production=part('  function visible(', '  const dismissedDiscoveryCards')+
         const assertNotCancelled=()=>{};window.events=[];window.providerSends=0;window.retryClicks=0;
         const composer=()=>document.querySelector('#prompt-textarea'),composerText=()=>'';
         const waitForResponseIdle=async()=>{},prepareCoverImageTool=async()=>{},waitForComposer=async()=>composer();
+        const setChatGPTImageTool=async()=>{};
         const attachSourceImages=async()=>{},setComposerText=async()=>composer();
         const waitForStableSendDraft=async()=>({button:null,editor:composer()});
         const coverEvent=async event=>{

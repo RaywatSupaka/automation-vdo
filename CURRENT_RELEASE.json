@@ -1,4 +1,60 @@
 {
+  "story_audit_ack_and_duplicate_start_530_20261007": {
+    "status": "root_launcher_and_original_extension_activated_queue_paused_live_output_unverified",
+    "runtime_pair": "Desktop launcher 0.15.530.0 and Extension 0.15.530",
+    "observed_failure": "Live 529 run saved image_prompt_ready before Send but its content ACK timed out while progress reports queued. Duplicate Start commands for the same live run were reported as errors, spent automatic recovery, and a fresh tab restored an unowned draft. No image Send or result was observed; the queue paused.",
+    "fix": "The image pre-Send audit bypasses the shared status outbox and requires an explicit durable Bridge ACK; a bounded second audit may recover a delayed ACK. A duplicate Start attaches only to the exact live job/run. Other run owners and uncertain sends remain blocked.",
+    "verification": "Focused story-image-result and story-dispatch passed; release-contract had one status-label failure, corrected and exact failed ID passed. 41-file Extension ZIP SHA256 41CDAA8A65FE40EDE3C75FCDD02104B0D351105DD7F1323817A955908A40DCF1. Actual root SmartFlow AI.exe 0.15.530.0 SHA256 62EDA3566530A2CC981FDB780962A458ED8D2F8C370CADCBF1F8CAA7AAAC386F. Original Chrome Extension ID papnilhgmmceacikdopjdomdbkaamobn in unchanged path connected at 530; Bridge system reports compatible. User is unsure whether a manual image Send occurred during the 529 recovery gap; Story and three successors remain paused pending proof. Full audit and live provider output remain unverified."
+  },
+  "story_idle_reader_recovery_529_20261007": {
+    "status": "root_launcher_and_original_extension_activated_queue_paused_live_output_unverified",
+    "runtime_pair": "Desktop launcher 0.15.529.0 and Extension 0.15.529",
+    "observed_failure": "Paired 528 reached audited first-image prompt. The exact prepared receipt had no dispatch marker, but the stalled worker no longer held its run, so the existing recovery probe returned owner_changed and paused the queue.",
+    "fix": "An idle content reader may verify the exact unchanged registered conversation twice under the prepared no-dispatch receipt; foreign active owners, cancellation, changed draft, user turns or provider request remain review-only. A claimed document rejects concurrent Start through reload.",
+    "verification": "Focused story-progress-stall, story-dispatch, story-image-result and release-contract passed. 41-file extension ZIP SHA256 90F14021D26C74A68B15FB800F88666D4DD97259016AC7E093E50F73EF5FA222. Root SmartFlow AI.exe 0.15.529.0 SHA256 EFCA3AFE7AA61ACFE53B6CBB478FD1E91F9CAC8ABEA794D654A433E198B6039A. Original Chrome Extension ID papnilhgmmceacikdopjdomdbkaamobn in unchanged browser_extension path connected and compatible at 529. Full audit and live Story output remain pending."
+  },
+  "story_main_world_inline_token_528_20261007": {
+    "status": "source_under_verification_queue_paused",
+    "runtime_pair": "Desktop launcher 0.15.528.0 and Extension 0.15.528",
+    "observed_failure": "Paired 527 passed the content-script response-format guard, but the MAIN-world trusted Send preflight compared the raw editor including its inline Create image token to the wrapped prompt. It returned draft_mismatch with gesture_phase not_started; the prepared receipt was restored and no click occurred.",
+    "fix": "MAIN-world preflight excludes only an exact non-editable Create image token when comparing the full wire prompt. The exact 527 audited prompt and not_started draft_mismatch trace can prove first-image pre-Send recovery while keeping unknown and accepted sends excluded."
+  },
+  "story_inline_format_and_checkpoint_resume_527_20261007": {
+    "status": "source_under_verification_queue_paused",
+    "runtime_pair": "Desktop launcher 0.15.527.0 and Extension 0.15.527",
+    "observed_failure": "Paired 526 placed the exact first-image prompt in ChatGPT but stopped before Send at AI_RESPONSE_FORMAT_NOT_READY. A later repeated Open command started a new root, where ChatGPT restored the unsent draft and bootstrap correctly refused to claim it.",
+    "fix": "Read the response-format suffix from editable composer text while excluding the inline Create image token. A Story with a saved analysis checkpoint continues its registered tab. Exact 526 audited prompt followed by adjacent no-Send format failure supplies bounded first-image pre-Send proof; accepted or uncertain sends remain excluded."
+  },
+  "story_latest_pre_send_526_20261007": {
+    "status": "source_fix_under_verification_queue_paused",
+    "runtime_pair": "Desktop launcher 0.15.526.0 and Extension 0.15.526",
+    "observed_failure": "525 activated and resumed the saved Story analysis, but legacy page-wide image discovery ran again because the proof selector recognized the original 521 pre-Send error but not the later 524 pre-Send image-tool failure. The 525 attempt was cancelled at analysis_saved without an image Send.",
+    "fix": "Select the latest exact first-image pre-Send failure with matching run, adjacent attempt, no dispatch, no image result or accepted request and bounded creation time. Permit the intervening no-Send wrong-conversation recovery while keeping uncertain and accepted sends excluded."
+  },
+  "story_image_tool_live_shape_525_20261007": {
+    "status": "activated_then_superseded_by_526_latest_proof",
+    "runtime_pair": "Desktop launcher 0.15.525.0 and Extension 0.15.525 activated with the original Extension ID",
+    "observed_failure": "524 recovered the saved analysis and transferred the exact pre-Send receipt, but ChatGPT still rendered Create image as a foreign draft after tool selection. The request stopped before Send and the three successor queue rows remained paused.",
+    "change": "The post-insertion image-tool recheck compares the canonical composer draft with the canonical owned prompt. The previous wrapped prompt included transport instructions that composerText intentionally strips, causing a false draft_changed after the Extension inserted its own prompt. Keep bounded, content-free DOM shape diagnostics for any remaining pre-Send mismatch."
+  },
+  "story_prepared_receipt_transfer_524_20261007": {
+    "status": "activated_then_superseded_by_525_live_diagnostic",
+    "runtime_pair": "Desktop launcher 0.15.524.0 and Extension 0.15.524 activated with the original Extension ID",
+    "observed_failure": "523 activated and the exact Story retry passed analysis_saved and began image 1 without another analysis Send. The old pre-Send receipt was bound to the former ChatGPT conversation, so the new tab stopped at WRONG_CONVERSATION before image Send. The Story remained resumable and the three successors stayed queued.",
+    "fix": "The exact 521 no-dispatch trace now also permits a prepared receipt transfer to the current chat only when receipt owner, timestamp, original conversation, extension identity, absence of dispatch nonce, empty current draft and no active generation all match. The new run writes a fresh receipt before any provider Send; uncertain or accepted sends remain blocked."
+  },
+  "story_first_image_pre_send_523_20261007": {
+    "status": "activated_then_superseded_by_524_receipt_transfer",
+    "runtime_pair": "Desktop launcher 0.15.523.0 and Extension 0.15.523 activated with the original Extension ID",
+    "observed_failure": "522 activated in the root DEV EXE and original Chrome Extension. Exact Story 7A98CB resumed its saved analysis without another analysis Send, then remained at analysis_saved while scanning a long prior ChatGPT conversation for legacy images. No image Send was reported. The running attempt was cancelled; its job and saved checkpoint remain.",
+    "fix": "For the exact 521 image-one pre-Send failure trace, the Story package carries scoped proof that lets the Extension skip page-wide legacy image discovery. The per-scene receipt recovery still runs before any new Send. Uncertain or accepted prior sends do not qualify."
+  },
+  "story_image_inline_tool_522_20261007": {
+    "status": "activated_then_superseded_by_523_scan_guard",
+    "runtime_pair": "Desktop launcher 0.15.522.0 and Extension 0.15.522 were activated with the original Extension ID",
+    "observed_failure": "STORY-20261007-7A98CB saved its accepted analysis, then image 1 stopped before Send with chatgpt_image_tool/draft_changed. The ChatGPT composer diagnostic reported 11 characters and the screenshot showed the Create image label. The queue paused with three untouched queued rows and no running worker. The older failed and cancelled rows remain preserved.",
+    "fix": "Exclude only a semantically non-editable inline Create image token from ChatGPT draft checks; protect editable text with the same words. Confirm image-tool selection again after prompt insertion for Story image, visual repair and AI cover. The exact Story was retried once from its saved analysis; no image Send was reported before that attempt was cancelled at analysis_saved."
+  },
   "root_dev_521_activation_20261007": {
     "status": "root_dev_521_original_extension_521_connected_queue_paused",
     "runtime_pair": "Root DEV launcher 0.15.521.0 and original Chrome Extension ID papnilhgmmceacikdopjdomdbkaamobn at the existing browser_extension path, version 0.15.521",
@@ -1865,7 +1921,7 @@
     "flow_fresh_project_323_verification": "Full1155 passed110.981s. Focused39 passed; post-suite navigation-lock and10 provider-helper scenarios passed.37-file source/folder/ZIP parity verified. Installed remains322; Chrome internal extension page unavailable to browser control, so no reload or new paid generation performed. User app/queue/media preserved. docs/reports/flow-fresh-project-323.md",
     "gemini_text_preflight_324_verification": "Full1159 passed112.578s; focused59 and version/integrity155 passed. Actual-source text36, observed composer DOM6, trusted Send22 and unchanged image retry28 passed.37-file source/folder/ZIP parity verified. Live323 A9F010 scene6 remains unsent with enabled Send; source guard incorrectly used5 historical thumbnails rather than1 composer attachment. Exact historical changed field was not recorded. Installed324 E2E pending; no user draft/receipt reset/reload or paid generation. Owned test process/headless browsers exited,19065 closed. docs/reports/gemini-text-preflight-324.md",
     "provider_dom_audit_325_verification": "Full1160 passed114.810s; focused172 passed7.294s. Live Gemini/ChatGPT controls and all5 Flow model menus inspected; restored Omni/Frames/720p/8s/9:16/x1. Installed323 discovery blocked before enqueue by unresolved remote job; no paid E2E claimed. Actual-source Flow59/Gemini image30/text36 and ChatGPT DOM6 passed.37-file source/folder/ZIP parity verified. Own test processes exited,19065 closed; own audit tabs closed and user drafts/app preserved. Installed325 E2E pending. docs/reports/provider-dom-audit-325.md",
-    "extension_version": "0.15.521",
+    "extension_version": "0.15.530",
     "scene_helper_383_report": "docs/reports/scene-helper-383.md",
     "scene_helper_383_verification": "Final1582 tests passed217.530s, exit0. New34 actual-source helper cases; Story receipt/recovery, Gemini text, Flow helper and155 integrity/release focused tests passed.28JSsyntax and38-file source/folder/ZIP parity;34files unchanged from382, Flow build-only. Live primary refusal/helper JSON inspected read-only; old382 reproduced misleading missing-label toast. User engine29936/382 idle queuepaused preserved;383 installed E2E pending. Owned duplicate inspection tab and test runners closed; no provider Send/credits or live-job writes.",
     "meta_video_377_report": "docs/reports/meta-video-377.md",
@@ -1895,14 +1951,14 @@
     "flow_continuous_348_verification": "Full1321 passed251.635s; focused10 passed2.029s. Flow rounds3-5 both providers, same-image/helper dedup, legacy budget-only recovery, 45-event audit and ordinary Story limits verified.37-file package parity. Installed348 E2E pending; user347 engine untouched. docs/reports/flow-continuous-repair-348.md",
     "flow_same_image_repair_346_verification": "Full1318 ran221.235s:1316 passed, one old widgetless fixture and one blueprint version literal failed; both corrected without production changes, final focused33 passed0.740s including failed cases. Prior focused34 passed12.587s, desktop60 passed1.301s.27JSsyntax and37-file source/folder/ZIP parity. Same-image/provider text repair first, validated original reference/new prompt enter fresh Flow project with request-scoped receipt; exact owned Story detail. Existing in-flight alternatives preserved. Installed345 userengine40664 not restarted/reloaded, no Codex provider generation. Installed346 E2E pending; docs/reports/flow-same-image-repair-346.md",
     "resume_routing_345_verification": "Final1309 passed196.738s; focused68 passed9.850s; new real-source routing/reader19cases plus Gemini332owner25 and motion344completion24.27JS syntax;37-file source/folder/ZIP parity. Readonly actual A5F176 routes scene10 to saved chat;32BFBF original request hash b27b60a3. Exact pending request routing, Gemini first URL/container remount ownership, shared stop reasons and truthful stage logs. Userengine46632/344 idle queuepaused untouched; tests exited19065closed. No provider generation. Installed345 E2E pending. docs/reports/resume-routing-345.md.",
-    "status": "root_dev_521_original_extension_521_connected_provider_output_unverified",
+    "status": "root_dev_530_original_extension_530_queue_paused_provider_output_unverified",
     "extension_source": "browser_extension",
     "desktop_version_contract": "core/local_bridge.py",
-    "install_directory": "deliverables/SmartFlow_AI_Extension_0.15.521",
+    "install_directory": "deliverables/SmartFlow_AI_Extension_0.15.530",
     "install_directory_role": "immutable_release_artifact; preserve existing loaded Chrome path and extension ID; explicit migration required for a versioned-path installation",
     "stable_install_directory": "browser_extension",
-    "install_zip": "deliverables/SmartFlow_AI_Extension_0.15.521.zip",
-    "install_zip_sha256": "7CF7F7E4D0B5B73719BF7BDB5FEC7AD2BF28ACCE28166F4EB38BF56C3B13F03E",
+    "install_zip": "deliverables/SmartFlow_AI_Extension_0.15.530.zip",
+    "install_zip_sha256": "90F14021D26C74A68B15FB800F88666D4DD97259016AC7E093E50F73EF5FA222",
     "lifecycle_readiness_333_verification": "Final1251 passed164.742s zero failures/errors; integration269 passed35.207s; cleanup22 actual-source cases inclSET_ACTIVE_JOB race, desktop15 lifecycle cases, realFFmpeg5 newcases, actualnestedcoverpublication andHTTP/atomicJSON regressions.27JS syntax;37-file source/folder/ZIP parity,34files unchanged from332; chatgpt.js unchanged andflow.js version-only. Fixed scopedclose/durableACK, terminalqueue/staleEP, covercancel/publication, rendercancel, nativeFPS/CRF, greenmanifest/Final and corruptsolebackup. Live331 discovery CMD-AC35B9E40D failed noFlowproject; no provider generation/reload/jobmutation. Own tests exited19065closed; finalBridgeunavailable/PID37548absent, no replacementlaunched. Installed333 E2E pending. docs/reports/lifecycle-readiness-333.md",
     "gemini_text_request_332_verification": "Final1219 passed167.932s; focused199 passed14.103s; new actual-source25 cases plus existing Gemini text47/image59/analysis34/motion11/gesture28. Stable exact request/live cleared composer, original draft expectation, accepted owner persistence/read-only motion resume and30s passive remount recovery; no third Send or legacy receipt reset.27JS syntax and37-file source/folder/ZIP parity;33files unchanged from331, Background/Flow version-only. Live331 AB59BE has user/answer11 and draft12 despite accepted12 trace; internal Gemini reason unproven. Original15images/11ready motion plans preserved, user37548/331 idle queuepaused, no reload or provider generation. Own tests exited,19065 closed. Installed332 E2E pending. docs/reports/gemini-text-request-332.md",
     "gemini_send_331_verification": "Final1214 tests passed149.251s; finalfocused182 passed11.888s; actual-source Gemini image59/text47/gesture28,27JS syntax and37-file source/folder/ZIP parity. First-image current-reference/readiness guard, sampled wait-change latch, late owned Story acceptance, existing entry-overlay Escape preserved. Desktop accepts owned_motion_user_turn and bounded phase-separated diagnostics.33/37 Extension files unchanged from330; Flow logic unchanged except build. No provider generation, user runtime reload/job/receipt mutation or manual Send. Own tests exited and19065 closed; Bridge unavailable, not relaunched. Installed331 E2E pending. docs/reports/gemini-send-331.md",
@@ -1919,7 +1975,7 @@
     "desktop_function_controls_verification": "Full1997 passed350.108s; focused75 passed7.250s; actual-source UI54 checks including all5 Flow models, unchanged7 route payloads, native input identity, restore/disabled/keyboard/dynamic/mixed states and5 widths. Product Story UI and UX/progress68 passed.47 frozen files unchanged including38 Extension394 files. No app/provider launch, queue writes, generation or installed EXE/WebView2 validation; owned browser/runner closed and19065 unbound.",
     "desktop_five_model_verification": "Full1115 passed104.938s; focused13 passed4.141s;53 actual-source Extension controller cases include all5 models at400/1365;7-panel UI includes all5 before discovery and preserves creation/queue payloads. Live account settings inspected for all5 and restored. Actual desktop action read_flow_settings CMD-ED79B0169C completed via installed Extension with all5 names. No paid-generation E2E claimed.292 source/folder/ZIP37-file parity unchanged; user engine idle; own tests exited and19065 closed. Report docs/reports/flow-five-models.md.",
     "desktop_flow_controls_verification": "UI2 full1115 passed103.789s; focused13 passed3.838s; direct Omni/Frames/720p/10s creation+queue payload verified, Fast invalid-option removal preserves old queue; source CSS screenshot inspected. Live desktop serves changed JS HTTP200/no-store, existing loaded window needs reload. Extension291 unchanged with37-file package parity. Own tests exited,19065 closed. No paid generation or user restart. See docs/reports/flow-precreate-controls-2.md.",
-    "desktop_launcher_version": "0.15.521.0",
+    "desktop_launcher_version": "0.15.530.0",
     "desktop_feature_revision": "long-video-1",
     "desktop_status_revision": "product-handoff-status-1",
     "desktop_flow_smoke_revision": "flow-test-studio-2",

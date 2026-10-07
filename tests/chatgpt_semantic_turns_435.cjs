@@ -20,7 +20,8 @@ let checks=0;const eq=(a,b,label)=>{assert.deepEqual(a,b,label);checks++;};
     const sleep=async ms=>{clock+=ms;},report=async(...args)=>events.push(args);
     const stopButtonVisible=()=>busy;
     const composer=()=>document.querySelector('textarea');
-    const composerText=node=>SmartFlowSingleAnswer.canonical((node||composer())?.value||'');
+    const composerText=(node,rawOnly=false)=>rawOnly ? (node||composer())?.value||''
+      : SmartFlowSingleAnswer.canonical((node||composer())?.value||'');
     const waitForStableSendDraft=async()=>({button:document.querySelector('button[type=submit]'),editor:composer()});
     const savedReceipts={};
     globalThis.chrome={runtime:{sendMessage:async()=>{dispatches++;mount();return {ok:true,method:'single_trusted_ai_send'};}},
@@ -298,21 +299,25 @@ let checks=0;const eq=(a,b,label)=>{assert.deepEqual(a,b,label);checks++;};
   // The actual START handler distinguishes a newly started runner from an
   // old document that is still running. ok:true alone cannot prove a reload
   // handoff; the old runner will disappear when navigation finally commits.
-  await page.addScriptTag({content:'function testContentStartHandoff(message,sendResponse){'
+  await page.addScriptTag({content:'let retireForStoryStall=false; function testContentStartHandoff(message,sendResponse){'
     +part('    if (message?.type !== "START_CHATGPT_JOB") return;', '\n  });')+'}'});
   const starts=await page.evaluate(()=>{
     let count=0;globalThis.runJob=async()=>{count++;};
     const previousJob=activeJobId,previousRun=activeRunId;
     const message={type:'START_CHATGPT_JOB',accept_existing_run:true,package:{job:{id:activeJobId},run_id:activeRunId}};
-    let oldAck,newAck;
+    let oldAck,newAck,claimedAck;
     testContentStartHandoff(message,ack=>oldAck=ack);
     const oldStarts=count;
     activeJobId='';activeRunId='';testContentStartHandoff(message,ack=>newAck=ack);
+    retireForStoryStall=true;testContentStartHandoff(message,ack=>claimedAck=ack);
+    retireForStoryStall=false;
     activeJobId=previousJob;activeRunId=previousRun;
-    return {oldAck,oldStarts,newAck,newStarts:count};
+    return {oldAck,oldStarts,newAck,claimedAck,newStarts:count};
   });
   eq([starts.oldAck,starts.oldStarts],[{ok:true,started:false,already_running:true},0],
     'old document idempotent ACK is not proof that a refreshed runner started');
   eq([starts.newAck,starts.newStarts],[{ok:true,started:true},1],'new document starts exactly one runner');
+  eq(starts.claimedAck,{ok:false,code:'AI_WEB_JOB_BUSY',error:'Story pre-Send recovery owns this document'},
+    'claimed pre-Send document rejects a concurrent Start');
   console.log(JSON.stringify({ok:true,cases:checks,providerSubmissions:0}));
 }finally{await browser.close();}})().catch(error=>{console.error(error);process.exit(1);});

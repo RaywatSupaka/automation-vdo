@@ -1,6 +1,42 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
-เวอร์ชัน Runtime ปัจจุบัน: `0.15.521`
+เวอร์ชัน Runtime ปัจจุบัน: `0.15.530` (Extension ID เดิมและพาธติดตั้งเดิมเชื่อมต่อแล้ว)
+
+## 0.15.530 — durable image audit and repeated Start
+
+`image_prompt_ready` ส่งตรงผ่าน Bridge และต้องได้คำตอบ durable หลัง fsync ก่อนกดส่งภาพ ไม่ใช้ status outbox ที่ตอบ buffered; timeout ลองยืนยันอีกครั้งแบบจำกัด. `START_CHATGPT_JOB` ซ้ำจะยอมรับเฉพาะ Job และ run ที่ collector ในเอกสารนั้นทำอยู่ ไม่เริ่มคำขอซ้ำหรือยอมรับ foreign run.
+
+## 0.15.529 — idle reader for prepared Story image
+
+The pre-Send stall probe accepts an idle content reader only when no job/run is active and no cancellation or prior recovery claim exists. It rechecks the exact registered conversation, prompt draft, user-turn baseline, request absence and attachments before claiming; Background also rechecks the durable prepared receipt and absence of a dispatch marker before reloading that same tab. A claimed document refuses concurrent START and keeps its fence through worker cleanup. A foreign worker, changed draft or provider request remains blocked.
+
+## 0.15.528 — MAIN-world Create image token
+
+The trusted Send preflight runs in the page's MAIN world and now reads the same editable wire text as the content script. It removes only a semantically non-editable Create image token from the comparison, while preserving the transport suffix and every editable character. A genuine draft change or missing suffix still blocks the one trusted click. Exact 527 no-click diagnostics let the first Story image resume through its prepared receipt.
+
+## 0.15.527 — continue the owned unsent image prompt
+
+The Send format guard now uses the same editable-only composer reader as the canonical draft comparison, so an inline Create image token cannot hide a valid trailing transport instruction. A truly absent instruction still stops before Send. Repeated Story Open after a persisted analysis checkpoint reuses the job's registered tab. A tightly matched 526 audited prompt and explicit pre-Send format failure can authorize first-image receipt recovery; no accepted or uncertain request is replayed.
+
+## 0.15.526 — latest exact pre-Send proof
+
+The desktop package supplies the latest verified first-image pre-Send owner after repeated safe failures. The worker skips legacy page scanning and may move only a matching prepared receipt; no dispatch nonce, accepted request, result proof or saved image may exist. The canonical draft recheck from 525 remains active before any provider Send.
+
+## 0.15.525 — canonical draft after writing image prompt
+
+The image-tool recheck now compares the editor's canonical text with the canonical owned prompt. The single-answer transport suffix is written to the page but removed by `composerText()` and must not be passed as the expected draft. Story image, visual repair and AI cover share this invariant. On a pre-Send mismatch, bounded DOM shape diagnostics exclude the prompt and user text.
+
+## 0.15.524 — transfer an exact pre-Send prepared image receipt
+
+When the verified 521 image 1 preflight failed before dispatch and the old conversation has closed, the worker can transfer its prepared receipt to the current job chat. It requires matching run, Extension ID, original conversation and creation window, no durable dispatch or Send nonce, no result proof or image, and an idle clean composer. `begin()` then saves a new owned receipt for the current run before Send. An uncertain or accepted request cannot use this route.
+
+## 0.15.523 — proven pre-Send first-image scan guard
+
+The Story package can carry exact proof that the 521 ChatGPT image-tool preflight stopped image 1 before dispatch. With no saved image and no pending resume target, the content worker skips legacy page-wide image discovery. Scene receipt restoration and ownership checks still run before Send. A later image action, conflicting trace or incomplete proof keeps the ordinary recovery path. This prevents a long conversation scan from holding a verified pre-Send retry at `analysis_saved`.
+
+## 0.15.522 — inline Create image token is not a user draft
+
+The ChatGPT editor can include a selected Create image token inside its editable root. Draft checks exclude only an exact, semantically non-editable image-tool token; ordinary editable text with the same words remains protected. The tool selector recognizes a single inline token as selection proof, and refuses to remove it when no removable control is available. Story image, visual repair and AI cover recheck tool selection after replacing editor text, before any provider Send or durable dispatch claim. Offline browser and timing fixtures cover inline-only selection, a real foreign draft, and duplicate selection prevention. Accepted and uncertain Sends remain review-only.
 
 ## 0.15.521 — owned surface recheck and passive cover acceptance
 

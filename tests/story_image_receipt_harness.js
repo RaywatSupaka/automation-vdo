@@ -50,6 +50,7 @@ function fixture(options = {}) {
     ['  function productPointingVisualInstruction(', '  function validateProductCreativePlan('],
     ['  function geminiImageGuidelineResponse(', '  function storyImageReferenceRequest('],
     ['  function imageDownloadFailure(', '  async function imageDataFromUrl('],
+    ['  function skipLegacyConversationScan(', '  async function recordStoryImageRequest('],
     ['  async function generateOneImage(','  function productImageFailureKind('],
     ['  async function runJob(','  chrome.runtime.onMessage.addListener(']]){
     const a=source.indexOf(start),b=source.indexOf(end,a);assert(a>=0&&b>a);vm.runInContext(source.slice(a,b),context);
@@ -144,6 +145,36 @@ const code = expected => error => error.code === expected;
       scene_index:1,run_id:old.run_id,client_id:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       created_after_ms:old.created_at-10,created_before_ms:old.created_at+10,trace_sequence:21}};
     await f.run();assert.equal(f.sends.length,1);assert.equal(f.storage[f.key],null);
+  });
+  await test('proven 521 prepared image can move to a fresh chat before Send',async()=>{
+    const first=fixture({provider:'chatgpt'});
+    first.context.submitImagePrompt=async()=>{throw new Error('pre-Send tool check');};
+    await assert.rejects(first.run());
+    const old=first.storage[first.key];
+    assert.equal(old.send_phase,'prepared');assert(!old.send_nonce);
+    const oldStorage=clone(first.storage);
+    const resumed=fixture({provider:'chatgpt',storage:first.storage,run:'RUN-NEW'});
+    resumed.context.location.href='https://chatgpt.com/c/new-chat';
+    resumed.pkg.first_image_pre_send={version:1,job_id:resumed.pkg.job.id,provider:'chatgpt',scene_index:1,
+      source_run_id:old.run_id,client_id:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      conversation_url:old.prepared_conversation,trace_sequence:29,
+      created_after_ms:old.created_at-100,created_before_ms:old.created_at+100};
+    resumed.context.submitImagePrompt=async()=>{resumed.sends.push(1);throw new Error('after recovery');};
+    await assert.rejects(resumed.run(),/after recovery/);
+    assert.equal(resumed.sends.length,1);
+    assert.equal(resumed.storage[resumed.key].run_id,'RUN-NEW');
+    assert.equal(resumed.storage[resumed.key].prepared_conversation,'https://chatgpt.com/c/new-chat');
+    for(const tamper of ['dispatch','nonce','proof']){
+      const rows=clone(oldStorage),record=rows[first.key];
+      if(tamper==='dispatch')rows[first.key+':dispatch']='accepted-nonce';
+      if(tamper==='nonce')record.send_nonce='accepted-nonce';
+      if(tamper==='proof')record.result_proof={prompt:'sent earlier'};
+      const blocked=fixture({provider:'chatgpt',storage:rows,run:'RUN-NEW'});
+      blocked.context.location.href='https://chatgpt.com/c/new-chat';
+      blocked.pkg.first_image_pre_send=resumed.pkg.first_image_pre_send;
+      await assert.rejects(blocked.run(),code('STORY_IMAGE_RECEIPT_REVIEW'));
+      assert.equal(blocked.sends.length,0);
+    }
   });
   const legacySeed=fixture({sendError:Object.assign(new Error('unknown'),{code:'UNKNOWN'})});
   await assert.rejects(legacySeed.run());

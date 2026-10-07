@@ -15,7 +15,7 @@ let passed=0;
 
 async function scenario(name,initial,options,verify) {
   const tabs=initial.map(row=>({...row,url:row.url||root,status:row.status||'complete'}));
-  const actions=[],storage={};
+  const actions=[],storage={...(options.storage||{})};
   let nextId=100;
   const context=vm.createContext({
     setTimeout:callback=>{callback();return 0;},
@@ -23,7 +23,8 @@ async function scenario(name,initial,options,verify) {
       gemini:{url:'https://gemini.google.com/app',matches:['https://gemini.google.com/app*'],name:'Gemini Web'}},
     BRIDGE:'http://fixture',normalizeAIProvider:value=>value||'chatgpt',
     bridgeFetch:async()=>({ok:true,json:async()=>({ok:true,package:{job:{id:'STORY-BOOTSTRAP',image_ai_provider:options.provider||'chatgpt'},
-      ...(options.resume?{ai_resume:options.resume}:{})}})}),
+      ...(options.resume?{ai_resume:options.resume}:{}),
+      ...(options.analysisCheckpoint?{analysis_checkpoint:{scene_prompts:['owned scene']}}:{})}})}),
     focusOpenedBrowserTab:async tab=>actions.push(['focus',tab.id]),
     rememberAutomationTabs:async id=>actions.push(['remember',id]),
     rememberedAutomationTabIds:async()=>options.rememberedIds||[],
@@ -36,12 +37,14 @@ async function scenario(name,initial,options,verify) {
       tabs.push(tab);actions.push(['create',tab.id]);return tab.id;
     },
     waitForTabComplete:async()=>{},isWebLoginUrl:()=>false,isGoogleVerificationUrl:()=>false,
-    chrome:{storage:{local:{get:async key=>key===null?{...storage}:typeof key==='string'?{[key]:storage[key]}:{},
+    chrome:{storage:{local:{get:async key=>key===null?{...storage}:typeof key==='string'?{[key]:storage[key]}:
+      Array.isArray(key)?Object.fromEntries(key.map(name=>[name,storage[name]])):{},
       set:async value=>Object.assign(storage,value),remove:async()=>{}}},
       tabs:{query:async()=>tabs.slice(),get:async id=>tabs.find(tab=>tab.id===id),
         create:async({url})=>{const tab={id:++nextId,url,status:'complete'};tabs.push(tab);actions.push(['create',tab.id]);return tab;},
         update:async(id)=>{actions.push(['activate',id]);return tabs.find(tab=>tab.id===id);},
-        sendMessage:async(id,message)=>{actions.push(['start',id,message.type]);return {ok:true};}},
+        sendMessage:async(id,message)=>{actions.push(['start',id,message.type,message.accept_existing_run]);
+          return options.startReply || {ok:true};}},
       scripting:{executeScript:async details=>{
         const tab=tabs.find(row=>row.id===details.target.tabId);
         if(details.files){
@@ -104,6 +107,22 @@ async function scenario(name,initial,options,verify) {
     assert.equal(outcome.tabId,2);
     assert.equal(actions.filter(a=>a[0]==='create').length,0);
     assert.equal(actions.filter(a=>a[0]==='start').length,1);
+  });
+  await scenario('saved Story analysis continues registered tab with its unsent draft',[
+    {id:1,empty:false,reason:'draft_present'}],{analysisCheckpoint:true,
+      storage:{'smartpostAIWebTab:chatgpt:STORY-BOOTSTRAP':1}},({actions,outcome})=>{
+    assert.equal(outcome.tabId,1);
+    assert.equal(actions.filter(a=>a[0]==='create').length,0);
+    assert.equal(actions.filter(a=>a[0]==='start').length,1);
+    assert.equal(actions.filter(a=>a[0]==='clear').length,0);
+  });
+  await scenario('duplicate Start for same run attaches to live collector without another Send',[
+    {id:1,empty:false,reason:'draft_present'}],{analysisCheckpoint:true,
+      storage:{'smartpostAIWebTab:chatgpt:STORY-BOOTSTRAP':1},
+      startReply:{ok:true,started:false,already_running:true}},({actions,outcome})=>{
+    assert.equal(outcome.tabId,1);
+    assert.equal(actions.filter(a=>a[0]==='start').length,1);
+    assert.equal(actions.find(a=>a[0]==='start')[3],true);
   });
   await scenario('all existing root tabs busy opens one new tab',[
     {id:1,empty:false},{id:2,empty:false}],{},({actions,outcome,tabs})=>{

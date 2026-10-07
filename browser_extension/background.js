@@ -548,7 +548,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.521-20261007.1";
+const FLOW_HELPER_BUILD = "flow-0.15.530-20261007.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";
@@ -3239,6 +3239,11 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
   const response = await bridgeFetch(`${BRIDGE}/api/${route}/${encodeURIComponent(jobId)}/chatgpt-package`, { cache: "no-store" });
   const payload = await response.json();
   if (!response.ok || !payload.ok) throw new Error(payload.error || "อ่านชุดงาน AI Web ไม่สำเร็จ");
+  // An accepted Story analysis is a durable checkpoint. A repeated Open
+  // command must continue its registered tab instead of bootstrapping a new
+  // root, where ChatGPT may restore this job's unsent image draft.
+  if (route === 'stories' && payload.package?.analysis_checkpoint && !forceFreshTab)
+    reuseAnalysis = true;
   if(pageResume) {
     if(!resultRefreshGuard || providerHint!=='chatgpt' || !reuseAnalysis || forceFreshTab
         || pageResume.provider!=='chatgpt' || pageResume.required!==true)
@@ -3602,7 +3607,9 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
   }
   const startMessage={
     type: "START_CHATGPT_JOB",
-    accept_existing_run: Boolean(resultRefreshGuard || resumeDocumentId),
+    // A repeated desktop command for this exact run must attach to its live
+    // collector, never report a false failure while that collector owns Send.
+    accept_existing_run: true,
     package: {
       ...payload.package,
       image_ai_provider: provider,
@@ -5838,6 +5845,18 @@ async function deliverObservedProgress(key,body) {
     return {ok:true,buffered:true};
   }finally{clearTimeout(timer);}
 }
+async function forwardStoryImageAudit(body) {
+  // Pre-Send proof must reach the Bridge's fsynced trace before it can permit
+  // Send. Do not wait behind unrelated status reports or accept outbox buffering.
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+  try {
+    const response=await bridgeFetch(`${BRIDGE}/api/extension/progress`,{
+      method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const payload=await response.json();
+    if(!response.ok || !payload.ok || payload.ignored) return {ok:false,audit_persisted:false};
+    return {ok:true,audit_persisted:true};
+  } finally {clearTimeout(timer);}
+}
 let progressOutboxFlushing=false;
 async function flushProgressOutbox(){
   if(progressOutboxFlushing)return;
@@ -7224,7 +7243,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
       await noteStoryRefreshCollectorPulse(progress,sender).catch(()=>{});
-      const payload = await forwardObservedProgress({client_id:CLIENT_ID,scope:'chatgpt',tab_id:Number(sender.tab?.id || 0),...progress});
+      const body={client_id:CLIENT_ID,scope:'chatgpt',tab_id:Number(sender.tab?.id || 0),...progress};
+      const payload = progress.step==='image_prompt_ready'
+        ? await forwardStoryImageAudit(body) : await forwardObservedProgress(body);
       if (progress.step === "user_action_required" && progress.job_id) {
         await rememberPendingWebAction({
           scope: "chatgpt", jobId: progress.job_id, provider: progress.provider,
@@ -8000,7 +8021,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const editorSelector = 'rich-textarea div[contenteditable="true"],.ql-editor[contenteditable="true"],#prompt-textarea,textarea[data-testid="prompt-textarea"],[role="textbox"][contenteditable="true"]';
         const readEditor = () => [...document.querySelectorAll(editorSelector)].find(visible) || null;
         const editor = readEditor();
-        const draft = node => normalize(node instanceof HTMLTextAreaElement ? node.value : (node?.innerText || node?.textContent || ''));
+        const draft = node => {
+          if (node instanceof HTMLTextAreaElement) return normalize(node.value);
+          let raw = String(node?.innerText || node?.textContent || '');
+          const label = /^(?:สร้างรูปภาพ|Create image|Create images)$/i;
+          const isTool = child => child !== node && child?.nodeType === 1
+            && (child.getAttribute('contenteditable') === 'false' || child.tagName === 'BUTTON'
+              || child.getAttribute('role') === 'button')
+            && label.test(normalize(child.textContent));
+          if (node?.querySelectorAll && [...node.querySelectorAll('[contenteditable="false"],button,[role="button"]')].some(isTool)) {
+            const editable = child => {
+              if (child.nodeType === 3) return child.nodeValue || '';
+              if (child.nodeType !== 1 || isTool(child)) return '';
+              if (child.tagName === 'BR') return ' ';
+              const children = [...child.childNodes].map(editable).join('');
+              return /^(?:DIV|P|LI)$/.test(child.tagName) ? ` ${children} ` : children;
+            };
+            raw = editable(node);
+          }
+          return normalize(raw);
+        };
         const expected = normalize(expectedText);
         if (!editor || !expected || draft(editor) !== expected) return {ok:false,reason:'draft_mismatch',error:'Prompt ไม่ครบหรือเปลี่ยนก่อนกด • เก็บร่างเดิมไว้ ยังไม่ส่ง'};
         const selectors = ['button[aria-label="ส่ง"]','button[aria-label="ส่งข้อความ"]','button[aria-label="Send message"]',

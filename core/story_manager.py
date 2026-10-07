@@ -30,7 +30,7 @@ from core.clip_cover import COVER_PROMPT, normalize_cover, ensure_cover
 from core.story_script import clean_dialogue_turn_text, spoken_script_for_job
 from core.thai_tts import prepare_thai_tts_script
 from core.story_styles import normalize_story_style, story_render_instruction, story_style_instruction
-from core.story_receipt_recovery import legacy_first_image_receipt_proof
+from core.story_receipt_recovery import legacy_first_image_receipt_proof, confirmed_first_image_pre_send
 from core.story_image_result_recovery import completed_image_result_proofs
 from core.story_content import (
     STORY_VISUAL_DEPICTION_INSTRUCTION, requested_story_names, story_source_aliases,
@@ -748,6 +748,8 @@ class StoryManager:
             package['long_video_plan'] = self.long_video_plan(job_id)
         if analysis_checkpoint and not checkpoints:
             package["image_receipt_pre_send_proof"] = legacy_first_image_receipt_proof(
+                folder, job_id, str(job.get("image_ai_provider") or "chatgpt"))
+            package["first_image_pre_send"] = confirmed_first_image_pre_send(
                 folder, job_id, str(job.get("image_ai_provider") or "chatgpt"))
         if overrides:
             package.update(reuse_analysis=True, scene_prompt_overrides=overrides,

@@ -6,7 +6,8 @@ from datetime import datetime
 from pathlib import Path
 
 from core.story_manager import StoryManager
-from core.story_receipt_recovery import legacy_first_image_receipt_proof, pending_story_image_target
+from core.story_receipt_recovery import (legacy_first_image_receipt_proof,
+    pending_story_image_target, confirmed_first_image_pre_send)
 
 
 class CompletedReferenceRequestTests(unittest.TestCase):
@@ -28,6 +29,130 @@ class CompletedReferenceRequestTests(unittest.TestCase):
                 terminal | {'run_id': 'RUN-OTHER'}]))
             self.assertTrue(pending_story_image_target(folder, job, [ready, answer, terminal,
                 ready | {'run_id': 'RUN-2', 'tab_id': 43}]))
+
+
+class FirstImagePreSendTests(unittest.TestCase):
+    def test_527_main_world_draft_preflight_has_no_click_and_keeps_prepared_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            path = folder / 'logs' / 'extension_trace.jsonl'
+            path.parent.mkdir(parents=True)
+            common = {'job_id': 'STORY-TEST', 'service': 'chatgpt', 'version': '0.15.527',
+                      'run_id': 'RUN-EXACT', 'client_id': 'a' * 32, 'tab_id': 42,
+                      'page_url': 'https://chatgpt.com/'}
+            def row(sequence, action, second, **fields):
+                return common | {'sequence': sequence, 'action': action,
+                                 'at': f'2026-10-07T17:55:{second:02d}'} | fields
+            rows = [row(1, 'analysis_saved', 46),
+                    row(2, 'generating_images', 48, message='กำลังสร้างภาพผ่านหน้า ChatGPT Web 1/6'),
+                    row(3, 'waiting_for_composer', 50), row(4, 'image_tool_selected', 56),
+                    row(5, 'image_prompt_ready', 58,
+                        detail={'scene_index': 1, 'attempt': 1, 'composer_matches': True}),
+                    row(6, 'image_attempt_result', 59,
+                        message='ภาพ 1 • ครั้ง 1 • STORY_IMAGE_RECEIPT_REVIEW • non_retryable_error • ไม่มีข้อความตอบกลับ'),
+                    row(7, 'error', 59,
+                        message='STORY_IMAGE_RECEIPT_REVIEW • CHATGPT_IMAGE_RESULT_SEND_NOT_STARTED',
+                        detail={'gesture_phase': 'not_started', 'preflight_reason': 'draft_mismatch'})]
+            def proof(items):
+                path.write_text('\n'.join(json.dumps(item, ensure_ascii=False) for item in items), encoding='utf-8')
+                return confirmed_first_image_pre_send(folder, 'STORY-TEST', 'chatgpt')
+            self.assertEqual(proof(rows)['source_run_id'], 'RUN-EXACT')
+            for changed in (rows[:6] + [rows[6] | {'detail': {'gesture_phase': 'mousePressed',
+                                                              'preflight_reason': 'draft_mismatch'}}],
+                            rows[:6] + [rows[6] | {'detail': {'gesture_phase': 'not_started',
+                                                              'preflight_reason': 'unknown'}}],
+                            rows[:5] + [rows[5] | {'sequence': 8}] + rows[6:],
+                            rows + [row(8, 'image_sent', 59)]):
+                with self.subTest(changed=changed[-1]['action']):
+                    self.assertIsNone(proof(changed))
+
+    def test_526_format_preflight_and_restored_draft_remain_pre_send(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            path = folder / 'logs' / 'extension_trace.jsonl'
+            path.parent.mkdir(parents=True)
+            base = {'job_id': 'STORY-TEST', 'service': 'chatgpt', 'version': '0.15.526',
+                    'run_id': 'RUN-EXACT', 'client_id': 'a' * 32, 'tab_id': 42,
+                    'page_url': 'https://chatgpt.com/'}
+            def row(sequence, action, second, **fields):
+                return base | {'sequence': sequence, 'action': action,
+                               'at': f'2026-10-07T17:33:{second:02d}'} | fields
+            rows = [row(1, 'analysis_saved', 20),
+                    row(2, 'generating_images', 22, message='กำลังสร้างภาพผ่านหน้า ChatGPT Web 1/6'),
+                    row(3, 'waiting_for_composer', 23), row(4, 'image_tool_selected', 25),
+                    row(5, 'image_prompt_ready', 27,
+                        detail={'scene_index': 1, 'attempt': 1, 'composer_matches': True}),
+                    row(6, 'image_attempt_result', 28,
+                        message='ภาพ 1 • ครั้ง 1 • AI_SEND_NOT_READY • non_retryable_error • ไม่มีข้อความตอบกลับ'),
+                    row(7, 'error', 28, message='AI_RESPONSE_FORMAT_NOT_READY • ยังไม่ได้กดส่ง'),
+                    row(8, 'error', 57, tab_id=0, page_url='',
+                        message='AI_WEB_WAIT_REVIEW • แท็บงานใหม่มีร่างข้อความที่ยืนยันเจ้าของไม่ได้'),
+                    row(9, 'story_bootstrap_review', 58, tab_id=43, page_url='')]
+            def proof(items):
+                path.write_text('\n'.join(json.dumps(item, ensure_ascii=False) for item in items), encoding='utf-8')
+                return confirmed_first_image_pre_send(folder, 'STORY-TEST', 'chatgpt')
+            result = proof(rows)
+            self.assertEqual(result['source_run_id'], 'RUN-EXACT')
+            self.assertEqual(result['trace_sequence'], 7)
+            self.assertEqual(result['created_after_ms'], int(datetime.fromisoformat(rows[1]['at']).timestamp() * 1000))
+            for changed in (rows[:5] + [rows[5] | {'action': 'image_sent'}] + rows[6:],
+                            rows[:4] + [rows[4] | {'detail': {'scene_index': 1, 'attempt': 1,
+                                                             'composer_matches': False}}] + rows[5:],
+                            rows[:6] + [rows[6] | {'message': 'AI_SEND_DISPATCHED_UNCONFIRMED'}] + rows[7:],
+                            rows + [row(10, 'image_sent', 59)],
+                            rows + [row(10, 'image_prompt_ready', 59)]):
+                with self.subTest(changed=changed[-1]['action']):
+                    self.assertIsNone(proof(changed))
+
+    def test_521_draft_preflight_skips_old_chat_scan_only_without_later_send(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            path = folder / 'logs' / 'extension_trace.jsonl'
+            path.parent.mkdir(parents=True)
+            common = {'job_id': 'STORY-TEST', 'service': 'chatgpt', 'version': '0.15.521',
+                      'run_id': 'RUN-OLD', 'client_id': 'a' * 32, 'tab_id': 42,
+                      'at': '2026-10-07T16:24:12',
+                      'page_url': 'https://chatgpt.com/c/12345678-1234-1234-1234-123456789abc'}
+            rows = [common | {'sequence': 1, 'action': 'analysis_saved'},
+                    common | {'sequence': 2, 'action': 'generating_images', 'message': 'กำลังสร้างภาพผ่านหน้า ChatGPT Web 1/6'},
+                    common | {'sequence': 3, 'action': 'waiting_for_composer'},
+                    common | {'sequence': 4, 'action': 'image_attempt_result',
+                              'message': 'ภาพ 1 • ครั้ง 1 • AI_SEND_NOT_READY • non_retryable_error • ไม่มีข้อความตอบกลับ'},
+                    common | {'sequence': 5, 'action': 'error',
+                              'detail': {'gesture_phase': 'not_started', 'preflight_reason': 'chatgpt_image_tool',
+                                         'dispatch_completed': False}},
+                    common | {'sequence': 1, 'run_id': 'RUN-NEW', 'version': '0.15.522', 'action': 'analysis_saved'}]
+            def proof(value):
+                path.write_text('\n'.join(json.dumps(row, ensure_ascii=False) for row in value), encoding='utf-8')
+                return confirmed_first_image_pre_send(folder, 'STORY-TEST', 'chatgpt')
+            self.assertEqual(proof(rows)['source_run_id'], 'RUN-OLD')
+            safe_later = rows + [common | {'sequence': 2, 'run_id': 'RUN-NEW', 'version': '0.15.523',
+                                          'action': 'generating_images', 'message': 'กำลังสร้างภาพผ่านหน้า ChatGPT Web 1/6'},
+                                 common | {'sequence': 3, 'run_id': 'RUN-NEW', 'version': '0.15.523',
+                                           'action': 'error', 'message': 'CHATGPT_IMAGE_RESULT_WRONG_CONVERSATION'}]
+            self.assertEqual(proof(safe_later)['source_run_id'], 'RUN-OLD')
+            later_base = common | {'version': '0.15.524', 'run_id': 'RUN-LATER',
+                                   'page_url': 'https://chatgpt.com/'}
+            safe_retry = safe_later + [
+                later_base | {'sequence': 4, 'at': '2026-10-07T17:13:37', 'action': 'generating_images',
+                              'message': 'กำลังสร้างภาพผ่านหน้า ChatGPT Web 1/6'},
+                later_base | {'sequence': 5, 'at': '2026-10-07T17:13:37', 'action': 'receipt_pre_send_recovered'},
+                later_base | {'sequence': 6, 'at': '2026-10-07T17:13:38', 'action': 'waiting_for_composer'},
+                later_base | {'sequence': 7, 'at': '2026-10-07T17:13:39', 'action': 'image_tool_selected'},
+                later_base | {'sequence': 8, 'at': '2026-10-07T17:13:41', 'action': 'image_attempt_result',
+                              'message': 'ภาพ 1 • ครั้ง 1 • AI_SEND_NOT_READY • non_retryable_error • ไม่มีข้อความตอบกลับ'},
+                later_base | {'sequence': 9, 'at': '2026-10-07T17:13:42', 'action': 'error',
+                              'detail': {'gesture_phase': 'not_started', 'preflight_reason': 'chatgpt_image_tool',
+                                         'dispatch_completed': False}},
+                later_base | {'sequence': 1, 'run_id': 'RUN-NEWEST', 'action': 'analysis_saved'}]
+            self.assertEqual(proof(safe_retry)['source_run_id'], 'RUN-LATER')
+            for changed in (rows + [common | {'sequence': 2, 'run_id': 'RUN-NEW', 'action': 'image_prompt_ready'}],
+                            rows[:2] + [common | {'sequence': 3, 'action': 'generating_images'}] + rows[2:],
+                            rows[:4] + [rows[4] | {'detail': {'dispatch_completed': True}}] + rows[5:],
+                            safe_later + [common | {'sequence': 4, 'run_id': 'RUN-NEW', 'action': 'image_attempt_result'}],
+                            safe_retry + [later_base | {'sequence': 2, 'run_id': 'RUN-NEWEST',
+                                                        'action': 'image_prompt_ready'}]):
+                self.assertIsNone(proof(changed))
 
 
 class LegacyReceiptProofTests(unittest.TestCase):

@@ -534,9 +534,30 @@
       || /^(?:failed to generate an image|image generation failed)[.!]?$/i.test(reply);
   }
 
-  function composerText(editor = composer()) {
+  function composerText(editor = composer(), rawOnly = false) {
     if (!editor) return "";
-    const raw = String(editor instanceof HTMLTextAreaElement ? editor.value : (editor.innerText || editor.textContent || ""));
+    let raw = String(editor instanceof HTMLTextAreaElement ? editor.value : (editor.innerText || editor.textContent || ""));
+    if (!IS_GEMINI && !(editor instanceof HTMLTextAreaElement) && editor.querySelectorAll) {
+      // ChatGPT can render the selected Create image tool *inside* its editable
+      // root. Its label is UI, not an owned prompt. Remove only a semantically
+      // non-editable tool node; ordinary text with the same words stays a draft.
+      const labels = /^(?:สร้างรูปภาพ|Create image|Create images)$/i;
+      const isToolNode = node => node !== editor && node?.nodeType === 1
+        && (node.getAttribute('contenteditable') === 'false' || node.tagName === 'BUTTON'
+          || node.getAttribute('role') === 'button')
+        && labels.test(String(node.textContent || '').trim().replace(/\s+/g, ' '));
+      if ([...editor.querySelectorAll('[contenteditable="false"],button,[role="button"]')].some(isToolNode)) {
+        const editableText = node => {
+          if (node.nodeType === 3) return node.nodeValue || '';
+          if (node.nodeType !== 1 || isToolNode(node)) return '';
+          if (node.tagName === 'BR') return ' ';
+          const children = [...node.childNodes].map(editableText).join('');
+          return /^(?:DIV|P|LI)$/.test(node.tagName) ? ` ${children} ` : children;
+        };
+        raw = editableText(editor);
+      }
+    }
+    if (rawOnly) return raw;
     return (globalThis.SmartFlowSingleAnswer?.canonical(raw) ?? raw)
       .trim().replace(/\s+/g, " ");
   }
@@ -1617,8 +1638,9 @@
       }
       throw error;
     }
-    const responseFormatReady = globalThis.SmartFlowSingleAnswer?.has(
-      editor instanceof HTMLTextAreaElement ? editor.value : (editor?.innerText || editor?.textContent || ''));
+    // The Create image chip may be rendered inside the editable root after
+    // the transport suffix. Read only editable text, as composerText does.
+    const responseFormatReady = globalThis.SmartFlowSingleAnswer?.has(composerText(editor, true));
     if (!responseFormatReady) {
       const error = new Error('AI_RESPONSE_FORMAT_NOT_READY • ร่างคำขอยังไม่มีข้อกำกับคำตอบเดียว • ยังไม่ได้กดส่ง');
       error.code = 'AI_SEND_NOT_READY';error.notDispatched = true;
@@ -4628,6 +4650,20 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     // Exact strings, not a lossy short hash. Stable source filenames exclude
     // renewed bridge capability URLs from the scene identity.
     const identity = JSON.stringify([promptIdentity, pkg.request?.image_files || pkg.job?.source_images || [], (pkg.image_urls || []).length]);
+    const preparedTransferAllowed = (record, dispatchValue) => {
+      const proof = pkg.first_image_pre_send;
+      return provider === 'chatgpt' && index === 1 && proof?.version === 1
+        && proof.job_id === jobId && proof.provider === provider && proof.scene_index === index
+        && proof.source_run_id === record?.run_id && proof.client_id === chrome.runtime.id
+        && proof.conversation_url === record?.prepared_conversation
+        && Number.isInteger(proof.trace_sequence) && proof.trace_sequence > 0
+        && Number.isFinite(proof.created_after_ms) && Number.isFinite(proof.created_before_ms)
+        && proof.created_before_ms >= proof.created_after_ms
+        && proof.created_before_ms - proof.created_after_ms <= 5000
+        && record?.created_at >= proof.created_after_ms && record.created_at <= proof.created_before_ms
+        && record.status === 'awaiting_result' && record.send_phase === 'prepared'
+        && !record.image_url && !record.send_nonce && !record.result_proof && !dispatchValue;
+    };
     const fail = (message) => storyImageRecoveryError("STORY_IMAGE_RECEIPT_REVIEW", index, message);
     const chatGPTBlob = url => /^blob:https:\/\/chatgpt\.com\/[0-9a-f-]{36}$/i.test(String(url || ''));
     const validUrl = (url, image = null, proof = null) => {
@@ -5137,7 +5173,17 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
           }
         }
         if(provider==='chatgpt' && owned.status==='awaiting_result' && owned.send_phase==='prepared' && !owned.image_url){
-          if(owned.prepared_conversation!==location.href.split(/[?#]/)[0])throw fail('CHATGPT_IMAGE_RESULT_WRONG_CONVERSATION • ต้องใช้แชตเดิม');
+          if(owned.prepared_conversation!==location.href.split(/[?#]/)[0]){
+            const dispatchKey=key+':dispatch';
+            const dispatchValue=(await chrome.storage.local.get(dispatchKey))[dispatchKey];
+            if(preparedTransferAllowed(owned,dispatchValue) && !stopButtonVisible()
+                && !composerText(composer()).trim()
+                && (!owned.resume_image_prompt || chatGPTStoryRequest(owned.resume_image_prompt).reason==='request_missing')){
+              await report('receipt_pre_send_recovered',`ฉาก ${index} • Log ยืนยันว่าไม่เคยส่งภาพ ย้ายคำขอที่เตรียมไว้ไปแชตงานปัจจุบัน`,completedCount);
+              return null;
+            }
+            throw fail('CHATGPT_IMAGE_RESULT_WRONG_CONVERSATION • ต้องใช้แชตเดิม');
+          }
           // Only new receipts with a durable pre-dispatch phase can restart preparation.
           // Historical awaiting_result records have no such proof and never enter here.
           if(!owned.result_proof || !chatGPTStoryRequest(owned.result_proof.prompt).frame)return null;
@@ -5523,6 +5569,15 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     return [...urls];
   }
 
+  function skipLegacyConversationScan(pkg, completedCount) {
+    const proof = pkg.first_image_pre_send;
+    return pkg.mode === 'story' && proof?.version === 1
+      && proof.job_id === pkg.job.id && proof.provider === PROVIDER_KEY
+      && proof.scene_index === 1 && completedCount === 0 && !pkg.ai_resume?.required
+      && Number.isInteger(proof.trace_sequence) && proof.trace_sequence > 0
+      && typeof proof.source_run_id === 'string' && /^RUN-[A-Za-z0-9_-]+$/.test(proof.source_run_id);
+  }
+
   async function recordStoryImageRequest(text, imageUrls, context, completedCount) {
     const state = JSON.parse(aiWebFailureDiagnostic());
     const editor = composer();
@@ -5542,22 +5597,30 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       visible_mode_labels: modeLabels, entry_mode: modeLabels.length ? 'visible_labels' : 'not_exposed'
     };
     if (context.onAuditPrepared) await context.onAuditPrepared(text, snapshot.source_count);
-    let response;
-    let auditTimer;
-    try {
-      response = await Promise.race([chrome.runtime.sendMessage({ type: 'CHATGPT_PROGRESS', progress: {
+    const auditProgress={
       job_id: activeJobId, run_id: activeRunId, provider: PROVIDER_KEY, step: 'image_prompt_ready',
       image_count: completedCount, page_url: location.href, image_request: snapshot,
       message: `ภาพ ${context.scene_index} • ครั้ง ${context.attempt} • ${inputKind} • รูปตั้งต้น ${snapshot.source_count} • Prompt ${text.length} ตัวอักษร • บันทึกคำสั่งและช่องพิมพ์จริงก่อนส่ง`
-      }}),new Promise(resolve=>{auditTimer=setTimeout(()=>resolve({timeout:true}),12000);})]);
-    } catch (_) {
-      // Transport failure is not permission to send without the local audit.
-      response = null;
-    } finally { clearTimeout(auditTimer); }
-    if (!response?.ok || response.ignored) {
+    };
+    let response;
+    for (let auditAttempt=0; auditAttempt<2; auditAttempt++) {
+      assertNotCancelled();
+      let auditTimer;
+      try {
+        response=await Promise.race([
+          chrome.runtime.sendMessage({type:'CHATGPT_PROGRESS',progress:auditProgress}),
+          new Promise(resolve=>{auditTimer=setTimeout(()=>resolve({timeout:true}),12000);})
+        ]);
+      } catch (_) {
+        // Transport failure is not permission to send without the local audit.
+        response=null;
+      } finally {clearTimeout(auditTimer);}
+      if(response?.ok && response.audit_persisted===true && !response.ignored && !response.buffered)break;
+    }
+    if (!response?.ok || response.audit_persisted!==true || response.ignored || response.buffered) {
       const timeout=response?.timeout===true;
       const error = new Error(timeout
-        ? 'STORY_IMAGE_AUDIT_TIMEOUT_PRE_SEND • ช่องยืนยันการบันทึกพรอมต์ไม่ตอบใน 12 วินาที • ยังไม่กดส่ง'
+        ? 'STORY_IMAGE_AUDIT_TIMEOUT_PRE_SEND • ช่องยืนยันการบันทึกพรอมต์ไม่ตอบหลังตรวจสองครั้ง • ยังไม่กดส่ง'
         : 'STORY_IMAGE_AUDIT_UNCONFIRMED • โปรแกรมยังไม่ยืนยันการบันทึกพรอมต์ก่อนส่ง • ยังไม่กดส่ง');
       error.code = timeout ? 'STORY_IMAGE_AUDIT_TIMEOUT_PRE_SEND' : 'STORY_IMAGE_AUDIT_UNCONFIRMED';
       throw error;
@@ -6004,8 +6067,16 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
 
   function chatGPTImageToolChip() {
     const scope=composer()?.closest('form') || document.querySelector('form[data-chatgpt-composer]');
-    return scope ? [...scope.querySelectorAll('button[aria-label]')].find(button => visible(button)
-      && /^(?:ลบ สร้างรูปภาพ|Remove Create image|Remove Create images)$/i.test(String(button.getAttribute('aria-label')||'').trim())) || null : null;
+    const removable=scope ? [...scope.querySelectorAll('button[aria-label]')].find(button => visible(button)
+      && /^(?:ลบ สร้างรูปภาพ|Remove Create image|Remove Create images)$/i.test(String(button.getAttribute('aria-label')||'').trim())) : null;
+    if(removable)return removable;
+    // Some ChatGPT layouts represent the selected tool as a non-editable
+    // inline token in the editor, with no separate remove button.
+    const editor=composer();
+    const inline=editor?.querySelectorAll ? [...editor.querySelectorAll('[contenteditable="false"]')]
+      .filter(node=>visible(node) && /^(?:สร้างรูปภาพ|Create image|Create images)$/i
+        .test(String(node.textContent||'').trim().replace(/\s+/g,' '))) : [];
+    return inline?.length===1 ? inline[0] : null;
   }
 
   async function setChatGPTImageTool(enabled, completedCount=0, ownedDraft='', guard=null) {
@@ -6013,11 +6084,28 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     const normalize=value=>String(value||'').trim().replace(/\s+/g,' ');
     const transientReasons=new Set(['composer_not_ready','opener_missing','opener_disabled',
       'menu_missing','option_detached','chip_unconfirmed']);
-    const fail=toolReason=>Object.assign(new Error('เครื่องมือสร้างรูปภาพยังไม่พร้อม • ยังไม่กดส่งคำขอ'),
+    const fail=(toolReason,shape=null)=>Object.assign(new Error('เครื่องมือสร้างรูปภาพยังไม่พร้อม • ยังไม่กดส่งคำขอ'),
       {code:'AI_SEND_NOT_READY',notDispatched:true,toolReason,transient:transientReasons.has(toolReason),
-        sendDiagnostics:{gesture_phase:'not_started',dispatch_completed:false,preflight_reason:'chatgpt_image_tool',tool_reason:toolReason}});
+        sendDiagnostics:{gesture_phase:'not_started',dispatch_completed:false,preflight_reason:'chatgpt_image_tool',tool_reason:toolReason,
+          ...(shape?{draft_shape:shape}:{})}});
     let baseline=null,waited=0,optionClicked=false,removeClicked=false;
     const opened=new WeakSet();
+    const draftShape=(editor,draft)=>{
+      const label=/^(?:สร้างรูปภาพ|Create image|Create images)$/i;
+      const describe=node=>({node_type:node.nodeType,tag:node.tagName||'',
+        editable:node.getAttribute?.('contenteditable')||'',role:node.getAttribute?.('role')||'',
+        test_id:node.getAttribute?.('data-testid')||'',length:String(node.textContent||'').trim().length,
+        image_label:label.test(String(node.textContent||'').trim().replace(/\s+/g,' ')),
+        children:[...node.childNodes||[]].slice(0,4).map(child=>child.tagName||'#text')});
+      const chip=chatGPTImageToolChip();
+      return {draft_length:draft.length,owned_length:normalize(ownedDraft).length,
+        baseline_length:baseline===null?-1:baseline.length,option_clicked:optionClicked,
+        chip_tag:chip?.tagName||'',chip_inside_editor:Boolean(chip&&editor.contains?.(chip)),
+        editor_tag:editor.tagName||'',editor_editable:editor.getAttribute?.('contenteditable')||'',
+        children:[...editor.childNodes].slice(0,5).map(describe),
+        label_nodes:[...editor.querySelectorAll('*')].filter(node=>label.test(String(node.textContent||'').trim().replace(/\s+/g,' ')))
+          .slice(0,5).map(describe)};
+    };
     const available=()=>{
       assertNotCancelled();
       if(stopButtonVisible())throw fail('response_active');
@@ -6026,9 +6114,9 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       if(!editor || editor.isConnected===false || !visible(editor))return null;
       const draft=normalize(composerText(editor));
       if(baseline===null){
-        if(draft && draft!==normalize(ownedDraft))throw fail('draft_changed');
+        if(draft && draft!==normalize(ownedDraft))throw fail('draft_changed',draftShape(editor,draft));
         baseline=draft;
-      }else if(draft!==baseline)throw fail('draft_changed');
+      }else if(draft!==baseline)throw fail('draft_changed',draftShape(editor,draft));
       const scope=editor.closest('form') || document.querySelector('form[data-chatgpt-composer]');
       return scope && scope.isConnected!==false ? {editor,scope} : null;
     };
@@ -6048,6 +6136,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         return;
       }
       if(!enabled){
+        if(chip.tagName!=='BUTTON')throw fail('inline_tool_unremovable');
         if(!removeClicked && !chip.disabled && chip.getAttribute('aria-disabled')!=='true'){
           removeClicked=true;chip.click();continue;
         }
@@ -6090,8 +6179,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     const retainedReference = () => retainedStoryReferenceReady(text, strictReference,
       storyContext?.ownsRetainedReference);
     const hasRetainedReference = strictReference && retainedReference();
-    await setChatGPTImageTool(true, completedCount, hasRetainedReference
-      ? globalThis.SmartFlowSingleAnswer.wrap(text) : text);
+    await setChatGPTImageTool(true, completedCount, text);
     let editor = await waitForComposer();
     const beforeUserTurns = userTurns().length;
     const beforeUserSignature = lastUserTurnSignature();
@@ -6109,6 +6197,9 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     const beforeTurnNumber = Math.max(-1, ...chatGPTConversationFrames().map(storyTurnNumber));
     const beforeAssistantTurns = assistantTurns().length;
     editor = await setComposerText(editor, text);
+    // Recheck after writing: an inline tool token can be removed by the
+    // editor's select-all replacement. This is still before any Send claim.
+    if (!IS_GEMINI) await setChatGPTImageTool(true, completedCount, text);
     let button = null;
     for (let attempt = 0; attempt < (IS_GEMINI ? 20 : 180) && !button; attempt += 1) {
       assertNotCancelled();
@@ -7087,7 +7178,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         // the missing scene is safer than assigning retry variants to later scenes.
         // A reviewed prompt must not be satisfied by unindexed images left in
         // the conversation before the edit. Only identified disk slots are safe.
-        const existingUrls = reviewedStoryAnalysis || completedImageCount() || PROVIDER_KEY === "gemini"
+        const skipLegacyScan = skipLegacyConversationScan(pkg, completedImageCount());
+        const existingUrls = reviewedStoryAnalysis || completedImageCount() || PROVIDER_KEY === "gemini" || skipLegacyScan
           ? []
           : (await collectConversationImageUrls()).slice(-imageCount);
         for (let index = 0; index < existingUrls.length && index < imageCount; index += 1) {
@@ -7285,14 +7377,17 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       });
       throw error;
     } finally {
-      activeJobId = "";
-      activeRunId = "";
-      activeSourceReferenceLimit = 3;
-      activeProductOutfitMode = '';
-      activeStoryDispatchStarted = false;
-      retireForStoryStall = false;
-      cancelRequested = false;
-      stopProviderOnCancel = true;
+      // Keep the claimed document fenced until Background reloads it. Clearing
+      // this flag here allows a concurrent Start to race the final receipt check.
+      if (!retireForStoryStall) {
+        activeJobId = "";
+        activeRunId = "";
+        activeSourceReferenceLimit = 3;
+        activeProductOutfitMode = '';
+        activeStoryDispatchStarted = false;
+        cancelRequested = false;
+        stopProviderOnCancel = true;
+      }
     }
   }
 
@@ -7320,6 +7415,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       if(composerText(editor).trim())throw Error('FLOW_PLAN_REVIEW • มีข้อความค้างอยู่ ไม่เขียนทับเพื่อแก้ภาพ');
       await attachSourceImages([status.context.image_url],completedCount,`smartflow-visual-${repair.request_id}.png`);
       await setComposerText(await waitForComposer(),repair.image_request);
+      if(!IS_GEMINI)await setChatGPTImageTool(true,completedCount,repair.image_request);
       const stable=await waitForStableSendDraft(repair.image_request.trim().replace(/\s+/g,' '));
       const users=userTurns().length,signature=lastUserTurnSignature(),answers=assistantTurns().length;
       // Desktop intent is durable BEFORE the trusted gesture. Resume only
@@ -7986,6 +8082,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     before=new Set(generatedImageElements(document).map(coverImageKey));
     users=userTurns().length;signature=lastUserTurnSignature();answers=assistantTurns().length;
     editor=await setComposerText(editor,coverPrompt);
+    if(!IS_GEMINI)await setChatGPTImageTool(true,0,coverPrompt);
     const stable=await waitForStableSendDraft(coverPrompt.trim().replace(/\s+/g,' '));
     await coverEvent({phase:'running',message:'แนบภาพแล้ว กำลังส่งคำสั่งสร้างปก',retry_count:attempt});
     // Persist uncertainty BEFORE any Send; a later preparation failure cannot
@@ -9044,7 +9141,12 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     if (message?.type === 'STORY_PRE_SEND_STALL_PROBE') {
       const expected=String(message.prompt||'').trim().replace(/\s+/g,' ');
       const attachments=chatGPTComposerAttachmentState();
-      const reason=activeJobId!==message.job_id || activeRunId!==message.run_id || cancelRequested
+      // A page reload can retire the old content worker while its durable
+      // receipt is still prepared. An idle reader may attest the unchanged
+      // page; a different active owner or a cancelled worker never may.
+      const sameOwner=activeJobId===message.job_id && activeRunId===message.run_id;
+      const idleReader=!activeJobId && !activeRunId && !cancelRequested && !retireForStoryStall;
+      const reason=(!sameOwner && !idleReader) || cancelRequested || retireForStoryStall
         ? 'owner_changed'
         : activeStoryDispatchStarted ? 'dispatch_started'
         : location.href.split(/[?#]/)[0]!==message.conversation_url ? 'conversation_changed'
@@ -9061,6 +9163,10 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       return;
     }
     if (message?.type !== "START_CHATGPT_JOB") return;
+    if (retireForStoryStall) {
+      sendResponse({ok:false,code:'AI_WEB_JOB_BUSY',error:'Story pre-Send recovery owns this document'});
+      return;
+    }
     if (activeJobId) {
       if(message.accept_existing_run===true && activeJobId===message.package?.job?.id
           && activeRunId===message.package?.run_id && !cancelRequested) {

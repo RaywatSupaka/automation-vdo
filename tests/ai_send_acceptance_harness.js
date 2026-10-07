@@ -206,7 +206,8 @@ function fixture(options = {}) {
     motionRequestIsLatestUser:()=>state.accepted && options.proof!=='composer',
     geminiTextRequestSnapshot:()=>state.accepted && options.proof!=='composer'
       ?{owner:{conversation_url:'https://gemini.google.com/app/existing',request_container_id:'0123456789abcdef',request_index:1,prompt_hash:'exact'}}:{owner:null},
-    composer: () => state.editor, composerText: (editor) => editor?.innerText || "",
+    composer: () => state.editor, composerText: (editor, rawOnly) => rawOnly
+      ? editor?.innerText || "" : frontend.SmartFlowSingleAnswer.canonical(editor?.innerText || ""),
     userTurns: () => Array(state.accepted && options.proof !== "composer" ? 2 : 1),
     lastUserTurnSignature: () => "existing-user-turn", assistantTurns: () => Array(1),
     stopButtonVisible: () => false,
@@ -233,7 +234,8 @@ function fixture(options = {}) {
     const shared=fs.readFileSync(path.join(root,'browser_extension/single_answer.js'),'utf8');
     vm.runInContext(shared,frontend);vm.runInContext(shared,backend);
     if(options.singleAnswer)state.editor.innerText=frontend.SmartFlowSingleAnswer.wrap(prompt);
-    frontend.composerText=editor=>frontend.SmartFlowSingleAnswer.canonical(editor?.innerText || '');
+    frontend.composerText=(editor,rawOnly=false)=>rawOnly ? editor?.innerText || ''
+      : frontend.SmartFlowSingleAnswer.canonical(editor?.innerText || '');
   }
   vm.runInContext(section(options.contentSource || content, "async function sendAndVerify(", "async function ensureAiWebModel("), frontend);
   if (options.storySend) {

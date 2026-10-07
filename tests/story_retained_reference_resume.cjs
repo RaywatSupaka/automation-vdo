@@ -51,7 +51,7 @@ async function sendAuditScenario(count, shouldStop) {
     aiWebFailureDiagnostic:()=>JSON.stringify({source_attachment_count:count,
       source_attachment_busy:false,source_attachment_failed:false,image_expansion_open:false,
       send_button_enabled:true}),composer:()=>editor,composerText:()=> 'prompt',visible:()=>true,
-    chrome:{runtime:{sendMessage:async()=>({ok:true})}},assertNotCancelled:()=>{},setTimeout,clearTimeout});
+    chrome:{runtime:{sendMessage:async()=>({ok:true,audit_persisted:true})}},assertNotCancelled:()=>{},setTimeout,clearTimeout});
   vm.runInContext(source.slice(a,b),context);
   const operation=context.recordStoryImageRequest('prompt',['saved-scene-4'],{scene_index:5,attempt:1},4);
   if(shouldStop)await assert.rejects(operation,error=>error.code==='STORY_IMAGE_CONTEXT_CONFLICT');
