@@ -1,5 +1,15 @@
 # Focused development checks
 
+`python tools/run_focused_tests.py --feature ui-terminology` checks the actual desktop markup in isolated Chromium: internal English wording is absent from the main text, Android diagnostics stay inside support details, loaded scripts use the shared confirmation dialog, and technical exception text is replaced at the common error boundary. It also runs existing product deletion, presenter library, Shopee posting/progress, Flow settings, scene plan, Android Wi-Fi and music library harnesses, plus syntax checks. It does not contact a provider or phone.
+
+`python tools/run_focused_tests.py --feature setup-recovery-ui` checks seven setup steps, the four real readiness signals, manual web-login confirmation, the three recovery steps, protected uncertain-send guidance, Flow-credit wording, error dialog deduplication and stopped-work queue display. It does not send a provider request or mutate a customer job.
+
+`python tools/run_focused_tests.py --feature create-wizard-ui` runs the six-step dialog in an isolated browser, checks Shopee URL, scene/episode limits, speaking/video guard, real readiness wording and Story payload equality against the actual legacy click handler. It also runs the existing Product/Drama snapshot stack, generation notice, and queue-choice harness. No provider request is made.
+
+`python tools/run_focused_tests.py --feature jobs-page-ui` checks the real desktop markup, styles and queue controller in an isolated Chromium window. It covers one primary action per job, five status filters, preserved queue pause wording, saved scene count, no raw queue error on cards, 44px controls, old-entry confirmation and stopped-before-queued ordering. It makes no provider request and does not activate the open customer window.
+
+`python tools/run_focused_tests.py --feature notification-layout` checks visible combinations of toast, minimized work and update controls across five viewport sizes, plus existing update notification behavior. Its screenshot is saved to `build/notification-stack/desktop.png`. This isolated browser check does not activate an already-open customer window.
+
 For owner-authorized uncertain Story image replay, run `py -3 tools/run_focused_tests.py --feature story-image-result`. The selector includes the job authorization and receipt transition fixtures; it does not send to ChatGPT.
 
 Use the Python interpreter from `.venv` if one exists. On Windows, for example:
@@ -8,6 +18,8 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature membership
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature ai-cover
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-dispatch
+.venv\Scripts\python.exe tools\run_focused_tests.py --feature story-progress-stall
+.venv\Scripts\python.exe tools\run_focused_tests.py --feature ai-send-viewport
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-recovery-ui
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-setup-ui
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature story-image-result
@@ -32,11 +44,15 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 
 `ai-cover` checks the post-video cover ledger and exact owned ChatGPT result collection. It covers an uncertain Send followed by a late answer, a completed cover image behind a stale Stop control, an accepted cover whose attachment filenames disappear after submission, and native stream-error ownership, durable Retry claim across paused collect-only resume, duplicate controls and ownership change before Retry. The browser fixtures make no provider request.
 
-`story-dispatch` checks duplicate command protection, exact saved-conversation tab adoption on Resume, ambiguous-tab stop, desktop URL routing and heartbeat dispatch ownership, plus read-only ChatGPT bootstrap tab selection, stale drafts, document replacement, retained-reference reuse for a prepared unsent Story draft across unified composer forms, exact attachment count before Send, and the unchanged Gemini tab route.
+`story-dispatch` checks duplicate command protection, exact saved-conversation tab adoption on Resume, ambiguous-tab stop, desktop URL routing and heartbeat dispatch ownership, plus read-only ChatGPT bootstrap tab selection, image-tool icons versus actual attachments, late restored drafts, pre-Send bootstrap retry without an empty-URL resume, accepted/uncertain-send vetoes, retained-reference reuse, and the unchanged Gemini tab route.
+
+`story-progress-stall` checks the exact-run three-minute watchdog, one guarded recovery command, timeout review, and Background receipt/tab/draft vetoes for accepted, dispatched, edited and racing Sends. The changed `chatgpt.js` syntax is checked; live provider output requires separate activation.
+
+`ai-send-viewport` checks the actual ChatGPT MAIN-world Send resolver in an offline browser at narrow and resized viewports. It permits at most two owned prepress scroll attempts when geometry changes, verifies the same draft, composer and button after scrolling, and rejects a fixed offscreen button or a resized final arm without clicking a provider. It also tests a trusted CDP hover arriving at the exact Send point, missing and untrusted events, a resize after delivery, and one bounded refocus before a single press.
 It also checks bounded removal of one exactly named unsent Story reference left in the composer after a failed Send preflight; ownership changes, unrelated drafts and multiple attachments remain blocked.
 The actual Background Send harness also checks up to three five-second read-only readiness rechecks, including transient ambiguous Send controls, one final gesture, and no gesture after the draft changes or ambiguity persists. The Story image result group verifies bounded reason and recheck evidence reaches the local trace without prompt text.
 
-`story-recovery-ui` checks durable saved-scene evidence, bounded trace fallback for a later reference error without a scene number, and the Story recovery timeline shown in the desktop UI. It does not send provider requests or alter saved jobs.
+`story-recovery-ui` checks durable saved-scene evidence, bounded trace fallback for a later reference error without a scene number, the Story recovery timeline, stopped-work display order, and direct Story Continue reclaiming only its failed queue row before the normal finisher runs. It does not send provider requests or alter saved jobs.
 
 `story-setup-ui` checks the Story Shorts Quick Setup's bounded inner scroll, three visible setup steps and progress, navigation by click, retained form values, and narrow layouts without provider requests.
 

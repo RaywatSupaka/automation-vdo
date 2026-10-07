@@ -44,6 +44,7 @@ def safe_ai_send_diagnostics(payload: Mapping[str, object]) -> AISendDiagnostics
             "draft_mismatch", "send_not_ready", "capture_missing", "target_changed",
             "readiness_changed", "target_blocked", "rejected_before_press",
             "chatgpt_image_tool", "send_target_ambiguous", "composer_form_changed",
+            "input_not_delivered",
         },
         "preflight_stage": {"after_attach", "after_claim"},
     }
@@ -88,6 +89,11 @@ def safe_ai_send_diagnostics(payload: Mapping[str, object]) -> AISendDiagnostics
         rechecks = source.get("preflight_rechecks")
         if type(rechecks) is int and 0 <= rechecks <= 3:
             result["preflight_rechecks"] = rechecks
+        for key, maximum in (("viewport_width", 10000), ("viewport_height", 10000),
+                             ("scroll_attempts", 2)):
+            value = source.get(key)
+            if type(value) is int and 0 <= value <= maximum:
+                result[key] = value
         reasons = source.get("preflight_reasons")
         if isinstance(reasons, list):
             allowed_reasons = {"send_not_ready", "response_active", "target_blocked", "send_target_ambiguous"}

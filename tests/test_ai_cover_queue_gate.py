@@ -28,7 +28,10 @@ class CoverQueueGateTests(unittest.TestCase):
         self.app.stories.get = lambda job: AtomicJsonFile(self.app.stories.root / job / 'job.json').read()
         self.app.products.get_job = lambda job: AtomicJsonFile(self.app.products.root / job / 'job.json').read()
         self.service = AICovers(self.app.products, self.app.stories)
-        self.app.bridge = SimpleNamespace(ai_covers=self.service)
+        self.app.bridge = SimpleNamespace(
+            ai_covers=self.service, REQUIRED_EXTENSION_VERSION='0.15.515',
+            extension_status=Mock(return_value={
+                'connected': True, 'clients': [{'version': '0.15.515'}]}))
         self.app.story_queue = CreationQueue(self.root)
         self.app.events = queue.Queue()
         for name in ('status', 'root', 'story_run_button', 'product_run_button', 'drama_series'):
@@ -100,6 +103,45 @@ class CoverQueueGateTests(unittest.TestCase):
         self.assertEqual(self.service.get(rid)['phase'], 'running')
         self.app._retry_story_job.assert_not_called()
         self.app._close_automation_browser.assert_not_called()
+
+    def test_queued_cover_with_old_extension_pauses_visibly_without_replay(self):
+        job, folder = self.job()
+        rid = self.cover(job, 'queued')
+        original = (folder / 'final.mp4').read_bytes()
+        self.app.bridge.extension_status.return_value = {
+            'connected': True, 'clients': [{'version': '0.15.513'}]}
+
+        self.app._start_next_story_queue_item()
+
+        item = self.app.story_queue.get_item(self.row_id)
+        self.assertEqual(item['status'], 'queued')
+        self.assertEqual(item['job_id'], job)
+        self.assertIn('0.15.515', item['error'])
+        self.assertEqual(self.app.story_queue.snapshot()['pause_reason'], 'ai_cover_needs_attention')
+        self.assertEqual(self.service.get(rid)['phase'], 'queued')
+        self.assertEqual(len(self.service.store.read()), 1)
+        self.assertEqual((folder / 'final.mp4').read_bytes(), original)
+        self.app._retry_story_job.assert_not_called()
+        self.app._desktop_set_notice.assert_called_once()
+
+        for _ in range(2):
+            self.app.story_queue.resume()
+            self.app._start_next_story_queue_item()
+            self.assertTrue(self.app.story_queue.snapshot()['paused'])
+            self.assertEqual(self.service.get(rid)['phase'], 'queued')
+            self.assertEqual(len(self.service.store.read()), 1)
+
+        # After the original Extension identity reports the required version,
+        # Resume keeps the same cover request and lets the collector claim it.
+        self.app.bridge.extension_status.return_value = {
+            'connected': True, 'clients': [{'version': '0.15.515'}]}
+        self.app.story_queue.resume()
+        self.app._start_next_story_queue_item()
+        self.assertEqual(self.app.story_queue.get_item(self.row_id)['status'], 'running')
+        self.assertFalse(self.app.story_queue.snapshot()['paused'])
+        self.assertEqual(self.service.get(rid)['phase'], 'queued')
+        self.assertEqual(len(self.service.store.read()), 1)
+        self.app._retry_story_job.assert_not_called()
 
     def test_review_pauses_then_cover_only_recovery_reuses_final(self):
         job, folder = self.job()

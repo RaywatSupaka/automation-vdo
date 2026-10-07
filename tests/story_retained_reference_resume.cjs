@@ -51,12 +51,32 @@ async function sendAuditScenario(count, shouldStop) {
     aiWebFailureDiagnostic:()=>JSON.stringify({source_attachment_count:count,
       source_attachment_busy:false,source_attachment_failed:false,image_expansion_open:false,
       send_button_enabled:true}),composer:()=>editor,composerText:()=> 'prompt',visible:()=>true,
-    chrome:{runtime:{sendMessage:async()=>({ok:true})}},assertNotCancelled:()=>{}});
+    chrome:{runtime:{sendMessage:async()=>({ok:true})}},assertNotCancelled:()=>{},setTimeout,clearTimeout});
   vm.runInContext(source.slice(a,b),context);
   const operation=context.recordStoryImageRequest('prompt',['saved-scene-4'],{scene_index:5,attempt:1},4);
   if(shouldStop)await assert.rejects(operation,error=>error.code==='STORY_IMAGE_CONTEXT_CONFLICT');
   else await operation;
   process.stdout.write(`PASS ${count} reference attachment(s) ${shouldStop?'stop':'ready'} before Send\n`);
+}
+
+async function auditAckTimeoutScenario() {
+  const a=source.indexOf('  async function recordStoryImageRequest(');
+  const b=source.indexOf('  function geminiImageSendState()',a);
+  const shell={querySelectorAll:()=>[]},editor={closest:()=>shell};
+  let prepared=0;
+  const context=vm.createContext({IS_GEMINI:false,PROVIDER_KEY:'chatgpt',activeJobId:'STORY-TEST',
+    activeRunId:'RUN-TEST',location:{href:'https://chatgpt.com/c/test'},
+    aiWebFailureDiagnostic:()=>JSON.stringify({source_attachment_count:1,
+      source_attachment_busy:false,source_attachment_failed:false,image_expansion_open:false,
+      send_button_enabled:true}),composer:()=>editor,composerText:()=> 'prompt',visible:()=>true,
+    chrome:{runtime:{sendMessage:()=>new Promise(()=>{})}},assertNotCancelled:()=>{},
+    setTimeout:fn=>{fn();return 1;},clearTimeout:()=>{}});
+  vm.runInContext(source.slice(a,b),context);
+  await assert.rejects(context.recordStoryImageRequest('prompt',['scene-4'],{
+    scene_index:5,attempt:1,onAuditPrepared:async()=>{prepared++;}},4),
+    error=>error.code==='STORY_IMAGE_AUDIT_TIMEOUT_PRE_SEND');
+  assert.equal(prepared,1);
+  process.stdout.write('PASS audit ACK timeout stops before Send\n');
 }
 
 async function clearUnsentScenario(name,changes,expected) {
@@ -102,4 +122,5 @@ async function clearUnsentScenario(name,changes,expected) {
   await clearUnsentScenario('multiple attachments keep references intact',{count:2},false);
   await sendAuditScenario(1,false);
   await sendAuditScenario(2,true);
+  await auditAckTimeoutScenario();
 })().catch(error=>{console.error(error);process.exitCode=1;});

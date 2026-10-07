@@ -83,7 +83,7 @@
       });
       const cover = item.cover_url || item.preview_url;
       if(item.ai_cover_state?.phase){const note=document.createElement('p');note.className='cover-hint';
-        note.textContent=item.ai_cover_state.phase==='ready'?'ปก AI สร้างสำเร็จแล้ว':`ปก AI ยังไม่สำเร็จ • ภาพที่แสดงเป็นภาพเดิม ไม่ใช่ผลปก AI รอบนี้ • ${item.ai_cover_state.message || item.ai_cover_state.phase}`;panels[1].append(note);}
+        note.textContent=item.ai_cover_state.phase==='ready'?'ปก AI สร้างสำเร็จแล้ว':`ปก AI ยังไม่สำเร็จ • ภาพที่แสดงเป็นภาพเดิม ไม่ใช่ผลปก AI รอบนี้ • ${window.smartflowSafeError?.(item.ai_cover_state.message || item.ai_cover_state.phase)||'ตรวจรายละเอียดงาน'}`;panels[1].append(note);}
       if (cover) { const img = document.createElement('img'); img.src = cover; img.alt = item.cover_url ? 'ปกคลิปที่บันทึกไว้' : 'ภาพฉากตัวอย่าง ยังไม่มีปกแยก'; img.className = 'library-cover-preview'; panels[1].append(img); }
       content.querySelectorAll('.detail-cover-button').forEach(button => panels[1].append(button));
       for (const [label, value] of [['รหัสงาน', item.job_id], ['ขนาดไฟล์', formatBytes(item.size_bytes)], ['สัดส่วน', item.aspect_ratio || '9:16'], ['ไฟล์', item.file_name]]) {

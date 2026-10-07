@@ -1,7 +1,7 @@
 (() => {
-  pageMeta.green=['GREEN SCREEN','กรีนสกรีน / แสง'];
+  pageMeta.green=['กรีนสกรีน','กรีนสกรีน / แสง'];
   const page=document.createElement('section');page.className='page';page.dataset.view='green';
-  page.innerHTML=`<section class="page-intro"><div><span class="eyebrow">GREEN SCREEN</span><h1>เพิ่มแสงและประกายให้คลิป</h1><p>ลบพื้นเขียว • วนภาพเอฟเฟกต์ชั้นบนสุด • ไม่ใช้เสียงของกรีนสกรีน</p></div></section>
+  page.innerHTML=`<section class="page-intro"><div><span class="eyebrow">กรีนสกรีน</span><h1>เพิ่มแสงและประกายให้คลิป</h1><p>ลบพื้นเขียว • วนภาพเอฟเฟกต์ชั้นบนสุด • ไม่ใช้เสียงของกรีนสกรีน</p></div></section>
   <section class="panel" style="padding:24px;max-width:860px">
     <h2>1. เลือกเอฟเฟกต์ 1–3 ไฟล์</h2><button class="button secondary" type="button" id="green-upload-button">＋ อัปโหลดกรีนสกรีน</button>
     <input id="green-upload" type="file" accept=".mp4,.mov,.mkv,.webm,.m4v,.avi" hidden>
@@ -71,7 +71,7 @@
       const text=document.createElement('span');text.textContent=`${asset.name} • ${Number(asset.duration).toFixed(1)} วินาที`;
       check.addEventListener('change',()=>{if(check.checked&&draft.length<3)draft.push({file:asset.file,color:'#00ff00',similarity:.15,blend:.08});else draft=draft.filter(c=>c.file!==asset.file);renderLists();});
       const remove=document.createElement('button');remove.type='button';remove.className='button ghost compact';remove.textContent='เอาออกจากคลัง';remove.title='เก็บไฟล์ที่งานเก่าใช้อยู่ ไม่ลบต้นฉบับ';
-      remove.onclick=async event=>{event.preventDefault();event.stopPropagation();if(busy)return;if(draft.some(c=>c.file===asset.file)){status('ยกเลิกเลือกไฟล์นี้และบันทึกก่อนเอาออกจากคลัง');return;}lock(true);try{const result=await original('green_remove',{file:asset.file});if(!result.ok)throw Error(result.error||'เอาออกไม่ได้');saved.assets=result.assets;renderLists();status('เอาออกจากรายการแล้ว • เก็บไฟล์สำหรับงานเก่าไว้');}catch(e){status(e.message);}finally{lock(false);}};
+      remove.onclick=async event=>{event.preventDefault();event.stopPropagation();if(busy)return;if(draft.some(c=>c.file===asset.file)){status('ยกเลิกเลือกไฟล์นี้และบันทึกก่อนเอาออกจากคลัง');return;}lock(true);try{const result=await original('green_remove',{file:asset.file});if(!result.ok)throw Error(result.error||'เอาออกไม่ได้');saved.assets=result.assets;renderLists();status('เอาออกจากรายการแล้ว • เก็บไฟล์สำหรับงานเก่าไว้');}catch(e){status(window.smartflowSafeError?.(e.message)||'เอาออกไม่สำเร็จ');}finally{lock(false);}};
       row.append(check,video,text,remove);q('#green-assets').append(row);
     }
     draft.forEach((clip,index)=>{
@@ -90,7 +90,7 @@
   function load(result){saved=clone(result);loaded=true;draft=clone(saved.settings.clips);q('#green-opacity').value=saved.settings.opacity*100;q('#green-opacity-label').textContent=Math.round(saved.settings.opacity*100)+'%';q('#green-fit').value=saved.settings.fit;
     q('#green-targets').querySelectorAll('input').forEach(e=>e.checked=Boolean(saved.targets[e.dataset.greenTarget]));renderLists();syncPanels();}
   const options=()=>({enabled:draft.length>0,clips:clone(draft),opacity:Number(q('#green-opacity').value)/100,fit:q('#green-fit').value});
-  const ready=original('green_status',{}).then(r=>{if(!r.ok)throw Error(r.error||'อ่านค่าไม่ได้');load(r);}).catch(e=>status(e.message));
+  const ready=original('green_status',{}).then(r=>{if(!r.ok)throw Error(r.error||'อ่านค่าไม่ได้');load(r);}).catch(e=>status(window.smartflowSafeError?.(e.message)||'อ่านค่าไม่สำเร็จ'));
   q('#green-opacity').oninput=()=>q('#green-opacity-label').textContent=q('#green-opacity').value+'%';
   function lock(value){busy=value;for(const id of ['#green-upload-button','#green-save','#green-preview-button'])q(id).disabled=value;}
   q('#green-upload-button').onclick=()=>{if(!busy){q('#green-upload').value='';q('#green-upload').click();}};
@@ -100,9 +100,9 @@
     if(!/\.(mp4|mov|mkv|webm|m4v|avi)$/i.test(file.name)||file.size<=0||file.size>500*1024*1024){status('เลือกไฟล์วิดีโอที่รองรับ ขนาดไม่เกิน 500 MB');return;}
     lock(true);const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),180000);
     try{status('กำลังอัปโหลดและตรวจวิดีโอ…');const response=await fetch('/api/desktop/green-upload',{method:'POST',headers:{'Content-Type':'application/octet-stream','X-File-Name':encodeURIComponent(file.name)},body:file,signal:controller.signal});const result=await response.json();if(!response.ok||!result.ok)throw Error(result.error||'อัปโหลดไม่สำเร็จ');saved.assets=result.assets;renderLists();status('อัปโหลดแล้ว • ติ๊กเลือกไฟล์ที่ต้องการ');}
-    catch(e){status(e.name==='AbortError'?'หมดเวลารออัปโหลด กรุณาตรวจรายการก่อนลองใหม่':e.message);}finally{clearTimeout(timer);lock(false);q('#green-upload').value='';}
+    catch(e){status(e.name==='AbortError'?'หมดเวลารออัปโหลด กรุณาตรวจรายการก่อนลองใหม่':(window.smartflowSafeError?.(e.message)||'อัปโหลดไม่สำเร็จ'));}finally{clearTimeout(timer);lock(false);q('#green-upload').value='';}
   };
-  q('#green-save').onclick=async()=>{if(busy)return;lock(true);try{const targets={};q('#green-targets').querySelectorAll('input').forEach(e=>targets[e.dataset.greenTarget]=e.checked);const result=await original('green_save',{settings:options(),targets});if(!result.ok)throw Error(result.error||'บันทึกไม่ได้');load(result);status('บันทึกแล้ว • ใช้กับงานใหม่ ไม่เปลี่ยนคิวเก่า');}catch(e){status(e.message);}finally{lock(false);}};
+  q('#green-save').onclick=async()=>{if(busy)return;lock(true);try{const targets={};q('#green-targets').querySelectorAll('input').forEach(e=>targets[e.dataset.greenTarget]=e.checked);const result=await original('green_save',{settings:options(),targets});if(!result.ok)throw Error(result.error||'บันทึกไม่ได้');load(result);status('บันทึกแล้ว • ใช้กับงานใหม่ ไม่เปลี่ยนคิวเก่า');}catch(e){status(window.smartflowSafeError?.(e.message)||'บันทึกไม่สำเร็จ');}finally{lock(false);}};
   // Settings preview deliberately avoids the offline FFV1 + MP4 final compositor.
   // One decoder and a small canvas bound CPU/memory, including for 4K source files.
   const preview=q('#green-preview'),source=q('#green-preview-source');

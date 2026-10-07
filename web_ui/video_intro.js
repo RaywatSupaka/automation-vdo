@@ -1,7 +1,7 @@
 (() => {
-  pageMeta.intro=['VIDEO INTRO','อินโทรคลิป'];
+  pageMeta.intro=['อินโทรคลิป','อินโทรคลิป'];
   const page=document.createElement('section');page.className='page';page.dataset.view='intro';
-  page.innerHTML=`<section class="page-intro"><div><span class="eyebrow">VIDEO INTRO</span><h1>แทรกอินโทรระหว่างคลิป</h1><p>เล่าเรื่องช่วงแรก → สุ่มจังหวะใส่อินโทร → เล่าต่อ</p></div></section>
+  page.innerHTML=`<section class="page-intro"><div><span class="eyebrow">อินโทรคลิป</span><h1>แทรกอินโทรระหว่างคลิป</h1><p>เล่าเรื่องช่วงแรก → สุ่มจังหวะใส่อินโทร → เล่าต่อ</p></div></section>
     <section class="panel" style="padding:24px;max-width:760px"><h2>วิดีโออินโทรที่ใช้ซ้ำ</h2>
     <p>ปล่อยให้เล่าไปก่อน แล้วสุ่มจุดแทรกช่วงต้น โดยเลือกจังหวะพักเสียงก่อนถ้ามี ไม่ล็อกวินาทีเดิมทุกคลิป เสียงและซับจะเล่นต่อหลังอินโทรจบ</p>
     <small>ช่วงประมาณวินาทีที่ 4–12 • คลิปสั้นจะปรับช่วงให้เหมาะสม • ถ้าไม่มีช่วงพักเสียงก็ยังแทรกได้ • ทำงานเดิมซ้ำใช้จุดเดิม</small>
@@ -45,7 +45,7 @@
   const original=postAction;
   const status=text=>page.querySelector('#intro-status').textContent=text;
   const ready=original('intro_status',{}).then(result=>{if(!result.ok)throw Error(result.error||'อ่านค่าอินโทรไม่ได้');render(result);})
-    .catch(error=>status(error.message));
+    .catch(error=>status(window.smartflowSafeError?.(error.message)||'อ่านค่าอินโทรไม่สำเร็จ'));
   const picker=page.querySelector('#intro-upload'),importButton=page.querySelector('#intro-import');
   let uploading=false;
   importButton.addEventListener('click',()=>{
@@ -69,7 +69,7 @@
       render(result);page.querySelector('#intro-file').value=result.asset.file;
       ['story','drama'].forEach((k,i)=>page.querySelector('#intro-'+k+'-default').checked=selectedTargets[i]);
       status('นำเข้าแล้ว • กดบันทึกเพื่อเลือกใช้ไฟล์นี้');
-    }catch(error){status(error.name==='AbortError'?'หมดเวลารอนำเข้า ตรวจไฟล์ในรายการก่อนลองใหม่':error.message);}
+    }catch(error){status(error.name==='AbortError'?'หมดเวลารอนำเข้า ตรวจไฟล์ในรายการก่อนลองใหม่':(window.smartflowSafeError?.(error.message)||'นำเข้าไม่สำเร็จ'));}
     finally{clearTimeout(timeout);uploading=false;importButton.disabled=false;page.querySelector('#intro-save').disabled=false;picker.value='';}
   });
   page.querySelector('#intro-save').addEventListener('click',async()=>{
@@ -77,7 +77,7 @@
         targets:{story:page.querySelector('#intro-story-default').checked,drama:page.querySelector('#intro-drama-default').checked}};
       const result=await original('intro_save',{settings});if(!result.ok)throw Error(result.error||'บันทึกไม่ได้');
       render(result);status('บันทึกแล้ว • ใช้กับงานใหม่ ไม่เปลี่ยนคิวที่บันทึกไว้');
-    }catch(error){status(error.message);}
+    }catch(error){status(window.smartflowSafeError?.(error.message)||'บันทึกไม่สำเร็จ');}
   });
   postAction=async(action,payload={})=>{
     const key=window.smartflowCreationFormKey?.(action,payload),item=panels.get(key);

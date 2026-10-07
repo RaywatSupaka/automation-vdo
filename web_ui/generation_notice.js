@@ -19,13 +19,24 @@
   dialog.querySelector('[data-notice-cancel]').onclick=()=>finish(false);
   dialog.querySelector('[data-notice-start]').onclick=()=>finish(true);
   dialog.addEventListener('cancel',event=>{event.preventDefault();finish(false);});
-  window.smartflowConfirmGeneration=()=>{
+  window.smartflowConfirmGeneration=action=>{
     if(pending)throw Error('กรุณายืนยันรายการที่กำลังเปิดอยู่ก่อน');
+    const lines=dialog.querySelectorAll('.modal-card > p');
+    if(action==='create_product'||action==='product_continue'){
+      lines[0].textContent='ตรวจลิงก์สินค้า จำนวนฉาก และวิธีสร้างวิดีโอก่อนเริ่ม';
+      lines[1].textContent='ถ้าใช้นายแบบ / นางแบบ แนะนำรูปที่แต่งกายมิดชิดและมุมภาพสุภาพ ผลการสร้างขึ้นอยู่กับผู้ให้บริการ';
+    }else if(action==='create_drama_series'||action==='create_drama_episode'||action==='continue_drama_series'){
+      lines[0].textContent='ตรวจชื่อเรื่อง จำนวนตอน ตัวละคร และวิธีสร้างวิดีโอก่อนเริ่ม';
+      lines[1].textContent='ระบบจะทำทีละตอนและบันทึกความคืบหน้าไว้สำหรับทำต่อ';
+    }else{
+      lines[0].textContent='ตรวจหัวข้อ จำนวนฉาก เสียง และวิธีสร้างวิดีโอก่อนเริ่ม';
+      lines[1].textContent='ระบบจะบันทึกความคืบหน้าไว้ หากงานสะดุดสามารถกลับมาดูและทำต่อได้';
+    }
     return new Promise(resolve=>{pending=resolve;dialog.showModal();});
   };
   postAction=async(action,payload={})=>{
     if(starts.has(action)&&!payload.queue_only){
-      const accepted=await window.smartflowConfirmGeneration();
+      const accepted=await window.smartflowConfirmGeneration(action);
       if(!accepted)throw Error('ยังไม่ได้เริ่มงาน • ปรับตัวเลือกแล้วเริ่มได้อีกครั้ง');
     }
     return original(action,payload);

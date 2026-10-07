@@ -65,7 +65,7 @@
     panel.querySelectorAll('[data-queued]').forEach(el=>el.checked=queued.has(el.dataset.queued));
     lockRows();
   }
-  async function refresh(){try{const data=await call('shopee_post_library');items=data.items||[];renderLibrary();}catch(e){message(e.message);}}
+  async function refresh(){try{const data=await call('shopee_post_library');items=data.items||[];renderLibrary();}catch(e){message(window.smartflowSafeError?.(e.message)||'อ่านคลิปไม่สำเร็จ');}}
   panel.addEventListener('input',e=>{if(e.target.matches('[data-caption],[data-url],[data-option]')){const row=e.target.closest('[data-row]');dirty.add(row.dataset.row);row.querySelector('.sp-dirty').textContent='ยังไม่ได้บันทึก';if(e.target.matches('[data-option]'))e.target.closest('label').querySelector('strong').textContent=e.target.checked?'เปิด':'ปิด';}if(e.target.matches('[data-caption]'))e.target.nextElementSibling.textContent=e.target.value.length+'/150 ตัวอักษร';if(e.target.matches('#sp-default-reuse,#sp-default-ai,#sp-default-available')){if(!defaultsDirty)defaultsRevision=state.revision;defaultsDirty=true;renderQueue();}});
   q('#sp-search').addEventListener('input',renderLibrary);
   panel.addEventListener('change',e=>{if(e.target.id==='sp-queue-all'){queued.clear();if(e.target.checked)eligible().forEach(x=>queued.add(x.id));syncSelection();return;}const key=e.target.dataset.pick||e.target.dataset.queued;if(!key)return;const set=e.target.dataset.pick?picks:queued;e.target.checked?set.add(key):set.delete(key);q('#sp-count').textContent=picks.size;syncSelection();});
@@ -91,20 +91,20 @@
       else if(action==='reset-unsent'){
         if(dirty.size||defaultsDirty)throw Error('บันทึกแคปชัน ลิงก์ และตัวเลือกที่แก้ไว้ก่อนล้างสถานะ');
         const count=eligible().length;if(!count)throw Error('ไม่มีคลิปที่ยังไม่ส่งให้เริ่มใหม่');
-        if(!confirm(`ล้างสถานะค้าง แล้วเริ่มนับใหม่ 0/${count} คลิป?\nเก็บคลิปและตัวเลือกเดิม • ไม่แตะโพสต์สำเร็จหรือโพสต์ที่ยังไม่รู้ผล\nขั้นตอนนี้ยังไม่สั่งโพสต์`))return;
+        if(!await window.smartflowConfirm(`ล้างสถานะค้าง แล้วเริ่มนับใหม่ 0/${count} คลิป?\nเก็บคลิปและตัวเลือกเดิม • ไม่แตะโพสต์สำเร็จหรือโพสต์ที่ยังไม่รู้ผล\nขั้นตอนนี้ยังไม่สั่งโพสต์`,{title:'ล้างสถานะงานที่ยังไม่ส่ง?',acceptLabel:'ล้างสถานะ'}))return;
         await call('shopee_post_reset_unsent',{run_id:state.posting_run?.id,revision:state.revision,confirm:true});
         queued.clear();for(const id of state.posting_run?.ids||[])queued.add(id);
         syncSelection();window.SmartFlowPostProgress?.open();
       }
       else if(action==='reset-options'){
-        if(defaultsDirty&&!confirm('ทิ้งตัวเลือกด้านบนที่ยังไม่บันทึก และโหลดค่าเริ่มต้นล่าสุด?'))return;
+        if(defaultsDirty&&!await window.smartflowConfirm('ทิ้งตัวเลือกด้านบนที่ยังไม่บันทึก และโหลดค่าเริ่มต้นล่าสุด?',{title:'โหลดค่าเริ่มต้นใหม่?',acceptLabel:'โหลดค่า'}))return;
         await call('shopee_post_status');defaultsDirty=false;
       }
       else if(action==='save-defaults'){await call('shopee_post_defaults',{revision:defaultsRevision,post_options:formOptions()});defaultsDirty=false;}
       else if(action==='apply-options'){
         if(dirty.size)throw Error('บันทึกการแก้รายคลิปก่อนใช้ตัวเลือกทั้งชุด');
         const ids=[...queued];if(!ids.length)throw Error('ติ๊กเลือกงานในคิวก่อน');
-        if(!confirm(`ใช้ตัวเลือกนี้กับ ${ids.length} คลิปที่เลือก?\n${summary(formOptions())}\nยังไม่เผยแพร่ และไม่เปลี่ยนค่าเริ่มต้น`))return;
+        if(!await window.smartflowConfirm(`ใช้ตัวเลือกนี้กับ ${ids.length} คลิปที่เลือก?\n${summary(formOptions())}\nยังไม่เผยแพร่ และไม่เปลี่ยนค่าเริ่มต้น`,{title:'ใช้ตัวเลือกกับคลิปที่เลือก?',acceptLabel:'ใช้ตัวเลือก'}))return;
         await call('shopee_post_apply_options',{ids,revision:state.revision,post_options:formOptions()});defaultsDirty=false;
       }
       else if(action==='check'||action==='start'){
@@ -115,18 +115,18 @@
           if(!state.account?.name)throw Error('อ่านบัญชีจากมือถือก่อนเริ่ม');
           const groups=new Map();for(const x of state.items.filter(x=>queued.has(x.id))){const o=x.post_options||defaultOptions;const key=summary({...o,allow_missing_controls:o.allow_missing_controls!==false});groups.set(key,(groups.get(key)||0)+1);}
           const choices=[...groups].map(([key,count])=>`${count} คลิป — ${key}`).join('\n');
-          if(!confirm(`โพสต์จริง ${ids.length} คลิป ไปบัญชี ${state.account.name}?\n${choices}\nตรวจว่ามือถือเปิดบัญชีนี้อยู่ • โปรแกรมจะเข้าหน้าโพสต์โดยไม่เปิดโปรไฟล์ตรวจซ้ำ\nส่งเฉพาะวิดีโอ • ใช้ปกอัตโนมัติของ Shopee • ไม่แชร์ต่อแอปอื่น`))return;
+          if(!await window.smartflowConfirm(`โพสต์จริง ${ids.length} คลิป ไปบัญชี ${state.account.name}?\n${choices}\nตรวจว่ามือถือเปิดบัญชีนี้อยู่ • โปรแกรมจะเข้าหน้าโพสต์โดยไม่เปิดโปรไฟล์ตรวจซ้ำ\nส่งเฉพาะวิดีโอ • ใช้ปกอัตโนมัติของ Shopee • ไม่แชร์ต่อแอปอื่น`,{title:'ยืนยันโพสต์จริง?',acceptLabel:'ยืนยันโพสต์'}))return;
           await call('shopee_post_start',{ids,revision:state.revision,confirm:true});
           ids.forEach(id=>queued.delete(id));
         }else await call('shopee_post_check',{ids});
       }
-    }catch(error){message(error.name==='AbortError'?'ยังยืนยันคำสั่งไม่ได้ กดโหลดคิวเพื่อตรวจสถานะ ห้ามกดเริ่มซ้ำ':error.message);}
+    }catch(error){message(error.name==='AbortError'?'ยังยืนยันคำสั่งไม่ได้ กดโหลดคิวเพื่อตรวจสถานะ ห้ามกดเริ่มซ้ำ':(window.smartflowSafeError?.(error.message)||'ยังยืนยันคำสั่งไม่ได้ กรุณาตรวจสถานะก่อนลองอีกครั้ง'));}
     finally{sending=false;renderedRevision=-1;if(!dirty.size)document.activeElement?.blur();renderQueue();}
   });
   async function poll(){
     const tracking=window.SmartFlowPostProgress?.tracking();
     if(!polling&&!sending&&!document.hidden&&(visible()||tracking)){
-      polling=true;try{await call('shopee_post_status');}catch(e){message(e.message);window.SmartFlowPostProgress?.disconnected();}finally{polling=false;}
+      polling=true;try{await call('shopee_post_status');}catch(e){message(window.smartflowSafeError?.(e.message)||'อ่านสถานะโพสต์ไม่สำเร็จ');window.SmartFlowPostProgress?.disconnected();}finally{polling=false;}
     }
     setTimeout(poll,tracking?1000:2500);
   }

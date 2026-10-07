@@ -16,7 +16,7 @@ const fs=require('fs'),assert=require('assert/strict'),{chromium}=require('playw
    let calls=[],accepted=false,hold=null,fail=false,notices=[];
    const ui={state:{stories:Array.from({length:11},(_,i)=>({id:'STORY-'+i,status:'error',title:'เรื่อง '+i})),story_progress:{}}};
    ui.state.stories.push({id:'product',content_kind:'product'},{id:'drama',job_type:'drama'},{id:'long',long_video:true},{id:'done',status:'ready',video_status:'ready'});
-   window.confirm=()=>accepted;
+   window.smartflowConfirm=async()=>accepted;
    const toast=(...v)=>notices.push(v),poll=async()=>{};
    const postAction=async(...v)=>{calls.push(v);await new Promise(resolve=>hold=resolve);if(fail)return {ok:false,error:'busy'};ui.state.stories=[];return {ok:true,cleared:11};};
    ${code}

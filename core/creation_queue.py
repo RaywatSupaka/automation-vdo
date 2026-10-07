@@ -379,6 +379,25 @@ class CreationQueue(StoryBatchQueue):
             return self._update(queue_id, status="queued", error="", started_at="", finished_at="",
                                 cancel_requested=False, previous_error=str(item.get("error") or ""))
 
+    def claim_failed_story_for_direct_resume(self, job_id):
+        """Bind a direct checkpoint retry to its failed queue row before work starts."""
+        with self._lock, self._store.locked():
+            data = self._load()
+            matches = [item for item in data["items"] if item.get("job_id") == str(job_id or "")]
+            item = matches[-1] if matches else None
+            if not item or item.get("status") != "failed" or item.get("mode") != "story":
+                return None
+            if item.get("cancel_requested") or any(
+                row.get("status") == "running" and row.get("queue_id") != item.get("queue_id")
+                for row in data["items"]
+            ):
+                raise ValueError("คิวนี้ถูกยกเลิกหรือมีงานอื่นกำลังทำอยู่")
+            self.require_not_trashed(job_id)
+            item.update(status="running", previous_error=str(item.get("error") or ""),
+                        error="", started_at=self._now(), finished_at="")
+            self._save(data)
+            return dict(item)
+
     def resume_unfinished(self, *, allow_orphan_running=False):
         """Explicit recovery keeps every existing Job binding and frozen option."""
         with self._lock, self._store.locked():

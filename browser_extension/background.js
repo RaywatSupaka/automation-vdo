@@ -80,9 +80,18 @@ function inspectEmptyCoverPreparation() {
       || ['aria-label','title'].some(name=>/^(?:stop(?: generating| response| streaming)?|หยุด(?:สร้าง|การสร้าง|คำตอบ|สตรีม)?)$/i
         .test(String(button.getAttribute(name)||'').trim().replace(/\s+/g,' ')))));
   const root=location.hostname==='chatgpt.com' && location.pathname==='/';
-  const draft=!!form && !!String(editor.innerText||editor.textContent||editor.value||'').trim();
+  const draft=!!form && [editor.innerText,editor.textContent,editor.value]
+    .some(value=>String(value||'').trim());
   const conversation=!!document.querySelector('[data-message-author-role="user"],[data-message-author-role="assistant"],[data-testid^="conversation-turn-"],[data-chatgpt-search-unit-key],[data-chatgpt-search-message-ids]');
-  const attachment=!!form?.querySelector('img,[aria-busy="true"],[role="progressbar"]')
+  // A selected Create image tool renders an icon inside the composer. An img
+  // (or a generic busy indicator) is not evidence of an uploaded file.
+  const attachment=!!form?.querySelector([
+    '[data-testid*="file-thumbnail"]','[data-testid*="attachment-preview"]',
+    '[data-testid*="upload-preview"]','button[aria-label*="remove file" i]',
+    'button[aria-label*="remove attachment" i]','button[aria-label*="ลบไฟล์" i]',
+    'button[aria-label*="ลบรูป" i]','img[src^="blob:"]',
+    'img[alt*="uploaded" i]','img[alt*="อัปโหลด" i]',
+    'img[alt^="smartpost-reference-" i]'].join(','))
     || [...document.querySelectorAll('input[type="file"]')].some(input=>input.files?.length);
   const reason=!root?'other_page':!form?'composer_not_ready':draft?'draft_present'
     :conversation?'conversation_present':stop?'response_active':attachment?'attachment_present':'ready';
@@ -123,9 +132,8 @@ async function waitForCleanChatGPTRoot(tabId,expectedDocumentId='') {
   }
   return proof;
 }
-// Only called for the new tab created for this exact, unsent Story bootstrap.
-// A draft restored into that tab is disposable; never edit an adopted tab or a
-// conversation, attachment, or active response.
+// Retained for explicit owner-proven recovery only. A newly opened tab may
+// restore a draft from another job; tab creation alone never owns that draft.
 function clearOwnedChatGPTBootstrapDraft() {
   const shown=el=>!!el && el.isConnected && el.getClientRects().length>0;
   if(location.hostname!=='chatgpt.com' || location.pathname!=='/')return {cleared:false,reason:'other_page'};
@@ -134,7 +142,13 @@ function clearOwnedChatGPTBootstrapDraft() {
   if(!form)return {cleared:false,reason:'composer_not_ready'};
   if(document.querySelector('[data-message-author-role="user"],[data-message-author-role="assistant"],[data-testid^="conversation-turn-"]'))
     return {cleared:false,reason:'conversation_present'};
-  if(form.querySelector('img,[aria-busy="true"],[role="progressbar"]')
+  if(form.querySelector([
+      '[data-testid*="file-thumbnail"]','[data-testid*="attachment-preview"]',
+      '[data-testid*="upload-preview"]','button[aria-label*="remove file" i]',
+      'button[aria-label*="remove attachment" i]','button[aria-label*="ลบไฟล์" i]',
+      'button[aria-label*="ลบรูป" i]','img[src^="blob:"]',
+      'img[alt*="uploaded" i]','img[alt*="อัปโหลด" i]',
+      'img[alt^="smartpost-reference-" i]'].join(','))
       || [...document.querySelectorAll('input[type="file"]')].some(input=>input.files?.length))
     return {cleared:false,reason:'attachment_present'};
   if([...document.querySelectorAll('button')].some(button=>shown(button)
@@ -534,7 +548,7 @@ const CLIENT_ID = chrome.runtime.id;
 const VERSION = chrome.runtime.getManifest().version;
 // Keep this in sync with flow.js and the public release. The build also
 // distinguishes an already-injected helper from a reloaded Extension worker.
-const FLOW_HELPER_BUILD = "flow-0.15.513-20261006.1";
+const FLOW_HELPER_BUILD = "flow-0.15.519-20261006.1";
 const FLOW_NATIVE_DOWNLOAD_START_TIMEOUT_MS = 15000;
 const FLOW_FAST_HANDOFF_DELAYS_MS = [250, 1000, 2500];
 const AUTOMATION_TAB_IDS_KEY = "smartpostAutomationTabIds";
@@ -759,7 +773,7 @@ async function ensureMetaRedesign(pkg) {
 }
 const AI_RUN_ACTIONS = new Set([
   "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt",
-  "resume_chatgpt", "restart_chatgpt_images", "inspect_chatgpt", "focus_ai_web"
+  "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web"
 ]);
 
 function flowRunStorageKey(jobId, shotIndex = 0) {
@@ -3531,16 +3545,8 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
       bootstrapDocumentId='';ownedFreshChatGPTRoot=true;
       continue;
     }
-    for(let clearAttempt=0; !proof.empty && ownedFreshChatGPTRoot
-        && proof.reason==='draft_present' && clearAttempt<2; clearAttempt++) {
-      const cleared=await clearOwnedChatGPTRootDraft(tabId,proof.documentId);
-      proof=cleared.cleared
-        ? await waitForCleanChatGPTRoot(tabId,proof.documentId)
-        : {...proof,reason:cleared.reason};
-      if(!cleared.cleared)break;
-    }
     if(!proof.empty && ownedFreshChatGPTRoot && occupiedFreshRootReplacements<1
-        && ['attachment_present','conversation_present','response_active'].includes(proof.reason)) {
+        && ['draft_present','attachment_present','conversation_present','response_active'].includes(proof.reason)) {
       // The newly opened root can restore another tab's content. Keep that
       // document intact and try one separate owned root before any Start.
       tabId=await openAIWebTab(provider);
@@ -3550,7 +3556,7 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
     }
     if(!proof.empty) {
       const notice=proof.reason==='draft_present'
-        ? 'ระบบล้างร่างที่ค้างในแท็บงานใหม่ไม่สำเร็จ • ยังไม่ส่งคำขอ'
+        ? 'แท็บงานใหม่มีร่างข้อความที่ยืนยันเจ้าของไม่ได้ • เก็บร่างไว้และยังไม่ส่งคำขอ'
         : proof.reason==='attachment_present'
           ? 'แท็บงานใหม่มีไฟล์แนบที่ยืนยันเจ้าของไม่ได้ • ยังไม่ส่งคำขอ'
         : proof.reason==='composer_not_ready' || proof.reason==='probe_failed'
@@ -3562,6 +3568,7 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
       error.bootstrapReason=proof.reason;error.service='chatgpt';
       throw error;
     }
+    bootstrapDocumentId=proof.documentId;
   }
   const tabValues = { [`smartpostAIWebTab:${provider}:${jobId}`]: tabId };
   if (provider === "chatgpt") tabValues[`smartpostChatGPTTab:${jobId}`] = tabId;
@@ -3576,6 +3583,23 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
   }
   if (resultRefreshGuard) await resultRefreshGuard(tabId);
   if(resumeDocumentId)await verifyDocument(tabId);
+  if(freshChatGPTRoot) {
+    // Injection and late ChatGPT hydration can change the exact composer
+    // after the first empty proof. Never hand an occupied root to the worker.
+    const finalProof=await waitForCleanChatGPTRoot(tabId,bootstrapDocumentId);
+    if(!finalProof.empty){
+      const notice=finalProof.reason==='draft_present'
+        ? 'แท็บงานใหม่มีร่างข้อความที่ยืนยันเจ้าของไม่ได้ • เก็บร่างไว้และยังไม่ส่งคำขอ'
+        : finalProof.reason==='attachment_present'
+          ? 'แท็บงานใหม่มีไฟล์แนบที่ยืนยันเจ้าของไม่ได้ • ยังไม่ส่งคำขอ'
+          : 'หน้า ChatGPT เปลี่ยนหลังเตรียมงาน • ยังไม่ส่งคำขอ';
+      await showStoryBootstrapReview(tabId,notice);
+      const error=Error(`AI_WEB_WAIT_REVIEW • ${notice}`);
+      error.code='AI_WEB_WAIT_REVIEW';error.tabId=tabId;
+      error.bootstrapReason=finalProof.reason;error.service='chatgpt';
+      throw error;
+    }
+  }
   const startMessage={
     type: "START_CHATGPT_JOB",
     accept_existing_run: Boolean(resultRefreshGuard || resumeDocumentId),
@@ -3626,6 +3650,72 @@ async function startAIWebJob(jobId, reuseAnalysis = false, providerHint = "", fo
     if(saved.refresh_recovery.document_id!==resumeDocumentId)throw Error('ยังยืนยันเอกสารแชตปัจจุบันไม่ได้');
   }
   }
+}
+
+async function recoverStalledStoryPreSend(jobId, runId) {
+  if (!/^STORY-/.test(String(jobId||'')) || !runId) throw Error('STORY_IMAGE_STALL_REVIEW • เจ้าของงานไม่ครบ');
+  const response=await bridgeFetch(`${BRIDGE}/api/stories/${encodeURIComponent(jobId)}/chatgpt-package`,{cache:'no-store'});
+  const payload=await response.json();
+  if(!response.ok || !payload.ok || normalizeAIProvider(payload.package?.job?.image_ai_provider)!=='chatgpt')
+    throw Error('STORY_IMAGE_STALL_REVIEW • อ่าน checkpoint งานไม่ได้');
+  const checkpoints=payload.package.checkpoint_images||[];
+  const saved=new Set(checkpoints.map(item=>Number(item?.index
+    || String(item||'').match(/(?:^|[\\/])scene_(\d+)\.png$/)?.[1]||0)).filter(Boolean));
+  const index=saved.size+1,sceneCount=Number(payload.package?.job?.scene_count||0);
+  if(!sceneCount || index>sceneCount || [...saved].some((value,i)=>!saved.has(i+1)))
+    throw Error('STORY_IMAGE_STALL_REVIEW • checkpoint ฉากไม่ต่อเนื่อง');
+  const key=`smartpostStoryGeneratedImage:chatgpt:${jobId}:${index}`;
+  const tabKey=`smartpostAIWebTab:chatgpt:${jobId}`,claimKey=key+':stall-recovery';
+  const read=async()=>chrome.storage.local.get([key,key+':dispatch',tabKey,`smartpostChatGPTTab:${jobId}`,
+    aiRunStorageKey(jobId),claimKey]);
+  const initial=await read(),receipt=initial[key],tabId=initial[tabKey];
+  if(initial[claimKey]?.job_id===jobId && initial[claimKey]?.run_id===runId)
+    return {jobId,already_claimed:true};
+  const safe=row=>row?.version===1 && row.job_id===jobId && row.provider==='chatgpt'
+    && row.scene_index===index && row.run_id===runId && row.status==='awaiting_result'
+    && row.send_phase==='prepared' && !row.send_nonce && !row.result_proof && !row.image_url
+    && row.pre_send_audit?.prompt && Number.isInteger(row.pre_send_audit.source_count)
+    && Number.isInteger(row.pre_send_audit.user_turn_count)
+    && typeof row.pre_send_audit.last_user_signature==='string'
+    && row.prepared_conversation===row.pre_send_audit.conversation_url;
+  if(!safe(receipt) || initial[key+':dispatch'] || initial[aiRunStorageKey(jobId)]!==runId
+      || !Number.isInteger(tabId) || tabId!==initial[`smartpostChatGPTTab:${jobId}`])
+    throw Error('STORY_IMAGE_STALL_REVIEW • ใบรับคำขอหรือแท็บเปลี่ยน ไม่ส่งซ้ำ');
+  const tab=await chrome.tabs.get(tabId);
+  if(String(tab.url||'').split(/[?#]/)[0]!==receipt.prepared_conversation || tab.status!=='complete')
+    throw Error('STORY_IMAGE_STALL_REVIEW • หน้าแชตเปลี่ยน');
+  const probe=async(claim=false)=>{
+    let timer;
+    try{return await Promise.race([chrome.tabs.sendMessage(tabId,{type:'STORY_PRE_SEND_STALL_PROBE',
+      job_id:jobId,run_id:runId,prompt:receipt.pre_send_audit.prompt,
+      source_count:receipt.pre_send_audit.source_count,
+      user_turn_count:receipt.pre_send_audit.user_turn_count,
+      last_user_signature:receipt.pre_send_audit.last_user_signature,
+      conversation_url:receipt.prepared_conversation,claim}),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('probe_timeout')),8000);})]);}
+    catch(error){throw Error(`STORY_IMAGE_STALL_REVIEW • ตรวจแชตเดิมไม่สำเร็จ (${error?.message||'probe_failed'})`);}
+    finally{clearTimeout(timer);}
+  };
+  const first=await probe();
+  if(!first?.ok)throw Error(`STORY_IMAGE_STALL_REVIEW • แชตเดิมไม่ปลอดภัย (${first?.reason||'probe_unavailable'})`);
+  await new Promise(resolve=>setTimeout(resolve,1500));
+  const second=await probe(true);
+  if(!second?.ok || !second.claimed)
+    throw Error(`STORY_IMAGE_STALL_REVIEW • สถานะก่อนตัดตัวทำงานเปลี่ยน (${second?.reason||'probe_unavailable'})`);
+  const latest=await read();
+  if(!safe(latest[key]) || JSON.stringify(latest[key])!==JSON.stringify(receipt)
+      || latest[key+':dispatch'] || latest[tabKey]!==tabId
+      || latest[aiRunStorageKey(jobId)]!==runId)
+    throw Error('STORY_IMAGE_STALL_REVIEW • มีการเริ่มส่งระหว่างตรวจ เก็บแชตเดิมไว้');
+  const claim={job_id:jobId,run_id:runId,scene_index:index,tab_id:tabId,
+    receipt_created_at:receipt.created_at,claimed_at:Date.now()};
+  await chrome.storage.local.set({[claimKey]:claim});
+  if(JSON.stringify((await read())[claimKey])!==JSON.stringify(claim))
+    throw Error('STORY_IMAGE_STALL_REVIEW • ยืนยันการกู้คืนไม่ได้');
+  // Replacing this exact owned document terminates the hung content worker.
+  // The provider chat URL, previous answers, disk images and queue order stay intact.
+  await chrome.tabs.reload(tabId);
+  return startAIWebJob(jobId,true,'chatgpt',false,runId);
 }
 
 async function cancelChatGPTJob(jobId) {
@@ -4937,7 +5027,7 @@ async function acknowledge(command, ok, error = "", flowCapabilities = null) {
 }
 
 async function reportAICommandFailure(command, error) {
-  const aiActions = new Set(["open_chatgpt", "open_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images"]);
+  const aiActions = new Set(["open_chatgpt", "open_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image"]);
   if (!aiActions.has(command?.action) || !command?.job_id) return;
   try {
     const userActionRequired = error?.code === "USER_ACTION_REQUIRED";
@@ -4945,7 +5035,7 @@ async function reportAICommandFailure(command, error) {
     const service = String(error?.service || command.provider || "chatgpt");
     const message = userActionRequired
       ? (error?.message || "กรุณายืนยันใน Google Chrome")
-      : `ผิดพลาด: ${error?.message || String(error)}`;
+      : `${command.action==='recover_stalled_story_image'?'STORY_IMAGE_STALL_REVIEW • ':''}ผิดพลาด: ${error?.message || String(error)}`;
     await reportWebActionProgress({
       scope: "chatgpt", step: userActionRequired ? "user_action_required" : "error",
       jobId: command.job_id, provider: command.provider, message, actionKind, service,
@@ -5081,6 +5171,8 @@ async function pollCommands() {
         await startAIWebJob(command.job_id, true, command.provider, false, command.run_id);
       } else if (command.action === "restart_chatgpt_images") {
         await startAIWebJob(command.job_id, true, command.provider, true, command.run_id);
+      } else if (command.action === "recover_stalled_story_image") {
+        await recoverStalledStoryPreSend(command.job_id, command.run_id);
       } else if (command.action === "inspect_chatgpt") {
         await inspectChatGPTPage(command.job_id, command.provider);
       } else if (command.action === 'focus_browser') {
@@ -7856,10 +7948,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       };
       await assertSendOwner();
       if (Number.isInteger(sender.tab?.windowId)) {
-        await chrome.windows.update(sender.tab.windowId, { focused: true }).catch(() => {});
+        const ownedWindow=typeof chrome.windows.get==='function'
+          ? await chrome.windows.get(sender.tab.windowId).catch(()=>null) : null;
+        await chrome.windows.update(sender.tab.windowId,
+          ownedWindow?.state==='minimized' ? {state:'normal',focused:true} : {focused:true}).catch(()=>{});
       }
       await chrome.tabs.update(tabId, { active: true }).catch(() => {});
-      await new Promise((resolve) => setTimeout(resolve, 120));
+      // Restoring a minimized or narrow window can reflow the composer after
+      // focus. Let that layout settle before measuring a physical mouse point.
+      await new Promise((resolve) => setTimeout(resolve, 350));
       // Gemini can leave an uploaded-image expansion dialog over the composer.
       // Dismiss that non-submission UI with one trusted Escape before locating
       // the Send button. Never click an image thumbnail and never submit here.
@@ -7968,7 +8065,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const priorPreparation = window.__smartflowAiSendPreparationV1;
         const preparation = gesture || (priorPreparation?.button === button
           && priorPreparation.editor === editor && priorPreparation.expected === expected
-          ? priorPreparation : {button,editor,expected,scrollAttempted:false});
+          ? priorPreparation : {button,editor,expected,scrollAttempted:false,scrollAttempts:0,lastScrollFrame:''});
         if (initial) window.__smartflowAiSendPreparationV1 = preparation;
         const frame = () => {
           const r = button.getBoundingClientRect();
@@ -7984,11 +8081,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         };
         let selected = hitPoint(.5,.5,0), strategy = 'center';
         if (!selected && allowFallback && !expectedArmKey) {
-          const r = button.getBoundingClientRect();
-          const inViewport = r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight;
-          if (!inViewport && !preparation.scrollAttempted) {
-            // Claim before the only scroll. Never repeat it when geometry stays unchanged.
-            preparation.scrollAttempted = true;
+          // A narrow browser can reflow after the first scroll. Allow one more
+          // owned scroll only when the viewport or button actually moved; a
+          // fixed offscreen control cannot consume an unbounded retry loop.
+          for (let attempt=0;attempt<2 && !selected;attempt++) {
+            const r = button.getBoundingClientRect();
+            const inViewport = r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight;
+            const currentFrame=frame();
+            if (inViewport || (preparation.scrollAttempts || 0)>=2
+                || (preparation.scrollAttempted && preparation.lastScrollFrame===currentFrame)) break;
+            preparation.scrollAttempted=true;
+            preparation.scrollAttempts=(preparation.scrollAttempts || 0)+1;
+            preparation.lastScrollFrame=currentFrame;
             button.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
             if (!usable(button) || draft(readEditor()) !== expected) return {ok:false,reason:'readiness_changed',error:'ร่างหรือปุ่มเปลี่ยนหลังเลื่อนหน้า • ยังไม่ส่ง'};
             const afterScrollEditor = readEditor();
@@ -7998,7 +8102,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (afterScrollTarget.button !== button)
               return {ok:false,reason:afterScrollTarget.reason || 'target_changed',error:'ปุ่มส่งเจ้าของช่องข้อความเปลี่ยนหลังเลื่อนหน้า • ยังไม่ส่ง'};
             selected = hitPoint(.5,.5,0);
-            if (selected) strategy = 'viewport_scroll';
+            if (selected) strategy='viewport_scroll';
           }
           if (!selected) {
             const alternatives = [[.5,.25],[.5,.75],[.25,.5],[.75,.5],[.25,.25],[.75,.25],[.25,.75],[.75,.75]];
@@ -8025,7 +8129,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             target_node_changes_prepress: 0, target_geometry_changes_prepress: 0,
             target_node_changes_during_gesture: 0, target_geometry_changes_during_gesture: 0,
             lastGeometry: [rect.left, rect.top, rect.width, rect.height].join("|"),
-            lastKey: "", scrollAttempted: preparation.scrollAttempted === true
+            lastKey: "", scrollAttempted: preparation.scrollAttempted === true,
+            scrollAttempts: preparation.scrollAttempts || 0,
+            lastScrollFrame: preparation.lastScrollFrame || ''
           };
           // Diagnostics observe the live node separately from the captured
           // gesture target. They never retarget or authorize a mouse action.
@@ -8073,6 +8179,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               }, true);
             }
           }
+          // CDP may acknowledge a mouse command while the tab receives no
+          // input. A harmless trusted move to the exact target must arrive
+          // before we persist a Story dispatch claim or press Send.
+          if (!window.__smartflowAiSendInputProbeCaptureV1) {
+            window.__smartflowAiSendInputProbeCaptureV1 = true;
+            document.addEventListener('mousemove', event => {
+              const current = window.__smartflowAiSendGestureV3;
+              const probe = current?.inputProbe;
+              if (!probe || !current.armed || !event.isTrusted) return;
+              const onTarget = current.button?.isConnected !== false
+                && (event.target === current.button || current.button?.contains(event.target)
+                  || event.composedPath?.().includes(current.button));
+              if (onTarget && Math.abs(event.clientX - probe.x) < 1
+                  && Math.abs(event.clientY - probe.y) < 1) probe.seen = true;
+            }, true);
+          }
         }
         if (!initial) {
           gesture.observeTarget(button,false);
@@ -8087,7 +8209,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (expectedArmKey) { if(!gesture.armed)gesture.armedAt=Date.now(); gesture.armed=true; }
         if ((initial || focusTarget) && document.activeElement!==button) button.focus({preventScroll:true});
         return {ok:true,x:selected.x,y:selected.y,key,point_strategy:strategy,point_index:selected.index,
+          viewport_width:innerWidth,viewport_height:innerHeight,
+          scroll_attempts:preparation.scrollAttempts || 0,
           label:normalize(button.getAttribute('aria-label')||button.textContent),promptLength:draft(editor).length};
+      };
+      const probeAiSendInputDelivery = (phase, point) => {
+        const gesture = window.__smartflowAiSendGestureV3;
+        if (!gesture?.armed || gesture.button?.isConnected === false
+            || gesture.lastKey !== point?.key) return {ok:false};
+        if (phase === 'start') {
+          gesture.inputProbe = {x:point.x,y:point.y,key:point.key,seen:false};
+          return {ok:true};
+        }
+        const probe = gesture.inputProbe;
+        const ok = phase === 'verify' && probe?.seen === true
+          && probe.key === point.key && probe.x === point.x && probe.y === point.y;
+        gesture.inputProbe = null;
+        return {ok};
       };
       const readInitialSendPoint = () => chrome.scripting.executeScript({
         target:sendTarget(),world:'MAIN',args:[wirePrompt,true,true,'',message.provider==='chatgpt'],func:resolveAiSendPrepressPoint
@@ -8171,6 +8309,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           await new Promise((resolve) => setTimeout(resolve, 70));
         }
         if (!stableBeforePress) throw new Error("ปุ่มส่ง AI Web ยังขยับอยู่ • หยุดก่อนกดส่ง");
+        // A user may resize the browser during the hover proof. Wait once and
+        // remeasure before any durable dispatch claim or physical press.
+        await new Promise(resolve=>setTimeout(resolve,300));
         await assertSendOwner();
         const ready = await sendReady();
         if (ready?.ok !== true) {
@@ -8187,6 +8328,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         finalPoint = await inspectSendPoint(false, finalPoint.key);
+        // Probe the actual page input route before the durable dispatch claim.
+        // Two bounded attempts can recover focus loss without ever pressing.
+        let inputDelivered = false;
+        for (let probeAttempt = 0; probeAttempt < 2 && !inputDelivered; probeAttempt++) {
+          if (probeAttempt) {
+            if (Number.isInteger(sender.tab?.windowId))
+              await chrome.windows.update(sender.tab.windowId, {focused:true}).catch(() => {});
+            await chrome.tabs.update(tabId, {active:true}).catch(() => {});
+            await new Promise(resolve => setTimeout(resolve,250));
+            await assertSendOwner();
+            const probeReady = await sendReady();
+            if (probeReady?.ok !== true) {
+              const error = new Error('Send readiness เปลี่ยนระหว่างตรวจอินพุต • ยังไม่กดส่ง');
+              error.preflightReason = String(probeReady?.reason || 'readiness_changed');
+              throw error;
+            }
+            finalPoint = await inspectSendPoint(false,finalPoint.key);
+          }
+          const [startProbe] = await chrome.scripting.executeScript({target:sendTarget(),world:'MAIN',
+            args:['start',finalPoint],func:probeAiSendInputDelivery});
+          if (startProbe?.result?.ok !== true) {
+            const error = new Error('ตรวจจุดรับอินพุตก่อน Send ไม่สำเร็จ • ยังไม่กดส่ง');
+            error.preflightReason = 'input_not_delivered';
+            throw error;
+          }
+          await chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', {
+            type:'mouseMoved',x:Math.max(0,finalPoint.x-1),y:finalPoint.y,
+            button:'none',buttons:0,pointerType:'mouse'});
+          await chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', {
+            type:'mouseMoved',x:finalPoint.x,y:finalPoint.y,
+            button:'none',buttons:0,pointerType:'mouse'});
+          const [probeProof] = await chrome.scripting.executeScript({target:sendTarget(),world:'MAIN',
+            args:['verify',finalPoint],func:probeAiSendInputDelivery});
+          inputDelivered = probeProof?.result?.ok === true;
+        }
+        if (!inputDelivered) {
+          const error = new Error('หน้าเว็บไม่รับเหตุการณ์เมาส์ที่ปุ่ม Send หลังตรวจซ้ำ • ยังไม่กดส่ง');
+          error.preflightReason = 'input_not_delivered';
+          throw error;
+        }
+        finalPoint = await inspectSendPoint(false,finalPoint.key);
         if(storyClaim||reminderClaim){
           await assertSendOwner();
           const dispatchClaim=reminderClaim||storyClaim;
@@ -8236,6 +8418,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const trustedClickSeen = clickProofInjection?.result?.trustedClickSeen === true;
       const diagnostics = { gesture_phase: gesturePhase, target_stable_before_press: stableBeforePress,
         send_target_strategy: finalPoint?.point_strategy || point.point_strategy,
+        viewport_width: finalPoint?.viewport_width || point.viewport_width,
+        viewport_height: finalPoint?.viewport_height || point.viewport_height,
+        scroll_attempts: finalPoint?.scroll_attempts || point.scroll_attempts || 0,
         preflight_rechecks:sendPreflightRechecks, preflight_reasons:sendPreflightReasons.slice(0,3) };
       if (clickProofInjection?.result) diagnostics.target_changed = clickProofInjection.result.targetChanged;
       for (const key of ["target_node_changes_prepress", "target_geometry_changes_prepress",
@@ -8273,7 +8458,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } catch (error) {
         if (gesturePhase !== 'not_started' || !canAttestNoDispatch) throw error;
         sendResponse({ok:false, error:String(error?.message || error), notDispatched:true,
-          diagnostics:{gesture_phase:'not_started', preflight_reason:['draft_mismatch','send_not_ready','send_target_ambiguous','response_active','composer_form_changed','capture_missing','target_changed','readiness_changed','target_blocked'].includes(error.preflightReason)?error.preflightReason:'rejected_before_press',
+          diagnostics:{gesture_phase:'not_started', preflight_reason:['draft_mismatch','send_not_ready','send_target_ambiguous','response_active','composer_form_changed','capture_missing','target_changed','readiness_changed','target_blocked','input_not_delivered'].includes(error.preflightReason)?error.preflightReason:'rejected_before_press',
             ...(error.preflightStage?{preflight_stage:error.preflightStage}:{}),
             preflight_rechecks:sendPreflightRechecks, preflight_reasons:sendPreflightReasons.slice(0,3)}});
         return;

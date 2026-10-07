@@ -1,5 +1,21 @@
 # พิมพ์เขียว Chrome Extension — SmartFlow AI
 
+## ChatGPT Send input delivery (0.15.519, 2026-10-06)
+
+The MAIN-world Send resolver records trusted `mousemove` delivery at the exact armed composer-owned button point. Before writing a Story dispatch latch or issuing `mousePressed`, Background probes with two harmless CDP moves and verifies the page event. A missing event triggers one owned-window/tab refocus, exact readiness/geometry recheck, and one final probe. Persistent loss reports `input_not_delivered` before dispatch; no uncertain or accepted Send is replayed. Existing post-press receipt and three read-only observations remain conservative. This addresses the observed 518 scene-2 press/release acknowledgement with zero captured page input events.
+
+## Story pre-Send stall recovery (0.15.518, 2026-10-06)
+
+For Story images, save the exact prepared audit prompt in the scene receipt before reporting `image_prompt_ready`. Bound the bridge ACK to 12 seconds; an ACK timeout leaves the prompt unsent and permits checkpoint recovery. The `recover_stalled_story_image` command verifies the same Job/run, next missing scene, prepared receipt, absent dispatch claim and owned chat, then asks the live content worker to claim its unchanged draft. The claim sets local cancellation before a physical click; a later dispatch or changed draft vetoes recovery. Reload only the owned tab and resume the missing scene. A 517 receipt without the new audit field cannot authorize this operation. Never treat silence alone as Send permission.
+
+## Paired Story pre-Send resume (0.15.517, 2026-10-06)
+
+The Background Story bootstrap and late-draft guards from 516 are unchanged. Desktop 517 classifies the exact pre-START review trace before constructing an analysis resume target. Extension 517 changes only the required paired version and Flow helper build identifier. No accepted or uncertain provider Send is replayed by this route.
+
+## Story bootstrap attachment and late-draft guard (0.15.516, 2026-10-06)
+
+The background root probe recognizes explicit file previews and populated file inputs. It ignores generic composer icons, including the Create image tool chip, and unrelated busy indicators. A restored draft has unknown ownership even when the tab was just created; preserve it, try one other root, and stop before Start if both are occupied. Recheck the exact document after script injection to catch late hydration. The content script still guards the draft at the image-tool boundary before writing or sending. Focused tests cover the icon false positive, actual files, duplicate occupied roots, and a draft appearing after injection; live activation remains a separate check.
+
 ## Accepted cover native Retry claim (0.15.513, 2026-10-06)
 
 Installed observation: root launcher and original Extension 513 connected in DEV MODE. A new cover request for Story 913AB4 sent once, saved one verified image, and advanced the queue. The old stream-error panel vanished after browser restart, so the native Retry branch remains fixture-proven only; the old accepted request is retained for audit.
@@ -1126,3 +1142,11 @@ Meta's completed image-not-viable or post-follow-up no-video result enters deskt
 After the desktop image ACK, finishScene explicitly reports the saved image while waiting for video/voice handoff. A rejected gate preserves its original error prefix and states that the image must not be regenerated. No Send/retry budget or next-scene barrier changes. Paired desktop correction preserves approved expressive turns. See docs/reports/editorial-handoff-471.md and logic-version-map-471.md; user owns activation. Historical versions/headings below are not today's authority. Old Meta Vibes removal does not describe the current Meta AI video adapter. Keep proven single-flight/receipt behavior; do not transplant obsolete selectors from a historical success.
 
 An explicit per-job authorization allows one scene 2 retry after a prior-run uncertain Send. The content script checks the original receipt and unchanged ChatGPT draft/reference over three samples, archives the old receipt with an ACK, then creates a new prepared receipt carrying the one-time token. Later resumes read the new receipt and cannot prepare another replay from the same authorization.
+
+# 0.15.515 AI cover queue version gate
+
+The Extension worker and Flow helper have the paired 515 version/build contract. The Desktop queue gate holds a queued cover when the connected Extension version is older or newer; no new Extension provider behavior is introduced beyond the 514 viewport recovery. Resume uses the exact queued request after a compatible connection.
+
+# 0.15.514 ChatGPT Send viewport recovery
+
+For the exact owned ChatGPT composer, the prepress resolver may re-scroll a Send control only when its viewport or geometry changed after the first scroll, with two total attempts and a fresh same-draft/form/button check after each. An unchanged fixed offscreen control or changed arm key stops before press. Background restores a minimized owned window before coordinate capture and lets reflow settle before claim. No second physical press is authorized after an attempted press; missing trusted click evidence remains uncertain and collect-only.

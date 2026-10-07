@@ -15,6 +15,9 @@ class AISendDiagnostics(TypedDict, total=False):
     preflight_reason: str
     tool_reason: str
     send_target_strategy: Literal["center", "viewport_scroll", "interior_point"]
+    viewport_width: int
+    viewport_height: int
+    scroll_attempts: int
     click_events: list[dict[str, object]]
 
 

@@ -41,7 +41,7 @@
     else if(b.dataset.musicPlay){
       const name=b.dataset.musicPlay;if(playing===name&&!player.paused){stop();return;}
       stop();playing=name;player.src='/api/desktop/music-preview?file='+encodeURIComponent(name);player.hidden=false;player.volume=.5;note.textContent='กำลังโหลด: '+name;
-      try{await player.play();if(playing===name)note.textContent='กำลังฟัง: '+name;}catch(error){if(playing===name)note.textContent='ฟังไม่ได้: '+name+' • '+error.message;}update();
+      try{await player.play();if(playing===name)note.textContent='กำลังฟัง: '+name;}catch(error){if(playing===name)note.textContent='ฟังไม่ได้: '+name+' • '+(window.smartflowSafeError?.(error.message)||'ตรวจไฟล์เสียงอีกครั้ง');}update();
     }
   });
   player.addEventListener('pause',update);player.addEventListener('play',update);player.addEventListener('ended',stop);

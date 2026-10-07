@@ -5,11 +5,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from core.ai_web_resume import ai_web_resume_target, conversation_url, request_hash
+from core.ai_web_resume import ai_web_resume_target, conversation_url, pre_send_bootstrap_failure, request_hash
 from core.atomic_json import AtomicJsonFile
 from core.flow_motion_plan import motion_plan_action, plan_context
 from core.story_manager import StoryManager
 from core.story_pipeline import story_recovery_action
+from core.story_failure_timeline import story_failure_timeline
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -93,6 +94,53 @@ class AiWebResume345Tests(unittest.TestCase):
                 package = manager.plugin_request(job['id'])
                 self.assertEqual(package['ai_resume'], before)
                 self.assertEqual(request_file.read_bytes(), original)
+
+    def test_pre_send_bootstrap_review_does_not_create_an_empty_url_resume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            manager = StoryManager(temp)
+            job = manager.create('นักไวโอลินกับทำนองที่ไม่มีใครจำได้', scene_count=6,
+                                 image_ai_provider='chatgpt')
+            folder = manager.root / job['id']
+            trace_path = folder / 'logs/extension_trace.jsonl'
+            trace_path.parent.mkdir(exist_ok=True)
+            first_run = 'RUN-BOOTSTRAP-ONE'
+            rows = [
+                dict(job_id=job['id'], run_id=first_run, action='error', page_url='',
+                     message='AI_WEB_WAIT_REVIEW • ไฟล์แนบที่ยืนยันเจ้าของไม่ได้ • ยังไม่ส่งคำขอ'),
+                dict(job_id=job['id'], run_id=first_run, action='story_bootstrap_review', page_url='',
+                     detail={'reason': 'attachment_present'}),
+                dict(job_id=job['id'], run_id='RUN-BOOTSTRAP-TWO', action='error', page_url='',
+                     message='AI_WEB_RESUME_REVIEW • ต้องกลับไปอ่านคำขอเดิม'),
+            ]
+            trace_path.write_text('\n'.join(json.dumps(row, ensure_ascii=False) for row in rows), encoding='utf-8')
+            manager.mark_failed(job['id'], 'chatgpt', rows[-1]['message'])
+            stale = dict(required=True, stage='analysis', provider='chatgpt', conversation_url='',
+                         request='unsent original request', evidence='job_trace')
+            manifest = manager.get(job['id'])
+            manifest['ai_resume_checkpoint'] = stale
+            manager._save(manifest)
+            request = json.loads((folder / 'ai_request.json').read_text(encoding='utf-8'))
+            prompt = folder / request['prompt_file']
+            original = prompt.read_bytes()
+            self.assertTrue(pre_send_bootstrap_failure(folder, manifest))
+            self.assertIsNone(ai_web_resume_target(folder, manifest))
+            self.assertIn('trace ที่บันทึกยังไม่ยืนยันว่าเว็บรับคำขอ',
+                          story_failure_timeline(manager.root, job['id']))
+            manager.mark_running(job['id'])
+            self.assertNotIn('ai_resume_checkpoint', manager.get(job['id']))
+            self.assertIsNone(manager.plugin_request(job['id'])['ai_resume'])
+            self.assertEqual(prompt.read_bytes(), original)
+
+            # Any evidence from the provider keeps the conservative old-turn
+            # route; a bootstrap review alone cannot erase a possible Send.
+            for extra in (dict(action='ai_send_accepted', page_url='https://chatgpt.com/c/owned'),
+                          dict(action='analysis_request_claimed', page_url='')):
+                with self.subTest(extra=extra['action']):
+                    trace_path.write_text('\n'.join(json.dumps(row, ensure_ascii=False)
+                        for row in [*rows, dict(job_id=job['id'], run_id='RUN-OTHER', **extra)]), encoding='utf-8')
+                    guarded = {**manager.get(job['id']), 'ai_resume_checkpoint': stale}
+                    self.assertFalse(pre_send_bootstrap_failure(folder, guarded))
+                    self.assertEqual(ai_web_resume_target(folder, guarded), stale)
 
     def test_accepted_chatgpt_canonical_hydration_failure_reopens_only_owned_analysis(self):
         with tempfile.TemporaryDirectory() as temp:

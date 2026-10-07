@@ -16,7 +16,7 @@ const ctx={node:element,$:()=>cards,Option:function(label,value){return Object.a
     {id:'b',name:'Beta',status:'error',clips:{},error:'Review'},
     {id:'c',name:'Hidden',status:'ready',library_state:'hidden',clips:{}},
     {id:'d',name:'Trash',status:'ready',library_state:'trash',clips:{}}],
-  window:{confirm:()=>true},postAction:async(a,p)=>actions.push({a,p}),refresh:async()=>{},toast:()=>{},
+  window:{smartflowConfirm:async()=>true},postAction:async(a,p)=>actions.push({a,p}),refresh:async()=>{},toast:()=>{},
   navigator:{clipboard:{writeText:async()=>{}}}};
 vm.createContext(ctx);
 vm.runInContext(source.slice(source.indexOf("  let librarySearch="),source.indexOf('  const panels={}')),ctx);
@@ -33,8 +33,8 @@ vm.runInContext('renderCards()',ctx);assert.equal(detail.querySelectorAll('video
 detail.close();assert.ok(video.paused);assert.equal(video.src,undefined);
 vm.runInContext('showDetail(jobs[1])',ctx);assert.equal(detail.querySelectorAll('video').length,0);
 (async()=>{
-  ctx.window.confirm=()=>false;await vm.runInContext("libraryChange(jobs[0],'trash')",ctx);assert.equal(actions.length,0);
-  ctx.window.confirm=()=>true;await vm.runInContext("libraryChange(jobs[1],'trash')",ctx);
+  ctx.window.smartflowConfirm=async()=>false;await vm.runInContext("libraryChange(jobs[0],'trash')",ctx);assert.equal(actions.length,0);
+  ctx.window.smartflowConfirm=async()=>true;await vm.runInContext("libraryChange(jobs[1],'trash')",ctx);
   assert.equal(actions[0].a,'presenter_library_state');assert.equal(actions[0].p.confirmed,true);
   console.log('Presenter library actual-source checks passed: filters, compact cards, single player, switch, polling, close, confirmation.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

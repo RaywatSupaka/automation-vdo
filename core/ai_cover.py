@@ -289,6 +289,18 @@ class AICovers:
     def recover_startup(self):
         # Preserve unknown outcomes after restart; never reset the Send budget.
         for row in self.active():
+            if row.get('phase') == 'queued' and not self._has_send_evidence(row):
+                try:
+                    manifest = AtomicJsonFile(self.folder(row['job_id']) / 'job.json').read()
+                    state = manifest.get('ai_cover_state') or {}
+                    if (state.get('request_id') == row['request_id']
+                            and state.get('phase') == 'queued'):
+                        # Background persists a Desktop claim before opening a
+                        # provider tab. This request has no claim or Send and
+                        # still owns the exact job, so the same ID can resume.
+                        continue
+                except Exception:
+                    pass  # Missing/changed ownership remains review-only.
             self.event(row['request_id'],{'phase':'needs_review','message':'โปรแกรมถูกเปิดใหม่ • ตรวจปกเดิมก่อนสั่งสร้างใหม่'})
 
     def package(self, rid):

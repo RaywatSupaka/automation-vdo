@@ -2464,7 +2464,11 @@ Preserve the exact character identity, face, body, clothing, props, location, co
         manifest = self.get(job_id)
         stage = str(stage or "chatgpt")
         if stage == "chatgpt" and manifest.get("ai_status") != "ready":
-            from core.ai_web_resume import ai_web_resume_target
+            from core.ai_web_resume import ai_web_resume_target, pre_send_bootstrap_failure
+            if pre_send_bootstrap_failure(self._folder(job_id), manifest):
+                # The old hint came only from a pre-START review. Remove that
+                # exact empty-owner hint before a genuinely new provider run.
+                manifest.pop('ai_resume_checkpoint', None)
             pending = ai_web_resume_target(self._folder(job_id), manifest)
             if pending and pending.get('stage') == 'analysis':
                 manifest['ai_resume_checkpoint'] = pending

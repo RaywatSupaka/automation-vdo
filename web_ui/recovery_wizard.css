@@ -1,0 +1,8 @@
+#recovery-wizard-body{padding:18px 0;border-top:1px solid var(--border,#33405f);border-bottom:1px solid var(--border,#33405f)}
+.recovery-step span{color:var(--muted,#a7b0c3);font-size:13px}
+.recovery-step h3{font-size:21px;margin:10px 0}
+.recovery-step p{font-size:14px;line-height:1.7;color:var(--text,#e8ecf4)}
+.recovery-step .button{min-height:44px}
+#automation-error-details{margin:12px 0;color:var(--muted,#a7b0c3);font-size:13px}
+#automation-error-details summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+#automation-error-details pre{max-height:180px;overflow:auto;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}

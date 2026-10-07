@@ -62,7 +62,7 @@
         const result=await window.SmartFlowSettingsEditor.readCapabilities();
         if(!host.isConnected||token!==readToken)return;
         flow.refresh();q('[data-plan-capabilities]').textContent=`อ่านล่าสุด ${new Date(result.checked_at*1000).toLocaleString('th-TH')} · ตรวจค่าซ้ำก่อนสร้างจริง`;
-      }catch(error){if(host.isConnected&&token===readToken)q('[data-plan-capabilities]').textContent=error.message;}
+      }catch(error){if(host.isConnected&&token===readToken)q('[data-plan-capabilities]').textContent=window.smartflowSafeError?.(error.message)||'ตรวจความพร้อมไม่สำเร็จ';}
       finally{if(host.isConnected&&token===readToken)update();}
     };
     function prepare(resume){
@@ -73,7 +73,7 @@
         const pending=confirm.payload.scene_indices;
         q('[data-plan-confirm-text]').textContent=`ใช้ ${names[provider.value]} กับฉาก ${pending.join(', ')}\nเก็บคลิปสำเร็จ ${Number(count.completed||0)} ฉากไว้เหมือนเดิม\n${resume?'บันทึกแล้วเริ่มทำต่อจากส่วนที่ยังขาด':'บันทึกอย่างเดียว ไม่เริ่มงานใหม่'}${review.active?'\nงานที่ส่งไปแล้วจะไม่ถูกหยุดหรือส่งซ้ำ':''}`;
         q('[data-plan-confirm]').hidden=false;update();q('[data-plan-confirm-save]').focus();
-      }catch(error){status.textContent=error.message;}
+      }catch(error){status.textContent=window.smartflowSafeError?.(error.message)||'ทำรายการไม่สำเร็จ';}
     }
     q('[data-plan-save]').onclick=()=>prepare(false);
     q('[data-plan-resume]').onclick=()=>prepare(true);
@@ -93,7 +93,7 @@
         }
         toast(request.resume?'บันทึกแล้วและส่งคำสั่งทำต่อ':'บันทึกค่าฉากแล้ว คลิปที่เสร็จยังอยู่ครบ','success');
         hooks.onSaved?.(data.review);
-      }catch(error){status.textContent=error.message+' • ไม่ได้ส่งคำสั่งสร้างซ้ำอัตโนมัติ';}
+      }catch(error){status.textContent=(window.smartflowSafeError?.(error.message)||'ทำรายการไม่สำเร็จ')+' • ไม่ได้ส่งคำสั่งสร้างซ้ำอัตโนมัติ';}
       finally{
         saving=false;hooks.onSaving?.(false);confirm=null;
         if(host.isConnected){q('[data-plan-confirm]').hidden=true;q('[data-plan-confirm-save]').disabled=false;q('[data-plan-confirm-cancel]').disabled=false;update();}

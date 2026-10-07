@@ -131,7 +131,7 @@
         if(!result)result=await postAction('product_jobs_delete_status',{request_id:pendingDeletion.request_id});
         const receipt=acceptDeletion(result),count=(receipt.deleted_ids||[]).length,total=pendingDeletion.job_ids.length;
         if(receipt.accepted===false&&['rejected','not_found'].includes(receipt.status)){
-          notice.textContent=receipt.error||'โปรแกรมยืนยันว่าไม่ได้รับคำขอลบ • ยังไม่ได้ลบงาน';
+          notice.textContent=receipt.error?(window.smartflowSafeError?.(receipt.error)||'โปรแกรมไม่รับคำขอลบ • ยังไม่ได้ลบงาน'):'โปรแกรมยืนยันว่าไม่ได้รับคำขอลบ • ยังไม่ได้ลบงาน';
           // A rejected retry cannot erase an earlier accepted partial batch.
           if(!pendingDeletion.status)pendingDeletion=null;
           rememberDeletion();toast(notice.textContent,'error');break;
@@ -144,13 +144,13 @@
         }
         if(receipt.status==='partial'){
           const failed=receipt.failed||[];
-          notice.textContent=`ลบถาวรแล้ว ${count}/${total} รายการ • ลบไม่สำเร็จ ${failed.length} รายการ${failed.length?': '+failed.map(row=>`${row.job_id}: ${row.error}`).join(' • '):''}`;
+          notice.textContent=`ลบถาวรแล้ว ${count}/${total} รายการ • ลบไม่สำเร็จ ${failed.length} รายการ • ตรวจงานที่ยังค้างก่อนลองอีกครั้ง`;
           toast(notice.textContent,'error');break;
         }
         notice.textContent=`กำลังลบถาวร ${count}/${total} รายการ • รอผลเดิม ไม่ส่งคำสั่งซ้ำ`;
         await new Promise(resolve=>setTimeout(resolve,500));result=null;
       }
-    }catch(error){notice.textContent=`${error.message} • ตรวจผลการลบเดิมก่อน ไม่ส่งคำสั่งซ้ำ`;toast(notice.textContent,'error');}
+    }catch(error){notice.textContent=`${window.smartflowSafeError?.(error.message)||'ตรวจผลเดิมไม่สำเร็จ'} • ตรวจผลการลบเดิมก่อน ไม่ส่งคำสั่งซ้ำ`;toast(notice.textContent,'error');}
     finally{sending=false;lastMarkup='';renderProductContinue(ui.state||{});}
   }
   async function manage(operation,ids,scope=''){
@@ -160,7 +160,7 @@
       if(!canDelete(ui.state||{}))return;
       const target=scope==='all_pending'?`งานค้างทั้งหมด ${ids.length} รายการ`:scope==='legacy_trash'?`รายการในถังขยะเดิม ${ids.length} รายการ`:`งานที่เลือก ${ids.length} รายการ`;
       const excludes=scope==='all_pending'?'ไม่รวมงานซ่อนไว้ คลิปสำเร็จ หรืองานอื่น':'ไม่รวมคลิปสำเร็จหรืองานอื่นที่ไม่ได้เลือก';
-      if(!window.confirm(`ลบ${target}ถาวร?\nลบข้อมูลรายการงาน พร้อมรูป เสียง และคลิปที่อยู่ในโฟลเดอร์งานที่เลือก\n${excludes}\nกู้คืนไม่ได้ และนำงานเหล่านี้ออกจากคิว`))return;
+      if(!await window.smartflowConfirm(`ลบ${target}ถาวร?\nลบข้อมูลรายการงาน พร้อมรูป เสียง และคลิปที่อยู่ในโฟลเดอร์งานที่เลือก\n${excludes}\nกู้คืนไม่ได้ และนำงานเหล่านี้ออกจากคิว`,{title:'ลบงานสินค้า?',acceptLabel:'ลบถาวร'}))return;
       pendingDeletion={request_id:deletionId(),job_ids:ids,scope};rememberDeletion();await deleteRequest(true);return;
     }
     sending=true;lastMarkup='';renderProductContinue(ui.state||{});const notice=panel.querySelector('#product-continue-notice');notice.textContent='กำลังบันทึก…';
@@ -168,14 +168,14 @@
       if(result?.ok===false)throw Error(result.error||'บันทึกไม่สำเร็จ');
       if(result.product_job_controls)ui.state.product_job_controls=result.product_job_controls;
       selected.clear();notice.textContent='บันทึกแล้ว';await poll(true);
-    }catch(error){notice.textContent=error.message;toast(error.message,'error');}
+    }catch(error){notice.textContent=window.smartflowSafeError?.(error.message)||'ทำรายการไม่สำเร็จ';toast(error.message,'error');}
     finally{sending=false;lastMarkup='';renderProductContinue(ui.state||{});}
   }
   panel.addEventListener('click',async e=>{
     if(e.target.closest('#product-jobs-delete-status')){await deleteRequest();return;}
     if(e.target.closest('#product-jobs-delete-retry')){
       if(sending||workBusy(ui.state||{})||pendingDeletion?.status!=='partial')return;
-      if(window.confirm('ลองลบส่วนที่เหลือจากคำขอเดิมถาวร?\nลบข้อมูลรายการงาน พร้อมรูป เสียง และคลิปในงาน กู้คืนไม่ได้\nไม่เพิ่มงานใหม่และไม่ลบคลิปสำเร็จหรืองานอื่น'))await deleteRequest(true);
+      if(await window.smartflowConfirm('ลองลบส่วนที่เหลือจากคำขอเดิมถาวร?\nลบข้อมูลรายการงาน พร้อมรูป เสียง และคลิปในงาน กู้คืนไม่ได้\nไม่เพิ่มงานใหม่และไม่ลบคลิปสำเร็จหรืองานอื่น',{title:'ลองลบส่วนที่เหลือ?',acceptLabel:'ลบถาวร'}))await deleteRequest(true);
       return;
     }
     if(e.target.closest('#product-jobs-clear-all')){await manage('delete',pending.map(j=>j.id),'all_pending');return;}
@@ -198,7 +198,7 @@
       if(result?.ok===false)throw Error(result.error||'ยังเริ่มทำต่อไม่ได้ กรุณาตรวจสถานะงาน');
       notice.textContent='รับคำสั่งทำต่อจากงานเดิมแล้ว';await poll(true);
       if(ui.state?.product_progress?.active||ui.state?.story_progress?.active)restoreProgress();
-    }catch(error){notice.textContent=error.message;toast(error.message,'error');}
+    }catch(error){notice.textContent=window.smartflowSafeError?.(error.message)||'ทำรายการไม่สำเร็จ';toast(error.message,'error');}
     finally{sending=false;lastMarkup='';window.renderProductContinue(ui.state||{});}
   });
   window.renderProductContinue(ui.state||{});

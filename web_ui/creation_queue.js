@@ -1,7 +1,8 @@
 /* Shared desktop FIFO UI and saved-cover navigation; never controls AI tabs. */
 (() => {
   const esc = escapeHtml;
-  const labels = Object.fromEntries(['queued','running','completed','failed','cancelled'].map(code => [code, SmartFlowStatus.label(code)]));
+  const labels = Object.fromEntries(['queued','running','completed','failed','cancelled','action_required'].map(code => [code, SmartFlowStatus.label(code)]));
+  const needsRecovery = row => row.status === 'action_required' || /SEND_UNCERTAIN|SEND_UNCONFIRMED|AI_WEB_RESUME_REVIEW|REQUEST_NOT_LATEST|PRIOR_RUN_UNCONFIRMED|AI_WEB_WAIT_REVIEW|draft_present|composer_not_ready|STORY_IMAGE_REFUSED|FLOW_CREDIT|FLOW_TERMS|LOGIN_REQUIRED|CAPTCHA|EXTENSION_UPDATE/i.test(String(row.error || ''));
   const kinds = {product:'คลิปสินค้า', story:'STORY SHORTS', drama:'ละครสั้น'};
   const kindLabel = row => row.long_video ? 'คลิปยาว' : kinds[row.mode || 'story'] || 'งานเดิม';
   const subtitleEnabled = row => {
@@ -11,6 +12,8 @@
     return row.subtitle === true;
   };
   let listSignature = '';
+  let otherSignature = '';
+  let jobsFilter = 'open';
   let requestId = '';
   let editing = '';
   let queueBusy = false;
@@ -20,7 +23,7 @@
   modal.className = 'modal'; modal.id = 'creation-editor';
   modal.setAttribute('aria-labelledby', 'creation-editor-title');
   modal.innerHTML = `<form class="modal-card cq-modal-card" id="creation-form">
-    <span class="eyebrow">CREATION QUEUE</span><h2 id="creation-editor-title">เพิ่มลิงก์สินค้าเข้าคิว</h2>
+    <span class="eyebrow">งานและคิว</span><h2 id="creation-editor-title">เพิ่มลิงก์สินค้าเข้าคิว</h2>
     <p id="creation-editor-description"></p>
     <label for="creation-values" id="creation-value-label">ลิงก์สินค้า • หนึ่งลิงก์ต่อบรรทัด</label>
     <textarea id="creation-values" required maxlength="40000" placeholder="https://s.shopee.co.th/…"></textarea>
@@ -266,7 +269,7 @@
       if(submittedWithDialogOpen)showPage('creation');
       toast(editing ? 'บันทึกรายการแล้ว' : `เพิ่ม ${result.queued} รายการ • ข้ามรายการซ้ำ ${result.duplicates || 0} • ${result.paused ? 'กดเริ่มคิวเมื่อพร้อม' : 'ต่อท้ายคิวแล้ว'}`, 'success');
       await poll();
-    } catch(error) { $('#creation-editor-error').textContent = error.message; }
+    } catch(error) { $('#creation-editor-error').textContent = window.smartflowSafeError?.(error.message) || 'ทำรายการไม่สำเร็จ'; }
     finally { button.disabled = false; button.textContent=editing?'บันทึกรายการ':'เพิ่มลงคิว'; }
   });
   $('#creation-values').addEventListener('input',updateBatchCount);
@@ -295,9 +298,9 @@
   });
   $('#creation-start').addEventListener('click', () => command('creation_start', {}, 'เริ่มคิวแล้ว • กำลังตรวจความพร้อม'));
   $('#creation-pause').addEventListener('click', () => command('creation_pause', {}, 'พักคิวแล้ว • คลิปปัจจุบันยังทำต่อจนจบ'));
-  $('#creation-cancel').addEventListener('click', () => command('creation_cancel_current', {}, 'ส่งคำขอยกเลิกและพักคิวแล้ว • เก็บไฟล์และ Checkpoint ไว้'));
+  $('#creation-cancel').addEventListener('click', () => command('creation_cancel_current', {}, 'ส่งคำขอยกเลิกและพักคิวแล้ว • เก็บไฟล์และความคืบหน้าไว้'));
   $('#creation-resume-unfinished').addEventListener('click', () => command('creation_resume_unfinished', {}, 'รับคำสั่งทำต่อคิวที่ค้างแล้ว • ใช้ Job และไฟล์เดิม'));
-  $('#creation-cancel-all').addEventListener('click', () => askQueueAction('creation_cancel_all', 'ยกเลิกคิวทั้งหมด?', 'หยุดรับงานถัดไปและขอยกเลิกงานที่กำลังทำในคิวนี้\nรูป เสียง วิดีโอ และ Checkpoint ยังคงอยู่ สามารถกดทำต่อเป็นรายงานได้ภายหลัง', 'ยกเลิกคิวทั้งหมด'));
+  $('#creation-cancel-all').addEventListener('click', () => askQueueAction('creation_cancel_all', 'ยกเลิกคิวทั้งหมด?', 'หยุดรับงานถัดไปและขอยกเลิกงานที่กำลังทำในคิวนี้\nรูป เสียง วิดีโอ และความคืบหน้ายังคงอยู่ สามารถกดทำต่อเป็นรายงานได้ภายหลัง', 'ยกเลิกคิวทั้งหมด'));
   $('#creation-clear-cache').addEventListener('click', () => askQueueAction('creation_clear_stuck_state', 'ล้างแคชสถานะค้าง?', 'ล้างเฉพาะสถานะชั่วคราวที่ค้างในโปรแกรมและพักคิว\nไม่ลบไฟล์งาน ประวัติ การเข้าสู่ระบบ หรือหลักฐานป้องกันการสร้างซ้ำ\nหากยังมีงานกำลังทำ ระบบจะไม่ล้าง ให้ยกเลิกและรอหยุดก่อน', 'ล้างแคชสถานะค้าง'));
   function askRemoveOld(queueIds=[], jobIds=[]) {
     const count=queueIds.length+jobIds.length;
@@ -322,8 +325,24 @@
     await command('creation_resume_jobs', {job_ids:[button.dataset.resumeJob]}, 'นำงานเดิมเข้าคิวเพื่อทำต่อแล้ว • ไม่สร้าง Job ใหม่');
   });
   $('#creation-filter').addEventListener('change', () => {listSignature = ''; window.renderCreationQueue(ui.state || {});});
-  $('#creation-status-filter').addEventListener('change', () => {listSignature = ''; window.renderCreationQueue(ui.state || {});});
+  $('#creation-status-filter').addEventListener('change', () => {jobsFilter = ''; listSignature = ''; window.renderCreationQueue(ui.state || {});});
+  $('#jobs-filters').addEventListener('click', event => {
+    const tab = event.target.closest('button[data-jobs-filter]');
+    if (!tab) return;
+    jobsFilter = tab.dataset.jobsFilter;
+    $('#creation-status-filter').value = 'all';
+    listSignature = ''; window.renderCreationQueue(ui.state || {});
+  });
   $('#creation-list').addEventListener('click', async event => {
+    const nav = event.target.closest('button[data-job-open], button[data-job-progress], button[data-job-recovery]');
+    if (nav && nav.dataset && ('jobProgress' in nav.dataset || 'jobOpen' in nav.dataset || 'jobRecovery' in nav.dataset)) {
+      if ('jobProgress' in nav.dataset) restoreProgress();
+      else if ('jobRecovery' in nav.dataset) {
+        const row = ui.state?.creation_queue?.items?.find(item=>item.queue_id===nav.dataset.jobRecovery);
+        if (row) {ui.automationErrorPage='creation';window.openRecoveryWizardForRow?.(row);}
+      } else showPage(nav.dataset.jobOpen || 'story');
+      return;
+    }
     const button = event.target.closest('button[data-cq]'); if (!button || button.disabled) return;
     const row = ui.state?.creation_queue?.items.find(item => item.queue_id === button.dataset.id); if (!row) return;
     if (button.dataset.cq === 'cover') {
@@ -341,6 +360,14 @@
     const payload = {queue_id:row.queue_id, direction:Number(button.dataset.direction || 0)};
     await command(`creation_${button.dataset.cq}`, payload, button.dataset.cq === 'retry' ? 'รับคำสั่งทำต่อแล้ว • ใช้ Job และไฟล์เดิม' : 'อัปเดตคิวแล้ว');
     button.disabled = false;
+  });
+  $('#creation-other-jobs').addEventListener('click', event => {
+    const product = event.target.closest('[data-product-in-jobs]');
+    if (product) { showPage('products'); const drawer = document.querySelector('.product-jobs-drawer'); if (drawer) drawer.open = true; return; }
+    const story = event.target.closest('[data-story-in-jobs]');
+    if (story) { showPage('story'); $('#story-old-tab')?.click(); return; }
+    const drama = event.target.closest('[data-drama-in-jobs]');
+    if (drama) { showPage('drama'); document.querySelector(`[data-open-series="${CSS.escape(drama.dataset.dramaInJobs)}"]`)?.click(); }
   });
   window.renderCreationQueue = state => {
     const queue = state.creation_queue || {items:[], counts:{}, paused:true};
@@ -366,6 +393,65 @@
     $('#creation-clear-hint').textContent = queue.can_clear_stuck_state === true
       ? 'ล้างเฉพาะแคชสถานะ • ไม่ลบรูป เสียง วิดีโอ หรือประวัติงาน'
       : 'ยังมีงานหรือคำสั่งกำลังทำอยู่ • ยกเลิกแล้วรอหยุดก่อนล้างสถานะ';
+    const queuedJobs = new Set(items.map(row => String(row.job_id || '')).filter(Boolean));
+    const supplemental = [];
+    const products = [...(Array.isArray(state.products) ? state.products : []),
+      ...(Array.isArray(state.stories) ? state.stories.filter(job => job.content_kind === 'product') : []),
+      ...(Array.isArray(state.product_preparations) ? state.product_preparations : [])];
+    const seenProducts = new Set();
+    for (const job of products) {
+      if (!job.id || seenProducts.has(String(job.id)) || queuedJobs.has(String(job.id))) continue;
+      seenProducts.add(String(job.id));
+      if (['deleted','video_deleted'].includes(job.status) || state.product_job_controls?.[job.id]?.hidden || state.product_job_controls?.[job.id]?.deleted || state.product_job_controls?.[job.id]?.permanently_deleted) continue;
+      const done = job.ready || job.status === 'ready' && job.video_status === 'ready';
+      const active = state.product_progress?.active && state.product_progress?.job_id === job.id;
+      supplemental.push({kind:'product',id:String(job.id),title:job.title || job.product_name || 'คลิปสินค้า',
+        status:done?'completed':active?'running':job.last_error?'failed':['cancelled','canceled'].includes(job.status)?'cancelled':'paused',
+        detail:job.sourcePreparation?'เตรียมข้อมูลสินค้าไว้แล้ว':`ภาพ ${Number(job.image_count || job.generated_image_count || 0)} จาก ${Number(job.scene_count || job.segment_target_count || 3)} ฉาก`});
+    }
+    for (const job of Array.isArray(state.stories) ? state.stories : []) {
+      if (!job.id || queuedJobs.has(String(job.id)) || job.series_id || job.content_kind === 'product' || job.product_story || job.cast_creation || job.story_source_only) continue;
+      const code = String(job.status || '').toLowerCase();
+      if (['deleted','video_deleted'].includes(code)) continue;
+      const stopped = ['cancelled','canceled'].includes(code) && job.pipeline_stage === 'user_cancel';
+      if (['cancelled','canceled'].includes(code) && !stopped) continue;
+      const done = ['ready','completed','complete','success','succeeded'].includes(code) && ['ready','completed','complete','success','succeeded'].includes(String(job.video_status || '').toLowerCase());
+      supplemental.push({kind:'story', id:String(job.id), title:job.title || job.topic || 'เรื่องเล่า Shorts', status:done?'completed':stopped?'cancelled':code==='action_required'?'action_required':['error','failed'].includes(code)?'failed':state.story_progress?.job_id===job.id && state.story_progress?.active?'running':'paused'});
+    }
+    for (const series of Array.isArray(state.drama_series?.items) ? state.drama_series.items : []) {
+      if (!series.id) continue;
+      const episodes = Array.isArray(series.episodes) ? series.episodes : [];
+      const done = episodes.filter(ep => ep.status === 'completed').length;
+      const status = episodes.some(ep => ep.status === 'failed') || series.status === 'needs_attention' ? 'failed'
+        : episodes.some(ep => ep.status === 'running') ? 'running'
+        : series.status === 'completed' ? 'completed' : series.status === 'cancelled' ? 'cancelled' : 'queued';
+      supplemental.push({kind:'drama', id:String(series.id), title:series.title || 'ละครสั้น', status, detail:`เสร็จแล้ว ${done} จาก ${Number(series.episode_count || episodes.length || 0)} ตอน`});
+    }
+    const allJobs = items.concat(supplemental);
+    const jobGroups = [
+      ['open', 'ยังไม่เสร็จ', row => row.status !== 'completed' && (row.status !== 'cancelled' || row.job_id || row.kind)],
+      ['attention', 'ต้องจัดการ', row => row.status === 'action_required' || row.status === 'failed' || (row.status === 'cancelled' && (row.job_id || row.kind))],
+      ['active', 'กำลังทำ / รอคิว', row => ['running','queued'].includes(row.status)],
+      ['stopped', 'หยุดไว้', row => row.status === 'cancelled' && Boolean(row.job_id || row.kind)],
+      ['done', 'เสร็จแล้ว', row => row.status === 'completed'],
+    ];
+    $('#jobs-filters').innerHTML = jobGroups.map(([key, label, match]) => `<button type="button" role="tab" class="jobs-filter" data-jobs-filter="${key}" aria-selected="${jobsFilter === key}">${label} <span>${allJobs.filter(match).length}</span></button>`).join('');
+    const otherVisible = supplemental.filter(row => jobsFilter ? Boolean(jobGroups.find(group => group[0] === jobsFilter)?.[2](row))
+      : ($('#creation-status-filter').value === 'completed' ? row.status === 'completed' : $('#creation-status-filter').value === 'all' || row.status !== 'completed'));
+    const otherKey = JSON.stringify([otherVisible, jobsFilter]);
+    if (otherKey !== otherSignature) {
+      otherSignature = otherKey;
+      $('#creation-other-jobs').innerHTML = otherVisible.map(row => {
+        const id = esc(row.id);
+        const stateCode = row.status === 'cancelled' ? 'paused' : row.status;
+        const button = row.kind === 'product'
+          ? `<button type="button" class="button secondary compact jobs-primary" data-product-in-jobs="${id}">ดูงาน</button>`
+          : row.kind === 'drama'
+          ? `<button type="button" class="button secondary compact jobs-primary" data-drama-in-jobs="${id}">เปิดโปรเจกต์</button>`
+          : `<button type="button" class="button secondary compact jobs-primary" data-story-in-jobs="${id}">${row.status === 'action_required' ? 'ดูวิธีแก้' : 'ดูงาน'}</button>`;
+        return `<article class="cq-row job-row" role="listitem"><div class="cq-order">${row.kind === 'drama' ? 'EP' : '↻'}</div><div>${SmartFlowStatus.pill(stateCode,{extraClass:'cq-status',resumable:row.status==='failed'})}<span class="cq-kind">${row.kind === 'drama' ? 'ละครสั้น' : row.kind === 'product' ? 'คลิปสินค้า' : 'เรื่องเล่า Shorts'}</span><h3>${esc(row.title)}</h3><div class="cq-meta">${esc(row.detail || 'ทำต่อจากงานเดิมได้')}</div></div><div class="cq-row-actions">${button}</div></article>`;
+      }).join('');
+    }
     const oldJobs = queue.recoverable_jobs || [];
     const oldTotal=Number(queue.recoverable_job_count || oldJobs.length);
     $('#creation-old-hint').textContent=`${oldTotal>oldJobs.length ? `แสดง ${oldJobs.length} จาก ${oldTotal} งาน • ` : ''}ทำต่อจากไฟล์เดิม หรือกดลบรายการที่ไม่ต้องการ • ไฟล์งานยังอยู่`;
@@ -379,13 +465,18 @@
       || (Boolean(button.dataset.dismissJob) && queue.can_remove_old_entries !== true);});
     const filter = $('#creation-filter').value;
     const statusFilter = $('#creation-status-filter').value || 'unfinished';
-    const rank = {running:0, queued:1, failed:2, cancelled:2, completed:3};
+    // Keep the active job visible, then surface stopped jobs with a Resume
+    // action before the queued backlog. This changes display only, not FIFO.
+    const rank = row => row.status === 'running' ? 0
+      : row.status === 'failed' || row.status === 'action_required' || (row.status === 'cancelled' && row.job_id) ? 1
+      : row.status === 'queued' ? 2 : row.status === 'completed' ? 3 : 4;
     const pending = items.filter(row=>['queued','running'].includes(row.status));
     const visible = items.filter(row => filter === 'all' || (filter === 'long_video' ? Boolean(row.long_video)
       : (row.mode || 'story') === filter && !(filter === 'story' && row.long_video)))
-      .filter(row => statusFilter === 'all' || (statusFilter === 'completed' ? row.status === 'completed'
-        : ['queued','running','failed'].includes(row.status) || (row.status === 'cancelled' && row.job_id)))
-      .sort((a,b)=>(rank[a.status]??3)-(rank[b.status]??3) ||
+      .filter(row => jobsFilter ? Boolean(jobGroups.find(group => group[0] === jobsFilter)?.[2](row))
+        : statusFilter === 'all' || (statusFilter === 'completed' ? row.status === 'completed'
+        : ['queued','running','failed','action_required'].includes(row.status) || (row.status === 'cancelled' && row.job_id)))
+      .sort((a,b)=>rank(a)-rank(b) ||
         (['failed','cancelled'].includes(a.status) && ['failed','cancelled'].includes(b.status)
           ? String(b.finished_at || b.created_at || '').localeCompare(String(a.finished_at || a.created_at || '')) : 0));
     const coverStates = new Map(visible.map(row => [row.queue_id, queueCoverState(row, state)]));
@@ -399,19 +490,26 @@
         const position = pending.some(item=>item.queue_id===row.queue_id) ? pending.findIndex(item=>item.queue_id===row.queue_id)+1 : '✓';
         const editable = status === 'queued' && !row.job_id && row.mode !== 'drama';
         const cover = coverStates.get(row.queue_id);
-        const btn = (action, text, extra='') => `<button class="button ${action === 'retry' ? 'secondary' : 'ghost'} compact" data-cq="${action}" data-id="${id}" ${extra}>${text}</button>`;
+        const btn = (action, text, extra='', primary=false) => `<button class="button ${action === 'retry' ? 'secondary' : 'ghost'} compact${primary ? ' jobs-primary' : ''}" data-cq="${action}" data-id="${id}" ${extra}>${text}</button>`;
         let actions = '';
-        if (editable) actions += btn('move','↑','data-direction="-1" aria-label="เลื่อนขึ้น"') + btn('move','↓','data-direction="1" aria-label="เลื่อนลง"') + btn('edit','แก้ไข');
+        if (editable) actions += btn('move','↑','data-direction="-1" aria-label="เลื่อนขึ้น"') + btn('move','↓','data-direction="1" aria-label="เลื่อนลง"');
         if (status !== 'running' && row.mode !== 'drama') actions += btn('remove','นำออกจากคิว');
-        if (['failed','cancelled'].includes(status) && row.mode !== 'drama') actions += btn('retry','ทำต่อจากเดิม');
-        if (status === 'completed' && row.job_id) actions += btn('result','ดูวิดีโอ');
-        if (status === 'failed') actions += btn('logs','ดู Log');
+        if (status === 'failed' || status === 'action_required') actions += btn('logs','ดูบันทึกเหตุการณ์');
         if (cover?.attention) actions += btn('cover','จัดการปก AI');
+        const main = status === 'running' ? '<button type="button" class="button secondary compact jobs-primary" data-job-progress>ดูความคืบหน้า</button>'
+          : status === 'completed' && row.job_id ? btn('result','ดูวิดีโอ','',true)
+          : needsRecovery(row) ? `<button type="button" class="button secondary compact jobs-primary" data-job-recovery="${id}">ดูวิธีแก้</button>`
+          : ['failed','cancelled'].includes(status) && row.job_id && row.mode !== 'drama' ? btn('retry','ทำต่อจากจุดเดิม','',true)
+          : editable ? btn('edit','แก้ไข','',true)
+          : `<button type="button" class="button secondary compact jobs-primary" data-job-open="${row.mode === 'product' ? 'products' : row.mode === 'drama' ? 'drama' : 'story'}">${status === 'failed' ? 'ดูวิธีแก้' : 'ดูงาน'}</button>`;
         const creativeNote=creativeStates.get(row.queue_id)?`<div class="cq-meta">${esc(creativeStates.get(row.queue_id))}</div>`:'';
-        const notice = creativeNote+(cover?.recovered ? '<div class="cq-meta">ปก AI บันทึกแล้ว • กด Run Queue เพื่อทำคิวต่อ</div>'
+        const notice = creativeNote+(cover?.recovered ? '<div class="cq-meta">ปก AI บันทึกแล้ว • กดเริ่มคิวเพื่อทำต่อ</div>'
           : status === 'cancelled' && row.job_id ? '<div class="cq-meta">หยุดไว้ • บท ภาพ และคลิปที่บันทึกแล้วจะใช้ต่อจากงานเดิม</div>'
-          : row.error ? `<div class="cq-error">${esc(row.error)}</div>` : '');
-        return `<article class="cq-row" role="listitem"><div class="cq-order">${status==='failed' ? '!' : status==='cancelled' ? '–' : position}</div><div><span class="cq-status sf-status ${status}" data-tone="${SmartFlowStatus.tone(status)}">${status === 'cancelled' && row.job_id ? 'หยุดไว้' : status === 'failed' && row.mode !== 'drama' ? SmartFlowStatus.RESUMABLE_FAILED : labels[status]}</span><span class="cq-kind">${kindLabel(row)}</span><h3>${esc(row.topic || row.link || '')}</h3><div class="cq-meta">${row.provider === 'gemini' ? 'Gemini Web' : 'ChatGPT Web • โมเดลปัจจุบัน'} • ${row.mode === 'product' ? '3 ช็อต' : Number(row.scene_count || 10)+' ฉาก'} • ${subtitleEnabled(row) ? 'เปิดซับ' : 'ปิดซับ'}<br>${id}${row.job_id ? ' • '+esc(row.job_id) : ''}</div>${notice}${status === 'running' ? `<div class="cq-meta" data-cq-stage="${id}"></div><progress data-cq-progress="${id}" max="100" value="0" aria-label="ความคืบหน้าคลิป"></progress>` : ''}</div><div class="cq-row-actions">${actions}</div></article>`;
+          : row.error ? '<div class="cq-meta">งานนี้สะดุด เปิดบันทึกเหตุการณ์เพื่อดูรายละเอียด</div>' : '');
+        const stateCode = status === 'cancelled' && row.job_id ? 'paused' : status;
+        const sceneCount = Number(row.scene_count || row.settings?.scene_count || (row.mode === 'product' ? 3 : 10));
+        const meta = `${row.provider === 'gemini' ? 'Gemini Web' : 'ChatGPT Web'} • ${Number.isFinite(sceneCount) ? sceneCount : 3} ฉาก • ${subtitleEnabled(row) ? 'เปิดซับ' : 'ปิดซับ'}`;
+        return `<article class="cq-row job-row" role="listitem"><div class="cq-order">${status==='failed' ? '!' : status==='cancelled' ? '–' : position}</div><div>${SmartFlowStatus.pill(stateCode,{extraClass:'cq-status',resumable:status==='failed' && row.mode!=='drama'})}<span class="cq-kind">${kindLabel(row)}</span><h3>${esc(row.topic || row.link || '')}</h3><div class="cq-meta">${meta}</div>${notice}${status === 'running' ? `<div class="cq-meta" data-cq-stage="${id}"></div><progress data-cq-progress="${id}" max="100" value="0" aria-label="ความคืบหน้าคลิป"></progress>` : ''}</div><div class="cq-row-actions">${main}${actions ? `<details class="jobs-more"><summary aria-label="ตัวเลือกเพิ่มเติมของงานนี้">⋯</summary><div>${actions}</div></details>` : ''}</div></article>`;
       }).join('') : items.length ? '<div class="cq-empty"><strong>ไม่มีงานในตัวกรองนี้</strong>ดูงานเก่าได้ที่ “ประวัติทั้งหมด” • ไม่มีรายการถูกลบ</div>' : '<div class="cq-empty"><strong>คิวนี้ยังว่าง</strong>เพิ่มลิงก์สินค้าหรือหัวข้อ Shorts ได้เลย<br>ยังไม่เริ่มใช้บริการ AI จนกว่าจะกดเริ่มคิว</div>';
     }
     $$('#creation-list button[data-cq]').forEach(button => {

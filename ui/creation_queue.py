@@ -543,6 +543,17 @@ class CreationQueueMixin:
         if result['ready']:
             return True
         message = result['message']
+        # A queued cover has not reached the provider. A connected Extension
+        # with the wrong protocol version cannot claim it, so a periodic queue
+        # tick would otherwise report "working" forever. Keep the exact request
+        # and final video, and make the dependency visible before any Send.
+        if result.get('phase') == 'queued':
+            extension, compatible = self._compatible_extension()
+            if extension.get('connected') and not compatible:
+                result = {**result, 'waiting': False}
+                message = (f"พักคิว • Extension รุ่นไม่ตรง • ต้องใช้รุ่น "
+                           f"{self.bridge.REQUIRED_EXTENSION_VERSION} ก่อนสร้างปก AI • "
+                           "คำขอปกและวิดีโอเดิมยังอยู่ • เมื่อเชื่อมต่อรุ่นที่ถูกต้องแล้วกดเริ่มคิวต่อ")
         item = item or self.story_queue.item_for_job(job_id)
         if item and item.get('status') in {'running', 'queued'}:
             # Keep Job/options/attempt/receipts. Do not release_running(), which

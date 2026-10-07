@@ -3,7 +3,7 @@
   const dialog = document.createElement('dialog');
   dialog.className = 'clip-cover-dialog';
   dialog.setAttribute('aria-labelledby', 'clip-cover-title');
-  dialog.innerHTML = `<header><div><span class="eyebrow">COVER STUDIO</span><h2 id="clip-cover-title">แก้ปกเอง หรือสร้างปกใหม่ด้วย AI</h2></div><button class="button ghost" data-cover-close aria-label="ปิดหน้าปก">✕</button></header>
+  dialog.innerHTML = `<header><div><span class="eyebrow">สร้างและแก้ปก</span><h2 id="clip-cover-title">แก้ปกเอง หรือสร้างปกใหม่ด้วย AI</h2></div><button class="button ghost" data-cover-close aria-label="ปิดหน้าปก">✕</button></header>
     <p class="cover-hint">แก้ปกเองใช้ภาพที่มีอยู่ ไม่ใช้เครดิต AI • ปุ่มสร้างปกใหม่ด้วย AI ใช้โควตาสร้างภาพ • ทั้งสองแบบไม่สร้างวิดีโอใหม่</p>
     <div class="cover-editor-grid"><section class="cover-preview-box"><img alt="พรีวิวปกคลิป" hidden><p>กำลังเตรียมพรีวิว…</p></section>
     <section class="cover-controls"><label class="field"><span>ข้อความปก <small data-cover-count></small></span><input data-cover-headline placeholder="วลีสั้นที่ชวนติดตาม"><small>ปกทำเองสูงสุด 60 ตัวอักษร • ปก AI สูงสุด 40 ตัวอักษร • เว้นว่างเพื่อให้ AI ออกแบบจากชื่อคลิป</small></label>
@@ -161,7 +161,7 @@
             q('.cover-preview-box img').src=url;q('.cover-preview-box img').hidden=false;q('.cover-preview-box p').hidden=true;
             const item=libraryItem(editor.item_id);if(item)item.cover_url=url;
             const preview=document.querySelector('#detail-modal .detail-video');if(preview)preview.poster=url;
-            status('บันทึกปกแล้ว • แสดงภาพที่บันทึกในโปรแกรม • กด Run Queue เพื่อทำคิวต่อได้');
+            status('บันทึกปกแล้ว • แสดงภาพที่บันทึกในโปรแกรม • กดเริ่มคิวเพื่อทำงานต่อได้');
           }
           break;
         }

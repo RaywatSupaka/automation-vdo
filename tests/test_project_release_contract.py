@@ -24,8 +24,8 @@ class ProjectReleaseContractTests(unittest.TestCase):
         self.assertIn(f"flow-{version}-", (ROOT / "browser_extension" / "flow.js").read_text(encoding="utf-8"))
         self.assertIn(f"flow-{version}-", (ROOT / "browser_extension" / "background.js").read_text(encoding="utf-8"))
 
-    def test_current_candidate_is_not_mislabeled_as_golden(self):
-        self.assertTrue(self.release["runtime"]["status"].startswith("candidate_"))
+    def test_current_runtime_is_not_mislabeled_as_golden(self):
+        self.assertTrue(self.release["runtime"]["status"].startswith(("candidate_", "root_dev_")))
         self.assertEqual(self.release["proven_baselines"]["reproducible_golden_flow"]["extension_version"], "0.15.112")
         self.assertEqual(self.release["proven_baselines"]["verified_three_shot_0_15_231"]["extension_version"], "0.15.231")
         self.assertEqual(self.release["proven_baselines"]["modern_extension_e2e"]["extension_version"], "0.15.216")

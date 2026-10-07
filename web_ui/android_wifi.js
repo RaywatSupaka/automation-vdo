@@ -22,9 +22,9 @@
     q('#android-wifi-badge').textContent = busy ? 'กำลังดำเนินการ' : connected ? 'เชื่อมต่อแล้ว' : state.phase === 'paired' ? 'จับคู่แล้ว • รอเชื่อมต่อ' : 'รอตรวจ / เชื่อมต่อ';
     q('#android-wifi-badge').classList.toggle('connected', Boolean(connected));
     panel.setAttribute('aria-busy', String(Boolean(busy)));
-    message(state.error || state.message || 'กดตรวจมือถือเพื่อเริ่มต้น');
+    message(state.error ? (window.smartflowSafeError?.(state.error)||'ตรวจมือถือไม่สำเร็จ') : state.message || 'กดตรวจมือถือเพื่อเริ่มต้น');
     const legacyStatus = document.querySelector('#queue-device');
-    if (legacyStatus) legacyStatus.textContent = state.error || state.message || 'กดตรวจมือถือเพื่อเริ่มต้น';
+    if (legacyStatus) legacyStatus.textContent = state.error ? (window.smartflowSafeError?.(state.error)||'ตรวจมือถือไม่สำเร็จ') : state.message || 'กดตรวจมือถือเพื่อเริ่มต้น';
     const selected = state.selected;
     q('#android-wifi-selected').textContent = selected ? `${selected.model} • Android ${selected.android} • ${selected.serial} • ${selected.shopee_installed ? 'พบ Shopee' : 'ยังตรวจไม่พบ Shopee'}` : 'ยังไม่มีมือถือที่ยืนยันพร้อมใช้งาน';
     q('#android-wifi-time').textContent = state.checked_at ? `ตรวจล่าสุด ${new Date(state.checked_at*1000).toLocaleTimeString('th-TH')}${fresh ? '' : ' • กดตรวจใหม่'}` : '';

@@ -47,6 +47,49 @@ def request_hash(value):
     return f'{result:08x}'
 
 
+def pre_send_bootstrap_failure(folder, job, trace=None):
+    """Prove the whole failed analysis history stopped before Story Start.
+
+    A bootstrap review is emitted by Background before it delivers START to
+    the content script. Any other progress, send evidence, saved media, or a
+    checkpoint with a conversation owner keeps the conservative resume path.
+    """
+    folder = Path(folder)
+    if job.get('ai_status') == 'ready' or (folder / 'prompts/ai_analysis_checkpoint.json').is_file():
+        return False
+    if any((folder / 'generated').glob('scene_*.png')):
+        return False
+    checkpoint = job.get('ai_resume_checkpoint') or {}
+    if checkpoint and (checkpoint.get('stage') != 'analysis'
+                       or checkpoint.get('evidence') != 'job_trace'
+                       or checkpoint.get('conversation_url')):
+        return False
+    rows = _trace(folder, job['id']) if trace is None else trace
+    if not rows:
+        return False
+    review_runs, error_runs = set(), set()
+    for row in rows:
+        action = row.get('action') or row.get('step')
+        if conversation_url(row.get('page_url'), str(job.get('image_ai_provider') or 'chatgpt')):
+            return False
+        run_id = str(row.get('run_id') or '')
+        if action == 'story_bootstrap_review':
+            if not run_id or (row.get('detail') or {}).get('reason') not in {
+                    'draft_present', 'attachment_present', 'conversation_present',
+                    'response_active', 'composer_not_ready', 'probe_failed', 'document_changed'}:
+                return False
+            review_runs.add(run_id)
+        elif action == 'error':
+            message = str(row.get('message') or '').upper()
+            if not run_id or not ('AI_WEB_WAIT_REVIEW' in message and 'ยังไม่ส่งคำขอ' in message
+                                  or 'AI_WEB_RESUME_REVIEW' in message):
+                return False
+            error_runs.add(run_id)
+        else:
+            return False
+    return bool(review_runs & error_runs)
+
+
 def ai_web_resume_target(folder, job):
     """Return a navigation hint. The content reader must still prove ownership."""
     folder = Path(folder)
@@ -89,6 +132,8 @@ def ai_web_resume_target(folder, job):
     image_target = pending_story_image_target(folder, job, trace)
     if image_target:
         return image_target
+    if pre_send_bootstrap_failure(folder, job, trace):
+        return None
     # An accepted initial analysis may not have reached the disk checkpoint.
     # Preserve its old request BEFORE package regeneration changes any wording.
     stopped = str(job.get('last_error') or job.get('automation_error') or job.get('error') or

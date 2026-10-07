@@ -56,7 +56,8 @@ class AISendDiagnosticsBridgeTests(unittest.TestCase):
                 self.heartbeat()
                 self.assertEqual(self.status()["client"]["ai_send_diagnostics"], detail)
         for reason in ("draft_mismatch", "send_not_ready", "capture_missing", "target_changed",
-                       "readiness_changed", "target_blocked", "rejected_before_press"):
+                       "readiness_changed", "target_blocked", "rejected_before_press",
+                       "input_not_delivered"):
             with self.subTest(reason=reason):
                 detail = {"gesture_phase": "not_started", "preflight_reason": reason}
                 self.assert_evidence(self.progress("error", **detail), detail)
@@ -69,6 +70,14 @@ class AISendDiagnosticsBridgeTests(unittest.TestCase):
                     "send_target_strategy": value, "preflight_reason": value,
                     "prompt": secret, "button": {"expected": secret}, "cookie": secret,
                 }}), {})
+
+    def test_viewport_recovery_evidence_is_bounded_and_prompt_free(self):
+        detail = {"gesture_phase": "released", "send_target_strategy": "viewport_scroll",
+                  "viewport_width": 360, "viewport_height": 340, "scroll_attempts": 2}
+        self.assert_evidence(self.progress("ai_send_dispatched", detail=detail), detail)
+        self.assertEqual(LocalBridge._safe_ai_send_diagnostics({"detail": {
+            "viewport_width": 10001, "viewport_height": -1, "scroll_attempts": 3,
+            "prompt": "PRIVATE PROMPT"}}), {})
 
     def test_request_owner_recovery_evidence_survives_http_state_trace(self):
         detail = {"request_owner_found": False, "request_matches": False,

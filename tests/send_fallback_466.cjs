@@ -11,7 +11,7 @@ const marker = 'const resolveAiSendPrepressPoint = (';
 const start = source.indexOf(marker);
 const end = source.indexOf('const readInitialSendPoint =', start + marker.length);
 assert(start >= 0 && end > start, 'Production prepress resolver extraction markers exist');
-const production = source.slice(start, end) + '\nwindow.__fixtureResolve = resolveAiSendPrepressPoint;';
+const production = source.slice(start, end) + '\nwindow.__fixtureResolve = resolveAiSendPrepressPoint; window.__fixtureInputProbe = probeAiSendInputDelivery;';
 const FIXTURE_URL = 'https://chatgpt.com/c/smartflow-offline-send-fixture';
 const DRAFT = 'Synthetic offline draft only.\nReturn one small JSON object.';
 const VIEWPORT = {width:400, height:850};
@@ -35,6 +35,8 @@ const resolve = (page, {initial=false, focusTarget=false, key='', allowFallback=
   page.evaluate(({draft,initial,focusTarget,key,allowFallback}) =>
     window.__fixtureResolve(draft, initial, focusTarget, key, allowFallback),
   {draft,initial,focusTarget,key,allowFallback});
+const probe = (page,phase,point) => page.evaluate(({phase,point}) =>
+  window.__fixtureInputProbe(phase,point),{phase,point});
 
 async function setup(page, options={}) {
   await page.setViewportSize(VIEWPORT);
@@ -89,6 +91,7 @@ async function snapshot(page) {
     return {scrollCalls:window.__fixtureScrollCalls, clicks:window.__fixtureClicks,
       rect:[rect.left,rect.top,rect.width,rect.height], prompt:document.querySelector('#prompt-textarea').value,
       preparation:preparation ? {scrollAttempted:preparation.scrollAttempted,
+        scrollAttempts:preparation.scrollAttempts,
         buttonMatches:preparation.button === document.querySelector('#send'),
         editorMatches:preparation.editor === document.querySelector('#prompt-textarea')} : null,
       gesture:gesture ? {armed:gesture.armed, scrollAttempted:gesture.scrollAttempted,
@@ -123,6 +126,41 @@ async function rejectedWithoutScroll(page, options, allowFallback=true) {
 }
 
 const cases = [
+  ['input_delivery_probe', async page => {
+    await setup(page);
+    const first = await resolve(page,{initial:true,focusTarget:true});
+    const point = await resolve(page,{key:first.key});
+    equal(point.ok,true,'Exact Send target arms before harmless input probe');
+    equal((await probe(page,'start',point)).ok,true,'Input probe starts for exact armed point');
+    equal((await probe(page,'verify',point)).ok,false,'CDP acknowledgement alone gives no page input proof');
+    await probe(page,'start',point);
+    await page.evaluate(({x,y}) => document.querySelector('#send').dispatchEvent(
+      new MouseEvent('mousemove',{bubbles:true,clientX:x,clientY:y})),point);
+    equal((await probe(page,'verify',point)).ok,false,'Synthetic untrusted move cannot prove delivery');
+    const session = await page.context().newCDPSession(page);
+    try {
+      await probe(page,'start',point);
+      await session.send('Input.dispatchMouseEvent',{
+        type:'mouseMoved',x:5,y:5,button:'none',buttons:0,pointerType:'mouse'});
+      equal((await probe(page,'verify',point)).ok,false,'Trusted off-target move cannot prove Send delivery');
+      await probe(page,'start',point);
+      await session.send('Input.dispatchMouseEvent',{
+        type:'mouseMoved',x:point.x-1,y:point.y,button:'none',buttons:0,pointerType:'mouse'});
+      await session.send('Input.dispatchMouseEvent',{
+        type:'mouseMoved',x:point.x,y:point.y,button:'none',buttons:0,pointerType:'mouse'});
+      equal((await probe(page,'verify',point)).ok,true,'Trusted CDP move reached exact Send target');
+      equal((await probe(page,'verify',point)).ok,false,'Input proof is single use');
+      await probe(page,'start',point);
+      await session.send('Input.dispatchMouseEvent',{
+        type:'mouseMoved',x:point.x-1,y:point.y,button:'none',buttons:0,pointerType:'mouse'});
+      await session.send('Input.dispatchMouseEvent',{
+        type:'mouseMoved',x:point.x,y:point.y,button:'none',buttons:0,pointerType:'mouse'});
+      await page.setViewportSize({width:420,height:VIEWPORT.height});
+      equal((await probe(page,'verify',point)).ok,true,'Delivered move alone remains a separate proof');
+      equal((await resolve(page,{key:point.key})).ok,false,'Resize still invalidates final arm before any press');
+      equal((await snapshot(page)).clicks.length,0,'No probe path clicks Send');
+    } finally { await session.detach(); }
+  }],
   ['center', async page => {
     await setup(page);
     const point = await resolve(page,{initial:true,focusTarget:true});
@@ -197,6 +235,40 @@ const cases = [
     proof = await snapshot(page);
     equal(proof.scrollCalls.length,1,'Visible rereads cannot repeat scroll');
     equal(proof.clicks.length,0,'Scroll preparation does not click');
+  }],
+  ['narrow_viewport_second_owned_scroll', async page => {
+    await setup(page,{offscreen:true});
+    await page.setViewportSize({width:360,height:340});
+    await page.evaluate(() => {
+      const button=document.querySelector('#send');
+      const nativeScroll=button.scrollIntoView.bind(button);
+      let calls=0;
+      button.scrollIntoView=(options) => {
+        if (++calls===1) window.scrollTo(0,200);
+        else nativeScroll(options);
+      };
+    });
+    const point=await resolve(page,{initial:true,focusTarget:true});
+    await pointHitsTarget(page,point,'Narrow viewport after partial first scroll');
+    equal(point.point_strategy,'viewport_scroll','Second owned scroll reaches the button');
+    equal((await snapshot(page)).preparation.scrollAttempts,2,'Only two scroll claims are spent');
+    const armed=await resolve(page,{key:point.key});
+    equal(armed.ok,true,'Same owned draft and viewport arm one Send point');
+    equal((await snapshot(page)).clicks.length,0,'Prepress recovery never sends');
+  }],
+  ['responsive_resize_after_failed_scroll', async page => {
+    await setup(page,{offscreen:true,fixed:true});
+    const blocked=await resolve(page,{initial:true,focusTarget:true});
+    equal(blocked.reason,'target_blocked','Fixed control cannot be clicked outside viewport');
+    await page.setViewportSize({width:360,height:340});
+    await page.evaluate(() => {
+      const button=document.querySelector('#send');
+      button.style.position='absolute';
+    });
+    const recovered=await resolve(page,{initial:true,focusTarget:true});
+    await pointHitsTarget(page,recovered,'Responsive reflow after viewport resize');
+    equal((await snapshot(page)).preparation.scrollAttempts,2,'Viewport reflow earns only one additional scroll');
+    equal((await snapshot(page)).clicks.length,0,'Responsive reflow does not send a prompt');
   }],
   ['fixed_offscreen_no_geometry_change', async page => {
     await setup(page,{offscreen:true,fixed:true});

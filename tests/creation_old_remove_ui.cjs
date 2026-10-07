@@ -35,6 +35,7 @@ const {chromium}=require('playwright');
  await page.locator('[data-dismiss-job="JOB-OLD-0"]').click();
  await page.locator('#creation-confirm-accept').click();
  assert.deepEqual(await page.evaluate(()=>calls[0]),{action:'creation_remove_old',payload:{queue_ids:[],job_ids:['JOB-OLD-0'],confirmed:true}});
+ await page.locator('#creation-list .jobs-more summary').click();
  await page.locator('[data-cq="remove"][data-id="CQ-STOPPED"]').click();
  await page.locator('#creation-confirm-accept').click();
  assert.deepEqual(await page.evaluate(()=>calls[1].payload),{queue_ids:['CQ-STOPPED'],job_ids:[],confirmed:true});

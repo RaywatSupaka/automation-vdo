@@ -41,25 +41,25 @@ const ui = {
 };
 
 const pageMeta = {
-  intro: ['VIDEO INTRO', 'อินโทรคลิป'],
-  presenter: ['PRESENTER STUDIO', 'ตัวละครผู้บรรยาย'],
-  'presenter-settings': ['PRESENTER SETTINGS', 'ตั้งค่าผู้บรรยาย'],
-  dashboard: ['SMARTFLOW CONTROL CENTER', 'หน้าแรก'],
-  products: ['SHOPEE VIDEO', 'คลิปสินค้า Shopee'],
-  story: ['STORY SHORTS STUDIO', 'เล่าเรื่อง Shorts'],
-  drama: ['AI DRAMA SERIES STUDIO', 'ละครสั้น AI'],
-  library: ['FINAL OUTPUTS', 'คลังวิดีโอ'],
-  creation: ['CREATION QUEUE', 'คิวสร้างคลิป'],
-  voice: ['AI VOICE', 'เสียงพากย์ AI'],
-  subtitle: ['AI SUBTITLE', 'ซับไตเติล'],
-  audio: ['AUDIO MIX', 'เพลงและเสียงประกอบ'],
-  logo: ['BRANDING', 'โลโก้'],
-  queue: ['SHOPEE • ANDROID', 'โพสต์ Shopee'],
-  settings: ['WORKSPACE SETTINGS', 'ค่าเริ่มต้นและคุณภาพ'],
-  guide: ['SETUP CENTER', 'ตั้งค่าครั้งแรกและคู่มือ'],
-  'ai-chat': ['WEBVIEW2 PROTOTYPE', 'AI Chat'],
-  logs: ['LIVE ACTIVITY', 'ช่วยเหลือและบันทึกระบบ'],
-  longvideo: ['LONG VIDEO', 'สร้างคลิปยาว 16:9'],
+  intro: ['อินโทรคลิป', 'อินโทรคลิป'],
+  presenter: ['ตัวละครผู้บรรยาย', 'ตัวละครผู้บรรยาย'],
+  'presenter-settings': ['ตั้งค่าผู้บรรยาย', 'ตั้งค่าผู้บรรยาย'],
+  dashboard: ['ศูนย์ควบคุม SmartFlow', 'หน้าแรก'],
+  products: ['คลิปสินค้า Shopee', 'คลิปสินค้า Shopee'],
+  story: ['สร้างเรื่องเล่า Shorts', 'เล่าเรื่อง Shorts'],
+  drama: ['สร้างละครสั้น AI', 'ละครสั้น AI'],
+  library: ['ผลงานสำเร็จ', 'คลังวิดีโอ'],
+  creation: ['งานและคิว', 'งานของฉัน'],
+  voice: ['เสียงพากย์ AI', 'เสียงพากย์ AI'],
+  subtitle: ['คำบรรยาย', 'ซับไตเติล'],
+  audio: ['เพลงและเสียงประกอบ', 'เพลงและเสียงประกอบ'],
+  logo: ['โลโก้และแบรนด์', 'โลโก้'],
+  queue: ['โพสต์ผ่านโทรศัพท์ Android', 'โพสต์ Shopee'],
+  settings: ['ค่าพร้อมใช้', 'ค่าเริ่มต้นและคุณภาพ'],
+  guide: ['ตั้งค่าครั้งแรก', 'ตั้งค่าครั้งแรกและคู่มือ'],
+  'ai-chat': ['หน้าทดลอง', 'AI Chat'],
+  logs: ['กิจกรรมปัจจุบัน', 'ช่วยเหลือและบันทึกระบบ'],
+  longvideo: ['สร้างคลิปยาว', 'สร้างคลิปยาว 16:9'],
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -268,6 +268,7 @@ async function prepareLogoImage(file) {
 }
 
 function toast(message, kind = 'info') {
+  if (kind === 'error') message = safeUiError(message);
   const node = $('#toast');
   node.className = `toast ${kind}`;
   node.setAttribute('role', kind === 'error' ? 'alert' : 'status');
@@ -277,6 +278,15 @@ function toast(message, kind = 'info') {
   clearTimeout(node._timer);
   node._timer = setTimeout(() => node.classList.remove('show'), kind === 'error' ? 12000 : 4200);
 }
+
+function safeUiError(message) {
+  const value = String(message || '').trim();
+  if (!value || !/[ก-๙]/u.test(value) || /Traceback|Exception|Error:|\.py\b|[A-Z]:[\\/]|\/api\/|\b(?:HTTP|JSON|SQL)\b|\b[A-Z][A-Z0-9_]{3,}\b/.test(value)) {
+    return 'ทำรายการไม่สำเร็จ กรุณาตรวจสถานะงานแล้วลองอีกครั้ง หากยังพบปัญหาให้เปิดรายละเอียดสำหรับทีมช่วยเหลือ';
+  }
+  return value;
+}
+window.smartflowSafeError = safeUiError;
 
 function showPage(page, updateHash = true) {
   if (page === 'video') page = 'settings';
@@ -447,7 +457,7 @@ function renderSystem(state) {
   const voiceCredit = creditPresentation(state.credits?.voice || {}, 'voice');
   const subtitleCredit = creditPresentation(state.credits?.subtitle || {}, 'subtitle');
   $('#health-grid').innerHTML = [
-    statusCard('↔', 'Local Bridge', sys.bridge_online ? `ออนไลน์ที่พอร์ต ${sys.bridge_port}` : 'ระบบหลังบ้านยังไม่พร้อม', sys.bridge_online),
+    statusCard('↔', 'การเชื่อมต่อ Chrome', sys.bridge_online ? `ออนไลน์ที่พอร์ต ${sys.bridge_port}` : 'ระบบหลังบ้านยังไม่พร้อม', sys.bridge_online),
     statusCard('⌁', 'Chrome Extension', sys.extension_compatible ? `รุ่น ${sys.extension_version} เชื่อมแล้ว` : `ต้องใช้รุ่น ${state.app.extension_required}`, sys.extension_compatible),
     statusCard('◉', 'AI Voice', sys.voice_configured ? voiceCredit.value : 'ยังไม่ได้เชื่อม API Key', Boolean(state.credits?.voice?.connected)),
     statusCard('字', 'AI Subtitle', sys.subtitle_connected ? subtitleCredit.value : 'ยังไม่ได้เชื่อม Subtitle Token', Boolean(state.credits?.subtitle?.connected)),
@@ -541,7 +551,7 @@ function renderProducts(products) {
   if (!ui.selectedProductId || !products.some(job => job.id === ui.selectedProductId)) ui.selectedProductId = products[0]?.id || '';
   const selected = $('#product-selected-job');
   const previous = ui.selectedProductId;
-  selected.innerHTML = products.length ? products.map(job => `<option value="${escapeHtml(job.id)}">${escapeHtml(job.id)} • ${escapeHtml(job.title)}</option>`).join('') : '<option value="">ยังไม่มี Product Job</option>';
+  selected.innerHTML = products.length ? products.map(job => `<option value="${escapeHtml(job.id)}">${escapeHtml(job.id)} • ${escapeHtml(job.title)}</option>`).join('') : '<option value="">ยังไม่มี งานสินค้า</option>';
   selected.value = previous;
   renderProductToolScope();
 }
@@ -556,7 +566,7 @@ function renderProductToolScope() {
 }
 
 function jobOptions(products, selectedValue = '') {
-  if (!products.length) return '<option value="">ยังไม่มี Product Job</option>';
+  if (!products.length) return '<option value="">ยังไม่มี งานสินค้า</option>';
   return products.map(job => `<option value="${escapeHtml(job.id)}" ${job.id === selectedValue ? 'selected' : ''}>${escapeHtml(job.id)} • ${escapeHtml(job.title)}</option>`).join('');
 }
 
@@ -623,7 +633,7 @@ function initStorySetupScroller() {
 }
 async function clearStoryRecovery() {
   if (storyRecoveryClearing) return;
-  if (!window.confirm('ล้างงานที่ต้องดำเนินการต่อทั้งหมดในหน้าเล่าเรื่อง Shorts?\nรวมงานที่ไม่ได้แสดงใน 8 รายการแรก และนำงานเหล่านี้ออกจากคิว\nรูป บท เสียง วิดีโอ และ Checkpoint เดิมยังอยู่ ไม่ลบไฟล์ และไม่กระทบงานสินค้า/ละครสั้น')) return;
+  if (!await window.smartflowConfirm('ล้างงานที่ต้องดำเนินการต่อทั้งหมดในหน้าเล่าเรื่อง Shorts?\nรวมงานที่ไม่ได้แสดงใน 8 รายการแรก และนำงานเหล่านี้ออกจากคิว\nรูป บท เสียง วิดีโอ และความคืบหน้าเดิมยังอยู่ ไม่ลบไฟล์ และไม่กระทบงานสินค้า/ละครสั้น',{title:'ล้างรายการงานเดิม?',acceptLabel:'ล้างเฉพาะรายการ'})) return;
   storyRecoveryClearing = true;
   renderStories(ui.state?.stories || [], ui.state?.story_progress || {});
   try {
@@ -669,7 +679,7 @@ function renderLongVideoRecovery(stories, storyProgress = {}) {
     const clips = mode === 'meta_ai' ? ` • คลิป Meta ${Number(job.meta_clip_count || 0)}/${total}`
       : mode === 'google_flow' ? ` • คลิป Flow ${Number(job.flow_clip_count || 0)}/${total}` : '';
     const stage = stages[job.pipeline_stage] || 'ทำส่วนที่เหลือต่อ';
-return `<article class="story-recovery-item"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title || job.topic || 'คลิปยาว')}</h3></div><span class="story-recovery-badge sf-status ${active ? 'running' : 'paused'}" data-tone="${active ? 'running' : 'paused'}">${active ? 'กำลังสร้าง' : 'หยุดไว้'}</span></header><div class="story-recovery-checkpoint"><b>${escapeHtml(stage)}</b><span>ภาพ ${images}/${total}${clips}</span></div>${job.last_error ? `<div class="story-recovery-error">${escapeHtml(job.last_error)}</div>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button><button class="button primary compact" data-retry-story="${escapeHtml(job.id)}" ${storyProgress.active ? 'disabled' : ''}>${active ? 'กำลังดำเนินการ' : '↻ ทำส่วนที่เหลือต่อ'}</button>${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
+return `<article class="story-recovery-item"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title || job.topic || 'คลิปยาว')}</h3></div><span class="story-recovery-badge sf-status ${active ? 'running' : 'paused'}" data-tone="${active ? 'running' : 'paused'}">${active ? 'กำลังสร้าง' : 'หยุดไว้'}</span></header><div class="story-recovery-checkpoint"><b>${escapeHtml(stage)}</b><span>ภาพ ${images}/${total}${clips}</span></div>${job.last_error ? `<details class="story-recovery-error"><summary>รายละเอียดสำหรับทีมช่วยเหลือ</summary><p>${escapeHtml(job.last_error)}</p></details>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button><button class="button primary compact" data-retry-story="${escapeHtml(job.id)}" ${storyProgress.active ? 'disabled' : ''}>${active ? 'กำลังดำเนินการ' : '↻ ทำส่วนที่เหลือต่อ'}</button>${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
   }).join('');
 }
 
@@ -773,7 +783,7 @@ function renderStories(stories, storyProgress = {}) {
       ? '<button class="button secondary compact" disabled>กำลังดำเนินการ</button>'
       : `<button class="button primary compact" data-retry-story="${escapeHtml(job.id)}">↻ ทำต่อจากจุดเดิม</button>`;
     const dismiss = isActive ? '' : `<button class="button danger compact" data-dismiss-story="${escapeHtml(job.id)}" data-story-title="${escapeHtml(job.title)}">ยกเลิกงานนี้</button>`;
-    return `<article class="story-recovery-item" role="listitem"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title)}</h3></div>${badge}</header><p>${escapeHtml(job.topic || job.description || 'รอข้อมูลเรื่อง')}</p>${creativeLabel?`<p class="creative-saved-label">${escapeHtml(creativeLabel)}</p>`:''}<div class="story-recovery-checkpoint"><b>Checkpoint: ${escapeHtml(stage)}</b><span>${escapeHtml(mode)}</span></div>${storyRecoveryProgress(job, storyProgress, isActive)}${storyRecoveryTimeline(job, failed)}${error ? `<details class="story-recovery-error"><summary>ดูรายละเอียดข้อผิดพลาด</summary><p>${escapeHtml(error)}</p></details>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button>${dismiss}${action}${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
+    return `<article class="story-recovery-item" role="listitem"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title)}</h3></div>${badge}</header><p>${escapeHtml(job.topic || job.description || 'รอข้อมูลเรื่อง')}</p>${creativeLabel?`<p class="creative-saved-label">${escapeHtml(creativeLabel)}</p>`:''}<div class="story-recovery-checkpoint"><b>ข้อมูลความคืบหน้า: ${escapeHtml(stage)}</b><span>${escapeHtml(mode)}</span></div>${storyRecoveryProgress(job, storyProgress, isActive)}${storyRecoveryTimeline(job, failed)}${error ? `<details class="story-recovery-error"><summary>รายละเอียดสำหรับทีมช่วยเหลือ</summary><p>${escapeHtml(error)}</p></details>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button>${dismiss}${action}${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
   }).join('');
   list.scrollTop = previousScroll;
 }
@@ -869,7 +879,7 @@ function openDramaProject(seriesId) {
     const retry = orphanedRunning
       ? `<button class="button primary compact" data-retry-story="${escapeHtml(jobId)}">↻ กู้คืนไฟล์และทำต่อ</button>`
       : status === 'failed' && jobId && !isLive
-      ? `<button class="button secondary compact" data-retry-story="${escapeHtml(jobId)}">↻ กู้คืนไฟล์จาก Checkpoint</button>`
+      ? `<button class="button secondary compact" data-retry-story="${escapeHtml(jobId)}">↻ กู้คืนไฟล์จาก ข้อมูลความคืบหน้า</button>`
       : status === 'failed' && isLive
         ? '<button class="button secondary compact" disabled>กำลังกู้คืน</button>'
       : status === 'failed'
@@ -877,7 +887,7 @@ function openDramaProject(seriesId) {
         : jobId ? `<button class="button ghost compact" data-open-job="${escapeHtml(jobId)}">เปิด Job</button>` : '';
     const note = status === 'completed'
       ? (episode.summary || 'วิดีโอตอนนี้เสร็จแล้ว')
-      : status === 'failed' ? (episode.error || 'ตอนนี้ต้องกู้ก่อนทำตอนถัดไป')
+      : status === 'failed' ? safeUiError(episode.error || 'ตอนนี้ต้องกู้ก่อนทำตอนถัดไป')
       : status === 'cancelled' ? 'ยกเลิกแล้ว • ระบบจะไม่ทำ EP นี้ต่อ'
       : orphanedRunning ? `งานหยุดกลางทาง • ไฟล์เดิมยังอยู่และพร้อมกู้คืน${checkpointText}`
       : status === 'running' ? `กำลังสร้างบท ภาพ เสียง หรือวิดีโอ${checkpointText}` : 'รอทำตามลำดับคิว';
@@ -896,7 +906,7 @@ function openDramaProject(seriesId) {
   const totalRetries = episodes.reduce((sum, item) => sum + Number(item.retry_count || 0) + Number(item.automation_retry_count || 0), 0);
   const cancellable = ['queued','running','needs_attention'].includes(String(series.status || '')) || episodes.some(item => ['queued','running','failed'].includes(String(item.status || '')));
   const cancelAction = cancellable ? `<button class="button danger" data-cancel-drama-series="${escapeHtml(series.id)}" data-series-title="${escapeHtml(series.title || 'ละครสั้น')}">ยกเลิกคิวซีรีส์นี้</button>` : '';
-  $('#drama-project-content').innerHTML = `<header class="drama-project-head"><div><span class="eyebrow">SERIES PROJECT</span><h2>${escapeHtml(series.title || 'ละครสั้น')}</h2><p>${escapeHtml(series.premise || 'โปรเจกต์ละครสั้นต่อเนื่อง')}</p></div>${pill(series.status || 'queued')}</header><section class="drama-project-bible five"><div><span>รหัสโปรเจกต์</span><strong>${escapeHtml(series.id)}</strong></div><div><span>ผู้สร้างภาพ</span><strong>${escapeHtml(provider)} • ${Number(series.scene_count || 10)} ฉาก/EP</strong></div><div><span>ธีมปกซีรีส์</span><strong>${escapeHtml(coverThemeLabel(series.cover_theme))}</strong></div><div><span>เวลารวม</span><strong>${escapeHtml(formatDuration(totalDuration))}</strong></div><div><span>Retry รวม</span><strong>${totalRetries} รอบ</strong></div></section><section class="drama-character-strip">${characters || '<span>ยังไม่มี Character Bible</span>'}</section><div class="drama-timeline">${episodeRows}</div><footer class="drama-project-actions"><button class="button ghost" data-open-series-folder="${escapeHtml(series.id)}">เปิดโฟลเดอร์โปรเจกต์</button><span class="drama-series-actions">${cancelAction}${canContinue ? `<button class="button primary" data-continue-series="${escapeHtml(series.id)}">＋ สร้าง EP ${episodes.length + 1} ต่อในธีมเดิม</button>` : ''}</span></footer>`;
+  $('#drama-project-content').innerHTML = `<header class="drama-project-head"><div><span class="eyebrow">โปรเจกต์ละครสั้น</span><h2>${escapeHtml(series.title || 'ละครสั้น')}</h2><p>${escapeHtml(series.premise || 'โปรเจกต์ละครสั้นต่อเนื่อง')}</p></div>${pill(series.status || 'queued')}</header><section class="drama-project-bible five"><div><span>รหัสโปรเจกต์</span><strong>${escapeHtml(series.id)}</strong></div><div><span>ผู้สร้างภาพ</span><strong>${escapeHtml(provider)} • ${Number(series.scene_count || 10)} ฉาก/EP</strong></div><div><span>ธีมปกซีรีส์</span><strong>${escapeHtml(coverThemeLabel(series.cover_theme))}</strong></div><div><span>เวลารวม</span><strong>${escapeHtml(formatDuration(totalDuration))}</strong></div><div><span>Retry รวม</span><strong>${totalRetries} รอบ</strong></div></section><section class="drama-character-strip">${characters || '<span>ยังไม่มี Character Bible</span>'}</section><div class="drama-timeline">${episodeRows}</div><footer class="drama-project-actions"><button class="button ghost" data-open-series-folder="${escapeHtml(series.id)}">เปิดโฟลเดอร์โปรเจกต์</button><span class="drama-series-actions">${cancelAction}${canContinue ? `<button class="button primary" data-continue-series="${escapeHtml(series.id)}">＋ สร้าง EP ${episodes.length + 1} ต่อในธีมเดิม</button>` : ''}</span></footer>`;
   $('#drama-project-content').querySelector('.drama-project-actions .drama-series-actions')
     ?.insertAdjacentHTML('afterbegin', dramaQueuedAction(series, activeJobId));
   $('#drama-project-modal').showModal();
@@ -961,7 +971,7 @@ function renderLibrary(items) {
 function renderGuide(state) {
   const sys = state.system;
   const rows = [
-    ['1', 'Local Bridge', sys.bridge_online ? `ออนไลน์ที่พอร์ต ${sys.bridge_port}` : 'กำลังเริ่มระบบหลังบ้าน', sys.bridge_online],
+    ['1', 'การเชื่อมต่อ Chrome', sys.bridge_online ? `ออนไลน์ที่พอร์ต ${sys.bridge_port}` : 'กำลังเริ่มระบบหลังบ้าน', sys.bridge_online],
     ['2', 'Chrome Extension', sys.extension_compatible ? `รุ่น ${sys.extension_version} พร้อมใช้งาน` : `ติดตั้งหรือ Reload รุ่น ${state.app.extension_required}`, sys.extension_compatible],
     ['3', 'AI Voice', sys.voice_configured && sys.voice_reference_configured ? 'API Key และเสียงต้นแบบพร้อม' : 'เปิดหน้าตั้งค่าเสียงแล้วบันทึก Key/เสียง', sys.voice_configured && sys.voice_reference_configured],
     ['4', 'AI Subtitle', sys.subtitle_connected ? 'เชื่อมรหัสเครื่องแล้ว' : 'เชื่อม Token หากต้องการ Subtitle', sys.subtitle_connected],
@@ -1231,26 +1241,27 @@ function updateStoryVideoMode() {
     ? `สร้างภาพให้ครบก่อน แล้วส่ง Google Flow ทีละฉาก • ใช้เครดิตสูงสุด ${Number($('#story-scenes').value || 10)} ครั้ง`
     : 'รวดเร็ว ประกอบภาพด้วย Motion และ Transition ในเครื่อง';
   $('#story-video-mode-feature').textContent = flow
-    ? '✓ ส่งภาพเข้า Google Flow ทีละฉากและบันทึก Checkpoint'
+    ? '✓ ส่งภาพเข้า Google Flow ทีละฉากและบันทึก ข้อมูลความคืบหน้า'
     : '✓ ประกอบภาพเป็นคลิปในเครื่อง';
 }
 
 function progressSteps(type, percent, current = {}) {
+  const labels = {images:'สร้างภาพ',source_video:'สร้างวิดีโอ',voice:'เสียงพากย์',compose:'ประกอบฉาก',finish:'ซับและตกแต่ง',cover:'ปกและบันทึก'};
   if(current.pipeline_phase){
-    const phases=[['images','ภาพพร้อม'],...(current.source_video_required||current.pipeline_phase==='source_video'?[['source_video','สร้างวิดีโอ']]:[]),...(current.audio_mode==='api'?[['voice','เสียง SmartSub']]:[]),['compose','ประกอบคลิป'],['finish','ซับ / ตกแต่ง'],['cover','ปก / บันทึก']];
+    const phases=[['images',labels.images],...(current.source_video_required||current.pipeline_phase==='source_video'?[['source_video',labels.source_video]]:[]),...(current.audio_mode==='api'?[['voice',labels.voice]]:[]),['compose',labels.compose],['finish',labels.finish],['cover',labels.cover]];
     const at=phases.findIndex(([phase])=>phase===current.pipeline_phase);
     if(at>=0)return phases.map(([_,label],i)=>`<span class="progress-step ${i<at?'done':i===at?'current':''}">${i<at?'✓ ':''}${label}</span>`).join('');
   }
-  if(current.stage==='finishing'&&current.scene_total&&current.scenes_complete===current.scene_total){return `<span class="progress-step done">✓ ครบ ${Number(current.scene_total)} ฉาก</span><span class="progress-step ${percent>=100?'done':'current'}">Final / ปกคลิป</span>`;}
+  if(current.stage==='finishing'&&current.scene_total&&current.scenes_complete===current.scene_total){return `<span class="progress-step done">✓ ครบ ${Number(current.scene_total)} ฉาก</span><span class="progress-step ${percent>=100?'done':'current'}">${labels.cover}</span>`;}
   if(current.stage==='scene'){
     const n=Number(current.scene_index||1),total=Number(current.scene_total||0),done=Number(current.scenes_complete||0);
     const phase=current.scene_phase;
-    if(phase==='repair')return `<span class="progress-step">ครบ ${done}/${total} ฉาก</span><span class="progress-step current">ฉาก ${n} • ภาพทดแทน / พรอมต์ใหม่</span><span class="progress-step">Google Flow</span><span class="progress-step">Final</span>`;
-    const parts=[['สร้างภาพ',phase==='image'],['วิดีโอ',phase==='requested'||phase==='video'],['เสียง/ประกอบฉาก',phase==='voice']];
-    return `<span class="progress-step">ครบ ${done}/${total} ฉาก</span>`+parts.map(([label,active])=>`<span class="progress-step ${active?'current':''}">ฉาก ${n} • ${label}</span>`).join('')+'<span class="progress-step">Final</span>';
+    if(phase==='repair')return `<span class="progress-step">ครบ ${done}/${total} ฉาก</span><span class="progress-step current">ฉาก ${n} • ภาพทดแทน / พรอมต์ใหม่</span><span class="progress-step">${labels.source_video}</span><span class="progress-step">${labels.cover}</span>`;
+    const parts=[[labels.images,phase==='image'],[labels.source_video,phase==='requested'||phase==='video'],[labels.voice+' / '+labels.compose,phase==='voice']];
+    return `<span class="progress-step">ครบ ${done}/${total} ฉาก</span>`+parts.map(([label,active])=>`<span class="progress-step ${active?'current':''}">ฉาก ${n} • ${label}</span>`).join('')+`<span class="progress-step">${labels.cover}</span>`;
   }
-  const product = [['รับสินค้า',0,8],['สร้างภาพ',8,38],['วิดีโอ AI ×3',38,68],['เสียง/ซับ',68,92],['Final',92,100]];
-  const story = [['เขียนบท',0,12],['สร้างภาพ',12,60],['เสียงพากย์',60,80],['ประกอบฉาก',80,90],['Final',90,100]];
+  const product = [['รับสินค้า',0,8],[labels.images,8,38],[labels.source_video,38,68],['เสียงพากย์และซับ',68,92],[labels.cover,92,100]];
+  const story = [['เขียนบท',0,12],[labels.images,12,60],[labels.voice,60,80],[labels.compose,80,90],[labels.cover,90,100]];
   return (type === 'product' ? product : story).map(([label,start,end]) => `<span class="progress-step ${percent >= end ? 'done' : percent >= start ? 'current' : ''}">${percent >= end ? '✓ ' : ''}${label}</span>`).join('');
 }
 
@@ -1359,9 +1370,10 @@ function renderAutomationError(state) {
   const context = `${report.job_id || ''} ${report.service || ''} ${report.message || ''}`;
   ui.automationErrorPage = /^PRESENTER-/i.test(String(report.job_id || '')) ? 'presenter'
     : /^STORY/i.test(String(report.job_id || '')) || /story|ละคร/i.test(context) ? 'story' : 'products';
-  $('#automation-error-title').textContent = report.title || 'งานหยุดเพราะพบข้อผิดพลาด';
-  $('#automation-error-message').textContent = `${report.job_id || 'Automation'} • ${report.message || 'พบข้อผิดพลาด'}`;
+  $('#automation-error-title').textContent = 'งานหยุดไว้และรอให้ตรวจสอบ';
+  $('#automation-error-message').textContent = 'ดูสิ่งที่ต้องทำในแต่ละขั้น แล้วกลับไปที่งานเดิม';
   $('#automation-error-log').textContent = report.text;
+  globalThis.renderRecoveryWizard?.(report);
   if (report.kind === 'warning' && report.event_id) {
     // The same authenticated terminal can replay after an Extension or UI
     // reload. Remember identifiers only, never the reason or user log text.
@@ -1371,7 +1383,7 @@ function renderAutomationError(state) {
     try { sessionStorage.setItem('smartflow-flow-failure-notices', JSON.stringify([...seen, report.event_id].slice(-128))); } catch (_) {}
     const activeJobs = [state.product_progress, state.story_progress, state.presenter_progress].filter(p => p?.active && p.job_id);
     if (activeJobs.length && !activeJobs.some(p => p.job_id === report.job_id)) return;
-    if (ui.progressMinimized) toast(`${report.title} • ดูสาเหตุในระบบและ Log`, 'warning');
+    if (ui.progressMinimized) toast('มีงานรอให้ตรวจสอบ • เปิดวิธีแก้ในระบบ', 'warning');
   }
   if (!modal.open && !ui.progressMinimized) modal.showModal();
 }
@@ -1407,7 +1419,7 @@ function render(state) {
     return;
   }
   hydrateForms(state);
-  renderSystem(state); renderWorkspaceIssues(state.workspace_issues); renderProducts(state.products); renderStories(state.stories, state.story_progress || {}); renderDramaSeries(state.drama_series || {}, state.story_progress || {}); renderLibrary(state.library); renderGuide(state); renderLogs(state); renderWorkspaceCleanup(state.workspace_cleanup || {}); renderTools(state); renderProgress(state); renderNotice(state); renderAutomationError(state);
+  renderSystem(state); renderWorkspaceIssues(state.workspace_issues); renderProducts(state.products); renderStories(state.stories, state.story_progress || {}); renderDramaSeries(state.drama_series || {}, state.story_progress || {}); renderLibrary(state.library); renderGuide(state); window.renderSetupWizard?.(state); renderLogs(state); renderWorkspaceCleanup(state.workspace_cleanup || {}); renderTools(state); renderProgress(state); renderNotice(state); renderAutomationError(state);
   window.renderStudio?.(state);
 }
 
@@ -1422,7 +1434,7 @@ async function poll(full = true) {
     ui.pollFailures += 1;
     $('#top-live-text').textContent = ui.pollFailures >= 3 ? 'โปรแกรมเบื้องหลังหยุดตอบสนอง' : 'โปรแกรมเบื้องหลังกำลังยุ่ง';
     if (ui.pollFailures >= 3) $('#top-live-dot').classList.remove('ready');
-    $('#footer-status').textContent = ui.pollFailures >= 3 ? error.message : 'กำลังรอระบบหลักตอบกลับ • โปรแกรมจะลองใหม่อัตโนมัติ';
+    $('#footer-status').textContent = ui.pollFailures >= 3 ? 'ติดต่อโปรแกรมเบื้องหลังไม่ได้ • กำลังลองใหม่อัตโนมัติ' : 'กำลังรอระบบหลักตอบกลับ • โปรแกรมจะลองใหม่อัตโนมัติ';
   } finally {
     ui.polling = false;
     if (ui.pendingFullPoll) { ui.pendingFullPoll = false; queueMicrotask(() => poll(true)); }
@@ -1519,7 +1531,7 @@ function scheduleSubtitlePreview({applyTheme=false, immediate=false} = {}) {
       if (sequence !== ui.subtitlePreviewSequence) return;
       stateNode.hidden = false;
       stateNode.classList.add('error');
-      $('span', stateNode).textContent = error.message;
+      $('span', stateNode).textContent = safeUiError(error.message);
     }
   }, immediate ? 0 : 360);
 }
@@ -1538,6 +1550,10 @@ function openConfirm(title, message, confirmAction, acceptLabel = 'ย้าย�
   ui.confirmAction = confirmAction;
   $('#confirm-modal').showModal();
 }
+window.smartflowConfirm = (message, {title='ยืนยันการทำรายการ', acceptLabel='ยืนยัน'} = {}) => new Promise(resolve => {
+  if (ui.confirmAction || $('#confirm-modal').open) {resolve(false);return;}
+  openConfirm(title, message, {mode:'external_callback',resolve}, acceptLabel);
+});
 
 async function openDetail(itemId) {
   const ticket = ++ui.libraryDetailTicket;
@@ -1646,10 +1662,10 @@ document.addEventListener('click', async event => {
   const productTool = event.target.closest('[data-product-tool]');
   if (productTool) {
     const tool=productTool.dataset.productTool, jobId=currentProductJobId(), job=productItem(jobId);
-    if(!jobId){toast('กรุณาเลือก Product Job','error');return}
+    if(!jobId){toast('กรุณาเลือก งานสินค้า','error');return}
     if(tool==='edit'){openProductDetail(jobId);return}
     if(tool==='delete_project'){openConfirm('ลบโปรเจกต์สินค้านี้?',`รูป บท เสียง ซับ วิดีโอ และแถว ${jobId} จะถูกย้ายลงถังขยะ Windows`,{mode:'product_project',jobId});return}
-    if(tool==='delete_all_products'){openConfirm('ลบ Product Job ทั้งหมด?','ทุกแถวสินค้าและโฟลเดอร์ Product Job จะถูกย้ายลงถังขยะ Windows แต่ยังกู้คืนได้',{mode:'all_products'});return}
+    if(tool==='delete_all_products'){openConfirm('ลบ งานสินค้า ทั้งหมด?','ทุกแถวสินค้าและโฟลเดอร์ งานสินค้า จะถูกย้ายลงถังขยะ Windows แต่ยังกู้คืนได้',{mode:'all_products'});return}
     try{if(tool==='add_images')await postAction('product_add_images',{job_id:jobId});else if(tool==='add_video')await postAction('product_add_video',{job_id:jobId});else await postAction('product_tool',{job_id:jobId,tool});toast('รับคำสั่งแล้ว','success');ui.toolsHydrated=false;await poll()}catch(e){toast(e.message,'error')}return;
   }
   const openSeries = event.target.closest('[data-open-series]');
@@ -1733,7 +1749,7 @@ document.addEventListener('click', async event => {
     try {
       await postAction('retry_story', {job_id: retryStory.dataset.retryStory});
       $('#drama-project-modal')?.close();
-      toast('กำลังทำต่อจาก Checkpoint เดิม', 'success');
+      toast('กำลังทำต่อจาก ข้อมูลความคืบหน้า เดิม', 'success');
       await poll();
     } catch (error) { toast(error.message, 'error'); retryStory.disabled = false; }
     return;
@@ -1743,7 +1759,7 @@ document.addEventListener('click', async event => {
   if (dismissStory) {
     openConfirm(
       `ยกเลิกงาน “${dismissStory.dataset.storyTitle || 'Story Shorts'}”?`,
-      'งานนี้จะหายจากรายการ “งานที่ต้องดำเนินการต่อ” แต่รูป บท เสียง และไฟล์ Checkpoint จะยังอยู่ในโฟลเดอร์เดิมและไม่ได้ถูกลบ',
+      'งานนี้จะหายจากรายการ “งานที่ต้องดำเนินการต่อ” แต่รูป บท เสียง และไฟล์ ข้อมูลความคืบหน้า จะยังอยู่ในโฟลเดอร์เดิมและไม่ได้ถูกลบ',
       {mode:'dismiss_story',jobId:dismissStory.dataset.dismissStory},
       'ยกเลิกงานนี้',
     );
@@ -1770,7 +1786,7 @@ document.addEventListener('click', async event => {
   if (close) {
     if (close.dataset.closeModal === 'detail-modal') $('#detail-content video')?.pause();
     document.getElementById(close.dataset.closeModal).close();
-    if (close.dataset.closeModal === 'confirm-modal') ui.confirmAction = null;
+    if (close.dataset.closeModal === 'confirm-modal') {if(ui.confirmAction?.mode==='external_callback')ui.confirmAction.resolve(false);ui.confirmAction = null;}
     return;
   }
   const filter = event.target.closest('[data-filter]');
@@ -1802,7 +1818,7 @@ $('#create-product').addEventListener('click', async () => {
     $('#product-link').value=''; await poll();
   } catch (error) { toast(error.message,'error'); }
 });
-$('#save-product-link').addEventListener('click',async()=>{try{const result=await postAction('import_product_link',{link:$('#product-link').value.trim()});$('#product-link').value='';ui.selectedProductId=result.job_id;toast(result.created?'สร้าง Product Job แล้ว':'ลิงก์นี้มีอยู่แล้ว','success');await poll()}catch(e){toast(e.message,'error')}});
+$('#save-product-link').addEventListener('click',async()=>{try{const result=await postAction('import_product_link',{link:$('#product-link').value.trim()});$('#product-link').value='';ui.selectedProductId=result.job_id;toast(result.created?'สร้าง งานสินค้า แล้ว':'ลิงก์นี้มีอยู่แล้ว','success');await poll()}catch(e){toast(e.message,'error')}});
 $('#product-selected-job').addEventListener('change',event=>{ui.selectedProductId=event.target.value;renderProductToolScope()});
 $('#product-detail-save').addEventListener('click',async()=>{try{await postAction('update_product',{job_id:$('#product-detail-id').value,product_name:$('#product-detail-name').value,price:$('#product-detail-price').value,commission:$('#product-detail-commission').value,description:$('#product-detail-description').value});toast('บันทึกข้อมูลสินค้าแล้ว','success');$('#product-detail-modal').close();await poll()}catch(e){toast(e.message,'error')}});
 $('#save-post-copy').addEventListener('click', async () => {
@@ -2044,7 +2060,7 @@ $('#voice-create').addEventListener('click',async()=>{try{await postAction('voic
 
 $('#subtitle-job').addEventListener('change',async()=>{try{await postAction('subtitle_select_job',{job_id:$('#subtitle-job').value});ui.toolsHydrated=false;await poll()}catch(e){toast(e.message,'error')}});
 $('#subtitle-connect').addEventListener('click',async()=>{try{await postAction('subtitle_connect',{token:$('#subtitle-token').value.trim()});$('#subtitle-token').value='';toast('กำลังเชื่อม Subtitle Token','info');setTimeout(async()=>{ui.toolsHydrated=false;await poll()},900)}catch(e){toast(e.message,'error')}});
-$('#subtitle-delete-credential').addEventListener('click',()=>openConfirm('ยกเลิก AI Subtitle?','รหัสอุปกรณ์ที่เก็บไว้ใน Windows จะถูกลบ หลังจากนี้อาจต้องใช้ Token SOT ใหม่เพื่อเชื่อมเครื่องอีกครั้ง','subtitle_disconnect','ยกเลิกการเชื่อมต่อ'));
+$('#subtitle-delete-credential').addEventListener('click',()=>openConfirm('ยกเลิก AI Subtitle?','รหัสอุปกรณ์ที่เก็บไว้ใน Windows จะถูกลบ หลังจากนี้อาจต้องใช้ รหัสเชื่อมต่อบริการซับไตเติลใหม่เพื่อเชื่อมเครื่องอีกครั้ง','subtitle_disconnect','ยกเลิกการเชื่อมต่อ'));
 $('#subtitle-create').addEventListener('click',async()=>{try{await postAction('subtitle_create',subtitlePayload());toast('เริ่มสร้าง Subtitle แล้ว','success');await poll()}catch(e){toast(e.message,'error')}});
 $('#subtitle-upload-font').addEventListener('click',async()=>{try{const r=await postAction('subtitle_upload_font');if(!r.cancelled){toast(`เพิ่มฟอนต์ ${r.font}`,'success');ui.toolsHydrated=false;await poll()}}catch(e){toast(e.message,'error')}});
 $('#subtitle-random-theme').addEventListener('click',async()=>{try{await postAction('subtitle_random_theme');ui.toolsHydrated=false;await poll();toast('สุ่มธีมแล้ว','success')}catch(e){toast(e.message,'error')}});
@@ -2091,7 +2107,7 @@ $('#install-extension').addEventListener('click',async()=>{try{await postAction(
 $('#copy-extension').addEventListener('click',()=>copyText(ui.state?.settings.extension_path||''));
 $('#open-log-folder').addEventListener('click',async()=>{try{await postAction('open_logs_folder')}catch(e){toast(e.message,'error')}});
 $('#cleanup-scan').addEventListener('click',async()=>{try{const result=await postAction('scan_workspace_junk');await poll();const summary=result.summary||{};toast(Number(summary.file_count||0)?`พบไฟล์ขยะ ${Number(summary.file_count).toLocaleString('th-TH')} ไฟล์ • ${formatBytes(summary.size_bytes)}`:'พื้นที่สะอาดแล้ว ไม่พบไฟล์ขยะ','success')}catch(e){toast(e.message,'error')}});
-$('#cleanup-run').addEventListener('click',async()=>{try{const result=await postAction('scan_workspace_junk');await poll();const summary=result.summary||{};const count=Number(summary.file_count||0);if(!count){toast('พื้นที่สะอาดแล้ว ไม่พบไฟล์ขยะ','success');return}openConfirm('ยืนยันเคลียร์ไฟล์ขยะ?',`ระบบจะย้ายไฟล์ขยะ ${count.toLocaleString('th-TH')} ไฟล์ (${formatBytes(summary.size_bytes)}) ลงถังขยะ Windows\n\nFinal, รูป, เสียง, Subtitle, ปก และข้อมูลโปรเจกต์จะไม่ถูกลบ งานที่กำลังทำ งานล้มเหลว และ Checkpoint ที่ยังต้องทำต่อจะถูกข้าม`,{mode:'workspace_cleanup',scanId:summary.scan_id},'ลบไฟล์ขยะทั้งหมด')}catch(e){toast(e.message,'error')}});
+$('#cleanup-run').addEventListener('click',async()=>{try{const result=await postAction('scan_workspace_junk');await poll();const summary=result.summary||{};const count=Number(summary.file_count||0);if(!count){toast('พื้นที่สะอาดแล้ว ไม่พบไฟล์ขยะ','success');return}openConfirm('ยืนยันเคลียร์ไฟล์ขยะ?',`ระบบจะย้ายไฟล์ขยะ ${count.toLocaleString('th-TH')} ไฟล์ (${formatBytes(summary.size_bytes)}) ลงถังขยะ Windows\n\nFinal, รูป, เสียง, Subtitle, ปก และข้อมูลโปรเจกต์จะไม่ถูกลบ งานที่กำลังทำ งานล้มเหลว และ ข้อมูลความคืบหน้า ที่ยังต้องทำต่อจะถูกข้าม`,{mode:'workspace_cleanup',scanId:summary.scan_id},'ลบไฟล์ขยะทั้งหมด')}catch(e){toast(e.message,'error')}});
 $('#progress-cancel').addEventListener('click',async event=>{
   const button=event.currentTarget;
   if(button.disabled)return;
@@ -2099,7 +2115,7 @@ $('#progress-cancel').addEventListener('click',async event=>{
   button.textContent='กำลังยกเลิก...';
   try{
     await postAction(ui.progressType==='presenter'?'presenter_cancel':ui.progressType==='product'?'cancel_product':'cancel_story');
-    toast('รับคำสั่งยกเลิกแล้ว • กำลังเก็บ Checkpoint','info');
+    toast('รับคำสั่งยกเลิกแล้ว • กำลังเก็บ ข้อมูลความคืบหน้า','info');
     await poll(true);
   }catch(e){
     button.disabled=false;
@@ -2127,7 +2143,7 @@ async function submitLongVideo(enqueueOnly = false) {
         : result.story_queue?.paused===false || result.paused===false ? 'เพิ่มต่อท้ายคิวที่กำลังทำแล้ว • งานปัจจุบันทำต่อจนจบ' : 'เพิ่มลงคิวแล้ว • ดูสถานะที่หน้าคิวสร้างคลิป'
       : `เริ่มงาน ${result.job_id} แล้ว • ดูสถานะและผลงานในโปรแกรม`;
     await poll();
-  } catch(error) { $('#long-status').textContent = error.message; toast(error.message,'error'); }
+  } catch(error) { $('#long-status').textContent = safeUiError(error.message); toast(error.message,'error'); }
   finally { button.disabled = false; }
 }
 $('#create-longvideo')?.addEventListener('click', () => submitLongVideo(false));
@@ -2175,6 +2191,7 @@ $('#automation-error-return').addEventListener('click',()=>{$('#automation-error
 $('#confirm-accept').addEventListener('click',async()=>{
   const target=ui.confirmAction;if(!target)return;$('#confirm-modal').close();if($('#detail-modal').open)$('#detail-modal').close();
   try{
+    if(target.mode==='external_callback'){target.resolve(true);return;}
     if(target==='voice_disconnect'){await postAction('voice_delete_key');$('#voice-key').value='';ui.toolsHydrated=false;toast('ยกเลิกการเชื่อมต่อ AI Voice แล้ว','success');await poll()}
     else if(target==='subtitle_disconnect'){await postAction('subtitle_delete_credential');$('#subtitle-token').value='';ui.toolsHydrated=false;toast('ยกเลิกการเชื่อมต่อ AI Subtitle แล้ว','success');await poll()}
     else if(target.mode==='cancel_drama_series'){const result=await postAction('cancel_drama_series',{series_id:target.seriesId});if($('#drama-project-modal').open)$('#drama-project-modal').close();toast(`ยกเลิกคิวแล้ว ${Number(result.cancelled || 0)} EP • พร้อมสร้างเรื่องใหม่`,'success');await poll()}
@@ -2185,6 +2202,7 @@ $('#confirm-accept').addEventListener('click',async()=>{
     else{if(target.mode==='product_project')await postAction('product_tool',{job_id:target.jobId,tool:'delete_project'});else if(target.mode==='all_products')await postAction('delete_all_product_projects');else if(target.mode==='all_renders')await postAction('delete_all_library_renders');else if(target.mode==='completed_projects')await postAction('delete_completed_projects');else await postAction(target.mode==='project'?'delete_library_project':'delete_library_video',{item_id:target.itemId});toast('รับคำสั่งแล้ว กำลังย้ายลงถังขยะ Windows','info');setTimeout(poll,700)}
   }catch(e){toast(e.message,'error')}finally{ui.confirmAction=null}
 });
+$('#confirm-modal').addEventListener('cancel',()=>{if(ui.confirmAction?.mode==='external_callback')ui.confirmAction.resolve(false);ui.confirmAction=null;});
 function setSidebarOpen(open) {
   $('#sidebar').classList.toggle('open', open);
   $('#sidebar-backdrop').classList.toggle('show', open);

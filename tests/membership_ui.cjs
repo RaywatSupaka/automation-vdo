@@ -24,6 +24,8 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{chromium}=requ
     await page.goto('http://membership.test/');
     await page.addStyleTag({path:'web_ui/styles.css'});
     await page.addStyleTag({path:'web_ui/membership.css'});
+    const safeError=fs.readFileSync('web_ui/app.js','utf8').match(/function safeUiError\(message\) \{[\s\S]*?\n\}/)?.[0];
+    assert(safeError);await page.addScriptTag({content:`${safeError};window.smartflowSafeError=safeUiError;`});
     await page.addScriptTag({path:'web_ui/membership.js'});
     await page.locator('#membership-message').filter({hasText:'กรุณากรอก Token'}).waitFor();
     assert.equal(await page.locator('.app-shell').evaluate(n=>n.inert),true);

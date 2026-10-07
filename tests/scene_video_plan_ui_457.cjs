@@ -6,6 +6,8 @@ try{
   const page=await browser.newPage({viewport:{width:400,height:900}});
   await page.route('**/*',r=>{network++;return r.abort();});
   await page.setContent('<section data-view="settings" hidden><div class="page-intro"></div></section><main id="fixture" style="padding:12px"><section id="plan"></section></main>');
+  const safeError=fs.readFileSync('web_ui/app.js','utf8').match(/function safeUiError\(message\) \{[\s\S]*?\n\}/)?.[0];
+  assert(safeError);await page.addScriptTag({content:`${safeError};window.smartflowSafeError=safeUiError;`});
   await page.addStyleTag({content:fs.readFileSync('web_ui/styles.css','utf8')+'\n'+fs.readFileSync('web_ui/studio.css','utf8')});
   await page.addScriptTag({content:`window.calls=[];window.toasts=[];window.saved=[];
     const escapeHtml=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -59,7 +61,7 @@ try{
   await page.evaluate(()=>{calls.length=0;failSave=true;renderPlan();});
   await panel.locator('[data-plan-resume]').click();await panel.locator('[data-plan-confirm-save]').click();
   assert.equal(await page.evaluate(()=>calls.filter(c=>c.action==='retry_story').length),0);checks++;
-  assert.match(await panel.locator('[data-plan-status]').innerText(),/Lost ACK/);checks++;
+  assert.match(await panel.locator('[data-plan-status]').innerText(),/ไม่ได้ส่งคำสั่งสร้างซ้ำอัตโนมัติ/);assert.doesNotMatch(await panel.locator('[data-plan-status]').innerText(),/Lost ACK/);checks++;
   await page.evaluate(()=>{failSave=false;calls.length=0;holdSave=true;renderPlan();});
   await panel.locator('[data-plan-save]').click();await panel.locator('[data-plan-confirm-save]').click();
   await page.waitForFunction(()=>typeof window.releaseSave==='function');

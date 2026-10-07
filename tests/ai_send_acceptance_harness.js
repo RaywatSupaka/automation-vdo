@@ -16,7 +16,7 @@ function section(source, start, end) {
 // real content acceptance loop. Only browser surfaces and time are mocked.
 function fixture(options = {}) {
   const prompt = "Repair this existing response as JSON; do not create a new job.";
-  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0, preflightReads: 0, postAttachReads: 0, postClaimReads: 0, delays: [] };
+  const state = { editor: { innerText: prompt }, label: options.label || "Send message", accepted: false, sleeps: 0, offset: 0, ownerChecks: 0, preflightReads: 0, postAttachReads: 0, postClaimReads: 0, delays: [], windowUpdates: [] };
   const originalEditor = state.editor;
   const claim={key:'smartpostStoryGeneratedImage:chatgpt:JOB-TEST:6',nonce:'test-nonce',scene_index:6};
   const storage={[claim.key]:{job_id:'JOB-TEST',run_id:'run-test',send_nonce:'test-nonce',send_phase:'dispatching',
@@ -84,10 +84,11 @@ function fixture(options = {}) {
       }]);
     }
   }
-  function fire(type, target = state.button) {
-    clock += options.slowEvents ? 70000 : 7;
-    if (!options.noCapturedEvents) for (const listener of listeners.get(type) || []) {
-      listener({ target, isTrusted: true, composedPath: () => [target] });
+  function fire(type, target = state.button, x = 40 + state.offset, y = 40) {
+    if (type !== 'mousemove') clock += options.slowEvents ? 70000 : 7;
+    if (type === 'mousemove' ? !options.dropHoverEvents : !options.noCapturedEvents)
+      for (const listener of listeners.get(type) || []) {
+      listener({ target, isTrusted: true, clientX:x, clientY:y, composedPath: () => [target] });
     }
   }
   function accept() {
@@ -107,7 +108,8 @@ function fixture(options = {}) {
         if (Object.hasOwn(value,claim.key+':dispatch')) state.dispatchLatched=true;
         Object.assign(storage,structuredClone(value));
       }}},
-      windows: { update: async () => {} }, tabs: {
+      windows: { get: async () => ({state:options.minimizedWindow?'minimized':'normal'}),
+        update: async (_id,update) => {state.windowUpdates.push(update);} }, tabs: {
         update: async () => {},
         sendMessage: async (_tabId, message) => {
           assert.equal(message.type, "VERIFY_AI_SEND_READY");
@@ -137,6 +139,13 @@ function fixture(options = {}) {
           commands.push({ method, ...event });
           if (event.type === "mouseMoved" && options.hoverMovesButton && !state.hoverMoved) {
             state.hoverMoved = true; state.offset += 30;
+          }
+          if (event.type === 'mouseMoved' && !options.dropHoverEvents
+              && !(options.dropHoverUntilRefocus && state.windowUpdates.length < 2)) {
+            const r=state.button.getBoundingClientRect();
+            const target=event.x>r.left && event.x<r.right && event.y>r.top && event.y<r.bottom
+              ? state.button : {tagName:'DIV'};
+            fire('mousemove',target,event.x,event.y);
           }
           if (event.type === "mousePressed") {
             assert.equal(event.x, 40 + state.offset, "Press must use post-hover live coordinates");
@@ -234,6 +243,31 @@ function fixture(options = {}) {
 }
 
 async function tests() {
+  {
+    const f=fixture({storyClaim:true,dropHoverUntilRefocus:true,acceptImmediately:true});
+    await f.run();
+    assert.equal(f.responses[0].ok,true,'One refocus recovers page input before Send');
+    assert.equal(f.state.windowUpdates.length,2);
+    f.checkSingleDispatch();
+  }
+  {
+    const f=fixture({storyClaim:true,dropHoverEvents:true});
+    await assert.rejects(f.run());
+    assert.equal(f.responses[0].notDispatched,true,'Missing page input stays pre-Send');
+    assert.equal(f.responses[0].diagnostics.preflight_reason,'input_not_delivered');
+    assert.equal(f.commands.filter(event=>event.type==='mousePressed').length,0);
+    assert.equal(f.storage[f.claim.key+':dispatch'],undefined,'No durable claim for a lost hover');
+    assert.equal(f.state.windowUpdates.length,2,'One bounded refocus after missing input');
+  }
+  {
+    const f=fixture({storyClaim:true,acceptImmediately:true,minimizedWindow:true});
+    await f.run();
+    assert.equal(JSON.stringify(f.state.windowUpdates),JSON.stringify([{state:'normal',focused:true}]),
+      'Restore only the exact owned minimized browser before Send measurement');
+    assert(f.state.delays.includes(350) && f.state.delays.includes(300),
+      'Wait for layout after restore and again before the dispatch claim');
+    f.checkSingleDispatch();
+  }
   // Captured 2026-09-24 ChatGPT composer uses aria-label="ส่ง", no test ID.
   // Content sees it, but both injected trusted-click selectors must agree.
   for (const label of ['ส่ง', 'ส่งข้อความ', 'ส่งพรอมต์', 'Send message', 'Send prompt']) {

@@ -1,0 +1,11 @@
+.setup-wizard{max-width:860px;padding:24px;display:grid;gap:16px}
+.setup-wizard-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.setup-wizard-head h2{margin:0;font-size:22px}
+.setup-wizard-head p{margin:0;color:var(--muted,#a7b0c3);font-size:13px}
+#setup-wizard-body{min-height:190px;border:1px solid var(--border,#33405f);border-radius:12px;padding:22px;background:var(--surface,#121826)}
+#setup-wizard-body h3{font-size:22px;margin:0 0 10px}
+#setup-wizard-body p{font-size:14px;line-height:1.7;color:var(--muted,#a7b0c3)}
+#setup-wizard-body .button{min-height:44px}
+.setup-web-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.setup-progress-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;margin-bottom:16px;font-size:14px}
+.setup-progress-banner[hidden]{display:none}

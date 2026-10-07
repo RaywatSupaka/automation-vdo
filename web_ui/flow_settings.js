@@ -140,7 +140,7 @@
         defaults=clone(result.settings);
         if(JSON.stringify(entry.read())===JSON.stringify(selected))custom=null;
         saveStatus.textContent='บันทึกแล้ว • เปิดโปรแกรมครั้งหน้าจะใช้ค่านี้';
-      }catch(e){saveStatus.textContent='บันทึกไม่สำเร็จ: '+e.message;}
+      }catch(e){saveStatus.textContent=window.smartflowSafeError?.(e.message)||'บันทึกไม่สำเร็จ';}
       finally{saving=false;refresh();}
     });
     anchor.addEventListener('change',()=>entry.refresh());panels.set(key,entry);entry.refresh();
@@ -199,7 +199,7 @@
   section.querySelector('[data-flow-save]').addEventListener('click',async()=>{
     if(!loaded||saving)return;
     saving=true;const selected=clone(draft);refresh();
-    try{const result=await original('flow_settings_save',{settings:selected});defaults=clone(result.settings);status.textContent='บันทึกแล้ว • ไม่เปลี่ยนงานเก่าหรือคิวที่เพิ่มไว้';}catch(e){status.textContent=e.message;}finally{saving=false;refresh();}
+    try{const result=await original('flow_settings_save',{settings:selected});defaults=clone(result.settings);status.textContent='บันทึกแล้ว • ไม่เปลี่ยนงานเก่าหรือคิวที่เพิ่มไว้';}catch(e){status.textContent=window.smartflowSafeError?.(e.message)||'บันทึกไม่สำเร็จ';}finally{saving=false;refresh();}
   });
   section.querySelector('[data-flow-read]').addEventListener('click',async event=>{
     const button=event.currentTarget;button.disabled=true;
@@ -218,7 +218,7 @@
         }
       }
       throw new Error('ยังไม่ได้รับผลอ่านเมนู ตรวจว่าโปรแกรมและ Extension เป็นรุ่นเดียวกัน แล้วลองอ่านใหม่');
-    }catch(e){status.textContent=e.message;}finally{button.disabled=false;}
+    }catch(e){status.textContent=window.smartflowSafeError?.(e.message)||'ทำรายการไม่สำเร็จ';}finally{button.disabled=false;}
   });
   refresh();
   ensureSettings().catch(()=>{});

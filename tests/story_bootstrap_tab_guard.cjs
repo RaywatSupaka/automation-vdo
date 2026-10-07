@@ -43,9 +43,13 @@ async function scenario(name,initial,options,verify) {
         update:async(id)=>{actions.push(['activate',id]);return tabs.find(tab=>tab.id===id);},
         sendMessage:async(id,message)=>{actions.push(['start',id,message.type]);return {ok:true};}},
       scripting:{executeScript:async details=>{
-        if(details.files){actions.push(['inject',details.target.tabId]);return [];}
-        if(details.args){actions.push(['notice',details.target.tabId,details.args[0]]);return [];}
         const tab=tabs.find(row=>row.id===details.target.tabId);
+        if(details.files){
+          actions.push(['inject',details.target.tabId]);
+          if(options.draftAfterInject && tab?.id===options.draftAfterInject)tab.empty=false;
+          return [];
+        }
+        if(details.args){actions.push(['notice',details.target.tabId,details.args[0]]);return [];}
         if(details.func?.name==='clearOwnedChatGPTBootstrapDraft'){
           actions.push(['clear',tab.id]);
           if(options.clearFails)return [{documentId:tab.documentId,result:{cleared:false,reason:'draft_still_present'}}];
@@ -108,25 +112,27 @@ async function scenario(name,initial,options,verify) {
     assert.equal(actions.filter(a=>a[0]==='start').length,1);
     assert.equal(tabs[0].empty,false);
   });
-  await scenario('new tab clears a restored draft automatically before Start',[
-    {id:1,empty:false}],{freshEmpty:false},({actions,outcome})=>{
-    assert.equal(outcome.tabId,101);
-    assert.equal(actions.filter(a=>a[0]==='create').length,1);
-    assert.equal(actions.filter(a=>a[0]==='clear').length,1);
+  await scenario('one restored draft is preserved while a second clean tab starts',[
+    {id:1,empty:false}],{freshStates:[{empty:false,reason:'draft_present'},{empty:true}]},({actions,outcome})=>{
+    assert.equal(outcome.tabId,102);
+    assert.equal(actions.filter(a=>a[0]==='create').length,2);
+    assert.equal(actions.filter(a=>a[0]==='clear').length,0);
     assert.equal(actions.filter(a=>a[0]==='start').length,1);
-    assert.equal(actions.filter(a=>a[0]==='notice').length,0);
   });
-  await scenario('failed clear still stops before Start',[
-    {id:1,empty:false}],{freshEmpty:false,clearFails:true},({actions,outcome})=>{
+  await scenario('draft restored into both new tabs stops without clearing or Start',[
+    {id:1,empty:false}],{freshEmpty:false,freshReason:'draft_present'},({actions,outcome})=>{
     assert.match(String(outcome.message),/AI_WEB_WAIT_REVIEW/);
-    assert.equal(actions.filter(a=>a[0]==='clear').length,1);
+    assert.match(String(outcome.message),/ร่างข้อความที่ยืนยันเจ้าของไม่ได้/);
+    assert.equal(actions.filter(a=>a[0]==='create').length,2);
+    assert.equal(actions.filter(a=>a[0]==='clear').length,0);
     assert.equal(actions.filter(a=>a[0]==='start').length,0);
   });
-  await scenario('draft restored after first clear is cleared once more',[
-    {id:1,empty:false}],{freshEmpty:false,restoreAfterFirstClear:true},({actions,outcome})=>{
-    assert.equal(outcome.tabId,101);
-    assert.equal(actions.filter(a=>a[0]==='clear').length,2);
-    assert.equal(actions.filter(a=>a[0]==='start').length,1);
+  await scenario('draft hydrated after injection stops before Start',[
+    {id:1,empty:false}],{draftAfterInject:101},({actions,outcome})=>{
+    assert.match(String(outcome.message),/AI_WEB_WAIT_REVIEW/);
+    assert.equal(outcome.bootstrapReason,'draft_present');
+    assert.equal(actions.filter(a=>a[0]==='inject').length,1);
+    assert.equal(actions.filter(a=>a[0]==='start').length,0);
   });
   await scenario('attachment restored into one new tab is preserved while another clean tab starts',[
     {id:1,empty:false}],{freshStates:[{empty:false,reason:'attachment_present'},{empty:true}]},({actions,outcome,tabs})=>{
@@ -183,6 +189,35 @@ async function scenario(name,initial,options,verify) {
     assert.equal(outcome.tabId,1);
     assert.equal(actions.filter(a=>a[0]==='create').length,0);
   });
+  {
+    const inspectSource=part('function inspectEmptyCoverPreparation()', '// Read only: a new Story');
+    const inspect=config=>{
+      const editor={isConnected:true,innerText:config.draft||'',textContent:config.draft||'',
+        getClientRects:()=>[{}],closest:()=>form};
+      const form={isConnected:true,querySelector:selector=>{
+        const selectors=selector.split(',').map(value=>value.trim());
+        if(config.icon && selectors.includes('img'))return {tagName:'IMG',src:'data:image/svg+xml;fixture'};
+        if(config.progress && (selectors.includes('[role="progressbar"]')
+            || selectors.includes('[aria-busy="true"]')))return {tagName:'DIV'};
+        if(config.attachment && selectors.includes('[data-testid*="file-thumbnail"]'))
+          return {tagName:'DIV',dataset:{testid:'file-thumbnail'}};
+        return null;
+      }};
+      const document={querySelectorAll:selector=>selector.startsWith('#prompt-textarea')?[editor]
+        :selector==='button'?[]:selector==='input[type="file"]'?[{files:config.fileInput?[{}]:[]}]:[],
+        querySelector:()=>config.conversation?{dataset:{}}:null};
+      const context=vm.createContext({document,location:{hostname:'chatgpt.com',pathname:'/'}});
+      vm.runInContext(inspectSource,context);
+      return context.inspectEmptyCoverPreparation();
+    };
+    assert.equal(inspect({icon:true}).reason,'ready');
+    assert.equal(inspect({icon:true,progress:true}).reason,'ready');
+    assert.equal(inspect({icon:true,attachment:true}).reason,'attachment_present');
+    assert.equal(inspect({icon:true,fileInput:true}).reason,'attachment_present');
+    assert.equal(inspect({icon:true,draft:'restored request'}).reason,'draft_present');
+    passed++;
+    process.stdout.write('PASS image-tool icon is not an attachment; real files and drafts remain guarded\n');
+  }
   {
     const operations=[];
     const form={querySelector:()=>null};

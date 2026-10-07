@@ -7,12 +7,12 @@
   $('[data-view="dashboard"] .hero').before(workspace);
 
   for (const page of ['story','drama']) {
-    const panel=el('section','panel studio-review-launcher', `<div><span class="eyebrow">STORYBOARD & VOICE CHECK</span><h2>ตรวจฉากและคำอ่าน</h2><p>ดูภาพ บท และไฟล์แต่ละฉาก โดยไม่เริ่มสร้างซ้ำ</p></div><label class="field"><span>เลือกงานที่ต้องการตรวจ</span><select id="${page}-review-job"></select></label><button class="button secondary" data-open-studio="${page}">เปิด Storyboard</button>`);
+    const panel=el('section','panel studio-review-launcher', `<div><span class="eyebrow">ตรวจภาพและเสียง</span><h2>ตรวจฉากและคำอ่าน</h2><p>ดูภาพ บท และไฟล์แต่ละฉาก โดยไม่เริ่มสร้างซ้ำ</p></div><label class="field"><span>เลือกงานที่ต้องการตรวจ</span><select id="${page}-review-job"></select></label><button class="button secondary" data-open-studio="${page}">เปิด Storyboard</button>`);
     if(page==='drama')$('.drama-series-panel').before(panel);
     else $('[data-view="'+page+'"] .page-intro').after(panel);
   }
 
-  const modal=el('dialog','modal studio-review-modal',`<div class="modal-card studio-review-card"><button class="modal-close" data-close-modal="studio-review-modal" aria-label="ปิด Storyboard">×</button><span class="eyebrow">STORYBOARD / CHECKPOINT</span><h2 id="studio-review-title">กำลังอ่านงาน…</h2><p id="studio-review-subtitle"></p><div id="studio-review-body" aria-live="polite"></div></div>`);
+  const modal=el('dialog','modal studio-review-modal',`<div class="modal-card studio-review-card"><button class="modal-close" data-close-modal="studio-review-modal" aria-label="ปิด Storyboard">×</button><span class="eyebrow">ภาพและความคืบหน้า</span><h2 id="studio-review-title">กำลังอ่านงาน…</h2><p id="studio-review-subtitle"></p><div id="studio-review-body" aria-live="polite"></div></div>`);
   modal.id='studio-review-modal';modal.setAttribute('aria-labelledby','studio-review-title');document.body.append(modal);
   modal.addEventListener('close',()=>{studio.request++;studio.dirty=false;$$('video',modal).forEach(v=>v.pause());if(studio.opener?.isConnected)studio.opener.focus({preventScroll:true});});
   modal.addEventListener('cancel',event=>{if(studio.dirty){event.preventDefault();toast('มีข้อความที่ยังไม่บันทึก กดบันทึก หรือปิดด้วยปุ่ม × เพื่อทิ้งการแก้ไข','warning');}});
@@ -81,7 +81,7 @@
         :/STORY_IMAGE_RESPONSE_REVIEW/.test(review.last_error)
           ?'เว็บตอบข้อความแล้ว แต่ยังไม่พบภาพใหม่ที่ยืนยันได้ • ไม่สรุปว่าสร้างล้มเหลวหรือถูกปฏิเสธ ระบบไม่ส่งซ้ำและไม่เริ่มงานใหม่อัตโนมัติ ตรวจคำตอบและผลในแชตเดิมก่อนกดทำต่อ บทและภาพที่บันทึกแล้วคงเดิม'
           :'');
-    return `<section class="studio-content-review needs-review" role="status"><h3>เหตุที่งานหยุด</h3><p>${escapeHtml(review.last_error)}</p>${explanation?`<p>${escapeHtml(explanation)}</p>`:''}</section>`;
+    return `<section class="studio-content-review needs-review" role="status"><h3>เหตุที่งานหยุด</h3><p>${escapeHtml(window.smartflowSafeError?.(review.last_error)||'งานหยุดก่อนเสร็จ กรุณาตรวจรายละเอียด')}</p>${explanation?`<p>${escapeHtml(window.smartflowSafeError?.(explanation)||'ตรวจรายละเอียดงานก่อนทำต่อ')}</p>`:''}<details><summary>รายละเอียดสำหรับทีมช่วยเหลือ</summary><p>${escapeHtml(review.last_error)}</p></details></section>`;
   }
   function pendingReviewDrafts(){
     return {videoPlan:studio.planEditor?.readDraft(),flow:$$('[data-flow-prompt],[data-flow-model]',modal).map(node=>[node.hasAttribute('data-flow-prompt')?'prompt':'model',node.dataset.flowPrompt||node.dataset.flowModel,node.value]),notes:$('#studio-notes').value, prompts:$$('[data-scene-prompt]',modal).filter(node=>node.value!==studio.review.scenes.find(scene=>scene.index===Number(node.dataset.scenePrompt))?.prompt).map(node=>[node.dataset.scenePrompt,node.value])};
@@ -106,15 +106,15 @@
     const selectedVideo=['google_flow','meta_ai'].includes(review.video_generation_mode)?review.video_generation_mode:'google_flow';
     const longMetaPending=Boolean(review.long_video&&!review.meta_landscape_available);
     const providerControl=review.video_plan?.supported?'<section data-scene-video-plan></section>':review.video_generation_mode==='image_motion'
-      ? '<section class="studio-video-provider"><div><span class="eyebrow">VIDEO CREATOR</span><h3>ภาพเคลื่อนไหวในเครื่อง</h3><p>งานนี้ไม่ได้ใช้ Google Flow หรือ Meta AI และเปลี่ยนผู้สร้างจากหน้านี้ไม่ได้</p></div></section>'
-      : `<section class="studio-video-provider"><div><span class="eyebrow">VIDEO CREATOR</span><h3>ผู้สร้างวิดีโอของงานนี้</h3><p>ใช้ภาพ บท และเสียงเดิมกับผู้สร้างที่เลือก • คลิปเดิมยังอยู่ในงาน</p></div><label class="field"><span>ผู้สร้างวิดีโอ</span><select data-story-video-provider ${review.video_provider_editable?'':'disabled'}><option value="google_flow" ${selectedVideo==='google_flow'?'selected':''}>Google Flow</option><option value="meta_ai" ${selectedVideo==='meta_ai'?'selected':''} ${longMetaPending?'disabled':''}>Meta AI (ทดลอง)${review.long_video?' • 16:9':''}${longMetaPending?' • รอยืนยัน':''}</option></select></label><small>${longMetaPending?'Meta AI คลิปยาวยังรอพิสูจน์ไฟล์แนวนอน 16:9 จริง • งาน Flow และคลิปเดิมไม่เปลี่ยน':'ใช้เฉพาะคลิปจากผู้สร้างที่เลือกและตรงกับภาพ/บทปัจจุบัน คลิปจากผู้สร้างเดิมยังเก็บไว้แต่ไม่เอามาปนใน Final รอบใหม่ • สร้างเฉพาะฉากที่ยังขาด'}</small><button class="button secondary compact" data-save-story-provider ${review.video_provider_editable?'':'disabled'}>บันทึกผู้สร้าง</button></section>`;
+      ? '<section class="studio-video-provider"><div><span class="eyebrow">สร้างวิดีโอ</span><h3>ภาพเคลื่อนไหวในเครื่อง</h3><p>งานนี้ไม่ได้ใช้ Google Flow หรือ Meta AI และเปลี่ยนผู้สร้างจากหน้านี้ไม่ได้</p></div></section>'
+      : `<section class="studio-video-provider"><div><span class="eyebrow">สร้างวิดีโอ</span><h3>ผู้สร้างวิดีโอของงานนี้</h3><p>ใช้ภาพ บท และเสียงเดิมกับผู้สร้างที่เลือก • คลิปเดิมยังอยู่ในงาน</p></div><label class="field"><span>ผู้สร้างวิดีโอ</span><select data-story-video-provider ${review.video_provider_editable?'':'disabled'}><option value="google_flow" ${selectedVideo==='google_flow'?'selected':''}>Google Flow</option><option value="meta_ai" ${selectedVideo==='meta_ai'?'selected':''} ${longMetaPending?'disabled':''}>Meta AI (ทดลอง)${review.long_video?' • 16:9':''}${longMetaPending?' • รอยืนยัน':''}</option></select></label><small>${longMetaPending?'Meta AI คลิปยาวยังรอพิสูจน์ไฟล์แนวนอน 16:9 จริง • งาน Flow และคลิปเดิมไม่เปลี่ยน':'ใช้เฉพาะคลิปจากผู้สร้างที่เลือกและตรงกับภาพ/บทปัจจุบัน คลิปจากผู้สร้างเดิมยังเก็บไว้แต่ไม่เอามาปนใน Final รอบใหม่ • สร้างเฉพาะฉากที่ยังขาด'}</small><button class="button secondary compact" data-save-story-provider ${review.video_provider_editable?'':'disabled'}>บันทึกผู้สร้าง</button></section>`;
     $('#studio-review-body').innerHTML=`<ol class="studio-checkpoints">${review.stages.map(stage=>`<li class="${stage.ready?'done':''}"><b>${stage.ready?'✓':'○'} ${escapeHtml(stage.label)}</b><small>${escapeHtml(stage.detail)}</small></li>`).join('')}</ol>
       ${providerControl}
       ${storyContentMarkup(review)}
       ${storyFailureMarkup(review)}
       <div class="studio-review-tools"><span>แสดงตามไฟล์จริง ไม่ถือว่ารูปครบเท่ากับวิดีโอเสร็จ</span><button class="button ghost compact" data-refresh-studio>↻ อ่านสถานะใหม่</button></div>
       <div class="studio-scene-grid">${review.scenes.map(scene=>`<article class="studio-scene"><div class="studio-scene-media">${scene.image_url?`<img loading="lazy" src="${escapeHtml(scene.image_url)}" alt="ภาพฉาก ${scene.index}">`:'<span>ยังไม่มีภาพ</span>'}</div><div class="studio-scene-copy"><header><b>ฉาก ${scene.index}</b><span class="status-pill ${scene.source==='pending'?'':'ready'}">${scene.source==='flow'?'Flow จริง':scene.source==='meta'?'Meta AI จริง':scene.source==='local'?'ภาพเคลื่อนไหวในเครื่อง':'รอวิดีโอ'}</span></header>${storySceneIdentityMarkup(review,scene)}<p>${escapeHtml(scene.narration||'ยังไม่มีบทฉาก')}</p>${storyScenePromptMarkup(scene)}${scene.video_url?`<video controls preload="none" src="${escapeHtml(scene.video_url)}" aria-label="วิดีโอฉาก ${scene.index}"></video>`:''}</div></article>`).join('')}</div>
-      <section class="studio-pronunciation"><div><span class="eyebrow">PRONUNCIATION CHECK</span><h3>คำอ่านเฉพาะงานนี้</h3><p>แทนคำในเสียงและซับร่วมกัน ไม่เปลี่ยนภาพหรือส่งงานสร้างเสียงอัตโนมัติ</p></div><label class="field"><span>คำต้นฉบับ = คำอ่านภาษาไทย (หนึ่งคู่ต่อบรรทัด)</span><textarea id="studio-notes" rows="4" placeholder="UnknownHero = ฮีโร่ลึกลับ" ${review.editable?'':'readonly'}></textarea></label><div class="studio-review-tools"><span id="studio-note-state">${escapeHtml(review.locked_reason||'บันทึกมีผลเฉพาะงานนี้ ไม่เปลี่ยนค่าเริ่มต้นของงานอื่น')}</span><button class="button secondary compact" data-preview-notes>ตรวจคำอ่าน</button><button class="button primary compact" data-save-notes ${review.editable?'':'disabled'}>บันทึกคำอ่าน</button></div><div id="studio-voice-result" role="status"></div><details><summary>ดูข้อความที่จะส่งให้ AI Voice (ไม่ใช้เครดิต)</summary><p id="studio-voice-script"></p></details></section>`;
+      <section class="studio-pronunciation"><div><span class="eyebrow">ตรวจคำอ่าน</span><h3>คำอ่านเฉพาะงานนี้</h3><p>แทนคำในเสียงและซับร่วมกัน ไม่เปลี่ยนภาพหรือส่งงานสร้างเสียงอัตโนมัติ</p></div><label class="field"><span>คำต้นฉบับ = คำอ่านภาษาไทย (หนึ่งคู่ต่อบรรทัด)</span><textarea id="studio-notes" rows="4" placeholder="UnknownHero = ฮีโร่ลึกลับ" ${review.editable?'':'readonly'}></textarea></label><div class="studio-review-tools"><span id="studio-note-state">${escapeHtml(review.locked_reason||'บันทึกมีผลเฉพาะงานนี้ ไม่เปลี่ยนค่าเริ่มต้นของงานอื่น')}</span><button class="button secondary compact" data-preview-notes>ตรวจคำอ่าน</button><button class="button primary compact" data-save-notes ${review.editable?'':'disabled'}>บันทึกคำอ่าน</button></div><div id="studio-voice-result" role="status"></div><details><summary>ดูข้อความที่จะส่งให้ AI Voice (ไม่ใช้เครดิต)</summary><p id="studio-voice-script"></p></details></section>`;
     $('#studio-notes').value=Object.entries(review.user_notes).map(([key,value])=>`${key} = ${value}`).join('\n');
     $('#studio-notes').addEventListener('input',()=>{studio.dirty=true;$('#studio-note-state').textContent='● มีคำอ่านที่ยังไม่บันทึก';});
     $$('[data-scene-prompt]',modal).forEach(node=>node.addEventListener('input',()=>{studio.dirty=true;}));
@@ -144,7 +144,7 @@
             if (state.status !== 'running') { toast(state.message, state.status === 'complete' ? 'success' : 'info'); break; }
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
-        } catch (error) { native.querySelector('[data-native-status]').textContent = error.message; toast(error.message, 'error'); }
+        } catch (error) { native.querySelector('[data-native-status]').textContent = window.smartflowSafeError?.(error.message)||'ทำรายการไม่สำเร็จ'; toast(error.message, 'error'); }
         finally { button.disabled = false; }
       };
       native.querySelector('[data-native-cancel]').onclick = async () => {
@@ -162,7 +162,7 @@
     if(!refresh){studio.opener=document.activeElement;$('#studio-review-body').innerHTML='<div class="studio-loading" role="status">กำลังอ่านบท ภาพ และไฟล์ของงาน…</div>';$('#studio-review-title').textContent='กำลังอ่านงาน…';$('#studio-review-subtitle').textContent='';modal.showModal();}
     const token=++studio.request;
     try{const data=await postAction('story_review',{job_id:jobId});if(token===studio.request&&modal.open)paintReview(data.review);}
-    catch(error){if(token===studio.request){$('#studio-review-body').textContent=error.message;toast(error.message,'error');}}
+    catch(error){if(token===studio.request){$('#studio-review-body').textContent=window.smartflowSafeError?.(error.message)||'อ่านรายละเอียดไม่สำเร็จ';toast(error.message,'error');}}
   }
   window.addEventListener('smartflow-story-provider-saved',event=>{
     if(modal.open&&event.detail?.jobId===studio.review?.job_id)openReview(event.detail.jobId,true);
@@ -221,7 +221,7 @@
     const view=active?(state.product_progress?.active?'products':state.story_progress?.mode==='drama'?'drama':'story'):next?(next.job_type==='drama_episode'?'drama':'story'):'products';
     const title=active?(active.action_required?'งานกำลังรอคุณ':'กำลังทำงาน'):pending.length+productPending.length?'มีงานที่ทำต่อได้':'พร้อมเริ่มเรื่องใหม่';
     const detail=active?`${name||active.job_id} • ${active.message||'กำลังดำเนินการ'}`:pending.length+productPending.length?`สินค้า ${productPending.length} งาน • เรื่องเล่า/ละคร ${pending.length} งาน • เก็บไฟล์เดิมไว้`:'เลือกคลิปสินค้า เรื่องเล่า หรือละคร ระบบจะบันทึกงานเป็นขั้นตอน';
-    const markup=`<div><span class="eyebrow">YOUR WORKSPACE</span><h2>${escapeHtml(title)}</h2><p>${escapeHtml(detail)}</p>${active?.detail?`<small>${escapeHtml(active.detail)}</small>`:''}</div><div class="studio-now-actions">${active?`<span class="studio-running">${Math.round(Number(active.percent)||0)}% ตามผลงานจริง</span>`:''}<button class="button ${active?'primary':'secondary'}" data-page="${view}">${active?'ดูงานที่กำลังทำ':'ไปหน้างาน'} →</button></div>`;
+    const markup=`<div><span class="eyebrow">พื้นที่งานของคุณ</span><h2>${escapeHtml(title)}</h2><p>${escapeHtml(detail)}</p>${active?.detail?`<small>${escapeHtml(active.detail)}</small>`:''}</div><div class="studio-now-actions">${active?`<span class="studio-running">${Math.round(Number(active.percent)||0)}% ตามผลงานจริง</span>`:''}<button class="button ${active?'primary':'secondary'}" data-page="${view}">${active?'ดูงานที่กำลังทำ':'ไปหน้างาน'} →</button></div>`;
     if(workspace.innerHTML!==markup)workspace.innerHTML=markup;
     const sys=state.system||{};
     const status=!sys.bridge_online?'ระบบหลักยังไม่พร้อม':!sys.extension_online?'รอเชื่อม Extension':!sys.extension_compatible?'รุ่น Extension ไม่ตรง':active?'กำลังทำงาน':'พร้อมทำงาน';

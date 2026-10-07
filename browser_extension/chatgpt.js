@@ -36,6 +36,8 @@
   }
   let activeJobId = "";
   let activeRunId = "";
+  let activeStoryDispatchStarted = false;
+  let retireForStoryStall = false;
   let cancelRequested = false;
   let stopProviderOnCancel = true;
   let activeRepairKey = '';
@@ -1623,6 +1625,7 @@
       throw error;
     }
     if(storySend){
+      activeStoryDispatchStarted = true;
       storyBaseline={conversation_url:location.href.split(/[?#]/)[0],before_turn:Math.max(-1,
         ...chatGPTConversationFrames().map(storyTurnNumber)),
         before_message_ids:chatGPTConversationFrames().filter(chatGPTFrameUser)
@@ -1630,6 +1633,7 @@
         before_frame_ids:chatGPTConversationFrames().filter(chatGPTFrameUser).map(chatGPTFrameId).filter(Boolean)};
       if(storySend.onDispatch)storyClaim=await storySend.onDispatch(expectedPrompt,storyBaseline);
     }
+    assertNotCancelled();
     if(ownedChatGPT){
       const frames=chatGPTConversationFrames();
       textBaseline={conversation_url:location.href.split(/[?#]/)[0],before_turn:Math.max(-1,...frames.map(storyTurnNumber)),
@@ -5368,6 +5372,19 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         await write({...owned,send_phase:'dispatching',send_nonce:nonce,result_proof:{prompt,...baseline}});
         return {key,nonce,scene_index:index};
       },
+      async auditPrepared(prompt, sourceCount) {
+        if (provider !== 'chatgpt' || !matches(owned) || owned.status !== 'awaiting_result'
+            || owned.send_phase !== 'prepared' || owned.run_id !== activeRunId
+            || owned.prepared_conversation !== location.href.split(/[?#]/)[0]
+            || owned.send_nonce || owned.result_proof || owned.image_url
+            || typeof prompt !== 'string' || !prompt.trim()
+            || !Number.isInteger(sourceCount) || sourceCount < 0 || sourceCount > 3)
+          throw fail('หลักฐานก่อนส่งภาพไม่ตรงงาน');
+        await write({...owned,pre_send_audit:{prompt,source_count:sourceCount,
+          conversation_url:location.href.split(/[?#]/)[0],prepared_at:Date.now(),
+          user_turn_count:userTurns().length,last_user_signature:lastUserTurnSignature()}});
+        activeStoryDispatchStarted = false;
+      },
       async sendNotStarted(){
         if(['chatgpt','gemini'].includes(provider) && owned.send_phase==='dispatching')
           await write({...owned,send_phase:'prepared',result_proof:null,send_nonce:''});
@@ -5524,20 +5541,25 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       send_button_enabled: state.send_button_enabled,
       visible_mode_labels: modeLabels, entry_mode: modeLabels.length ? 'visible_labels' : 'not_exposed'
     };
+    if (context.onAuditPrepared) await context.onAuditPrepared(text, snapshot.source_count);
     let response;
+    let auditTimer;
     try {
-      response = await chrome.runtime.sendMessage({ type: 'CHATGPT_PROGRESS', progress: {
+      response = await Promise.race([chrome.runtime.sendMessage({ type: 'CHATGPT_PROGRESS', progress: {
       job_id: activeJobId, run_id: activeRunId, provider: PROVIDER_KEY, step: 'image_prompt_ready',
       image_count: completedCount, page_url: location.href, image_request: snapshot,
       message: `ภาพ ${context.scene_index} • ครั้ง ${context.attempt} • ${inputKind} • รูปตั้งต้น ${snapshot.source_count} • Prompt ${text.length} ตัวอักษร • บันทึกคำสั่งและช่องพิมพ์จริงก่อนส่ง`
-      }});
+      }}),new Promise(resolve=>{auditTimer=setTimeout(()=>resolve({timeout:true}),12000);})]);
     } catch (_) {
       // Transport failure is not permission to send without the local audit.
       response = null;
-    }
+    } finally { clearTimeout(auditTimer); }
     if (!response?.ok || response.ignored) {
-      const error = new Error('STORY_IMAGE_AUDIT_UNCONFIRMED • โปรแกรมยังไม่ยืนยันการบันทึกพรอมต์ก่อนส่ง • ยังไม่กดส่ง');
-      error.code = 'STORY_IMAGE_AUDIT_UNCONFIRMED';
+      const timeout=response?.timeout===true;
+      const error = new Error(timeout
+        ? 'STORY_IMAGE_AUDIT_TIMEOUT_PRE_SEND • ช่องยืนยันการบันทึกพรอมต์ไม่ตอบใน 12 วินาที • ยังไม่กดส่ง'
+        : 'STORY_IMAGE_AUDIT_UNCONFIRMED • โปรแกรมยังไม่ยืนยันการบันทึกพรอมต์ก่อนส่ง • ยังไม่กดส่ง');
+      error.code = timeout ? 'STORY_IMAGE_AUDIT_TIMEOUT_PRE_SEND' : 'STORY_IMAGE_AUDIT_UNCONFIRMED';
       throw error;
     }
     assertNotCancelled();
@@ -6448,6 +6470,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
             postRefreshRedo:imageReceipt?.postRefreshRedo===true,
             onMissingSend: imageReceipt ? text => imageReceipt.missingSend(text) : null,
             onDispatch: imageReceipt ? (text,baseline) => imageReceipt.dispatching(text,baseline) : null,
+            onAuditPrepared: imageReceipt && !IS_GEMINI ? (text,count) => imageReceipt.auditPrepared(text,count) : null,
             onSendRejected: imageReceipt ? () => imageReceipt.sendNotStarted() : null,
             onAcceptanceTimeout:imageReceipt ? (text,baseline,monitor)=>imageReceipt.acceptanceTimeout(text,baseline,monitor) : null,
             onSubmitted: imageReceipt ? (text,owner) => imageReceipt.submitted(text,owner) : null,
@@ -6878,6 +6901,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
     if (activeJobId) throw new Error(`กำลังทำงาน ${activeJobId} อยู่`);
     activeJobId = pkg.job.id;
     activeRunId = String(pkg.run_id || "");
+    activeStoryDispatchStarted = false;
+    retireForStoryStall = false;
     conversationPendingText = String(pkg.ai_resume?.stage==='analysis' ? pkg.ai_resume.request||'' : '');
     conversationPendingReferences = [];
     // Only a frozen Product Story with an outfit reference uses four images.
@@ -7232,6 +7257,7 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       if (!submitted?.ok) throw new Error(submitted?.error || `โปรแกรมไม่รับผลจาก ${AI_NAME}`);
       await report("complete", metaSequence ? `ภาพและวิดีโอบันทึกครบ ${imageCount} ฉาก • โปรแกรมกำลังรวม Final ตามเสียงและซับที่เลือก` : mode === "story" ? `ส่งบทและภาพครบ ${imageCount} ฉากแล้ว • โปรแกรมกำลังทำเสียงและวิดีโอต่อ • ยังไม่ใช่วิดีโอ Final` : "เสร็จแล้ว 3 รูป • ส่งต่อ Google Flow อัตโนมัติ", imageCount);
     } catch (error) {
+      if (retireForStoryStall) return; // The exact owned pre-Send worker was replaced; successor owns progress.
       if(error?.code==='STORY_IMAGE_REFRESH_SCHEDULED' || error?.code==='CHATGPT_RESPONSE_REFRESH_SCHEDULED'){
         // Keep the active owner and guard alive until Background reloads this
         // exact tab; clearing them in finally before its last check is a race.
@@ -7263,6 +7289,8 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
       activeRunId = "";
       activeSourceReferenceLimit = 3;
       activeProductOutfitMode = '';
+      activeStoryDispatchStarted = false;
+      retireForStoryStall = false;
       cancelRequested = false;
       stopProviderOnCancel = true;
     }
@@ -8981,6 +9009,25 @@ if(now-lastReport>=5000){lastReport=now;await report('preparing_flow_prompt',`�
         && activeRunId===message.run_id && !cancelRequested,
         job_id:activeJobId,run_id:activeRunId,observed_at_ms:lastObservationMs,
         page_url:location.href.split(/[?#]/)[0]});
+      return;
+    }
+    if (message?.type === 'STORY_PRE_SEND_STALL_PROBE') {
+      const expected=String(message.prompt||'').trim().replace(/\s+/g,' ');
+      const attachments=chatGPTComposerAttachmentState();
+      const reason=activeJobId!==message.job_id || activeRunId!==message.run_id || cancelRequested
+        ? 'owner_changed'
+        : activeStoryDispatchStarted ? 'dispatch_started'
+        : location.href.split(/[?#]/)[0]!==message.conversation_url ? 'conversation_changed'
+        : userTurns().length!==message.user_turn_count
+          || lastUserTurnSignature()!==message.last_user_signature ? 'conversation_turn_changed'
+        : !expected || chatGPTStoryRequest(expected).reason!=='request_missing' ? 'request_present_or_ambiguous'
+        : stopButtonVisible() ? 'response_active'
+        : composerText(composer())!==expected ? 'draft_changed'
+        : attachments.count!==message.source_count || attachments.busy || attachments.failed
+          ? 'attachment_changed' : '';
+      if(!reason && message.claim===true){retireForStoryStall=true;cancelRequested=true;stopProviderOnCancel=false;}
+      sendResponse({ok:!reason,claimed:!reason && message.claim===true,reason:reason||'prepared_unsent',job_id:activeJobId,
+        run_id:activeRunId,page_url:location.href.split(/[?#]/)[0]});
       return;
     }
     if (message?.type !== "START_CHATGPT_JOB") return;

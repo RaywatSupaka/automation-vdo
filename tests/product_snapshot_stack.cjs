@@ -38,6 +38,7 @@ async function fixture(browser){
   `});
   const app=read('app.js');
   await page.addScriptTag({content:app.slice(app.indexOf('async function postAction('),app.indexOf('function readBlobAsDataUrl('))});
+  await page.addScriptTag({content:app.slice(app.indexOf('function safeUiError('),app.indexOf('function showPage('))});
   const helpers=app.indexOf('const fallbackAiModelOptions =');
   await page.addScriptTag({content:app.slice(helpers,app.indexOf('function bindAiModelSelect(',helpers))});
   const order=[...html.matchAll(/<script[^>]+src="\/desktop\/([^?"/]+)(?:\?[^" ]*)?"/g)].map(m=>m[1]).filter(f=>files.has(f));

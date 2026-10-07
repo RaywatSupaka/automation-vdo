@@ -1378,6 +1378,38 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         if client and client_provider != locked_provider:
             self.events.put(("story_error", {"job_id": job_id, "cancel_event": self._story_cancel_event, "value": f"Extension เปิด {client_provider} ไม่ตรงกับ Provider ของ Job ({locked_provider})"}))
             return
+        from core.story_progress_stall import image_prompt_ready_stalled
+        if image_prompt_ready_stalled(client, job_id, expected_run):
+            marker = (job_id, expected_run, str(client.get("ai_updated_at") or ""))
+            if locked_provider != "chatgpt":
+                self.events.put(("story_error", {"job_id": job_id,
+                    "cancel_event": self._story_cancel_event,
+                    "value": "STORY_IMAGE_PROGRESS_STALLED • ผู้ให้บริการไม่รองรับการกู้ร่างก่อนส่ง • เก็บงานเดิมไว้"}))
+                return
+            if getattr(self, "_story_image_stall_marker", None) != marker:
+                self._story_image_stall_marker = marker
+                self._story_image_stall_since = time.monotonic()
+                self._story_image_stall_reported = False
+                try:
+                    self.bridge.queue_extension_command("recover_stalled_story_image", job_id,
+                        provider_hint="chatgpt", run_id=expected_run)
+                    self._update_story_progress({"percent": self._story_progress_value.get(),
+                        "stage": "chatgpt", "message": "พบขั้นสร้างภาพค้าง • กำลังตรวจหลักฐานการส่ง",
+                        "detail": "ตรวจ Job, แชต และใบรับคำขอก่อนเริ่มต่อจากภาพที่บันทึกไว้"})
+                except Exception as exc:
+                    self.events.put(("story_error", {"job_id": job_id,
+                        "cancel_event": self._story_cancel_event,
+                        "value": f"STORY_IMAGE_PROGRESS_STALLED • ส่งคำสั่งกู้คืนไม่ได้ ({type(exc).__name__})"}))
+                    return
+            elif time.monotonic() - getattr(self, "_story_image_stall_since", 0) >= 90:
+                if not getattr(self, "_story_image_stall_reported", False):
+                    self._story_image_stall_reported = True
+                    self.events.put(("story_error", {"job_id": job_id,
+                        "cancel_event": self._story_cancel_event,
+                        "value": "STORY_IMAGE_PROGRESS_STALLED • Extension ไม่ยืนยันผลกู้คืนใน 90 วินาที • เก็บแชตเดิมและภาพที่บันทึกไว้"}))
+                return
+            self._story_monitor_after = self.root.after(600, lambda: self._monitor_story_browser_progress(job_id))
+            return
         payload = browser_progress(client, job_id, story_job.get("scene_count", 1)) if client else None
         if payload:
             # Keep dispatch ownership through heartbeat gaps. Dropping this
@@ -1655,6 +1687,10 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
         from core.flow_review import request_scene_repair_resume
         from core.scene_video_plan import enabled as planned_video
         manual_flow_resume = request_scene_repair_resume(self.stories.root / job_id, job) if job.get('video_generation_mode') == 'google_flow' and not planned_video(job) else None
+        # A direct retry bypasses claim_next(); restore its failed queue owner
+        # so the normal ready/error finisher can record the terminal state.
+        if queue is not None:
+            queue.claim_failed_story_for_direct_resume(job_id)
         self.stories.reset_recovery_attempts(job_id)
         self._story_pipeline_job_id = job_id
         self._story_browser_launches = getattr(self, "_story_browser_launches", {})
@@ -1757,6 +1793,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             "STORY_FLOW_DUPLICATE_POLICY_EVENT", "FLOW_REPAIR_REVIEW", "FLOW_SEND_REVIEW",
             "FLOW_POLICY_BLOCKED", "FLOW_FACE_POLICY_BLOCKED", "FLOW_ATTACHMENT_UNCONFIRMED",
             "AI_IMAGE_REFERENCE_UNCONFIRMED", "AI_WEB_RESUME_REVIEW",
+                    "STORY_IMAGE_PROGRESS_STALLED", "STORY_IMAGE_STALL_REVIEW",
         )):
             # The exact terminal event was already handled. Automatic recovery
             # would reopen Flow and physically submit the same scene again.
@@ -1811,7 +1848,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
             must_read_old_chat = bool(resume_target.get("required"))
             if not has_ai_checkpoint:
                 resume_action = "open_story_chatgpt"
-            elif attempt >= 2 and not must_read_old_chat:
+            elif attempt >= 2 and not must_read_old_chat and "STORY_IMAGE_AUDIT_TIMEOUT_PRE_SEND" not in error_message:
                 resume_action = "restart_chatgpt_images"
         provider_hint = str(recovered.get("image_ai_provider") or "chatgpt").strip().lower()
         provider_name = "Gemini Web" if provider_hint == "gemini" else "ChatGPT Web"
@@ -10433,7 +10470,7 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
                     continue
                 if any(code in message for code in (
                     "STORY_IMAGE_RECEIPT_REVIEW", "STORY_IMAGE_DOWNLOAD_PENDING",
-                    "STORY_IMAGE_CHECKPOINT_UNREADABLE", "STORY_ANALYSIS_CHECKPOINT_REVIEW", "STORY_IMAGE_FALLBACK_REVIEW",
+                    "STORY_IMAGE_CHECKPOINT_UNREADABLE", "STORY_ANALYSIS_CHECKPOINT_REVIEW", "STORY_IMAGE_FALLBACK_REVIEW", "STORY_IMAGE_STALL_REVIEW",
                     "GEMINI_IMAGE_SEND_REVIEW", "GEMINI_TEXT_SEND_REVIEW", "GEMINI_TEXT_REQUEST_REVIEW",
                     "AI_ANALYSIS_TIMEOUT", "AI_ANALYSIS_FORMAT_REVIEW", "AI_ANALYSIS_JSON_AMBIGUOUS",
                     "ใช้เวลาตอบนานเกิน 6 นาที",
@@ -12375,7 +12412,8 @@ class MainWindow(CreationQueueMixin, PresenterMixin):
                     or story_image_refusal_notice(job_id, raw_error, trace)) if job_id else ""
                 reported_error = review_notice or str(payload)
                 keep_ai_draft_open = (bool(review_notice)
-                    or any(code in raw_error for code in ("AI_WEB_WAIT_REVIEW", "AI_WEB_RESUME_REVIEW"))
+                    or any(code in raw_error for code in ("AI_WEB_WAIT_REVIEW", "AI_WEB_RESUME_REVIEW",
+                                                        "STORY_IMAGE_PROGRESS_STALLED", "STORY_IMAGE_STALL_REVIEW"))
                     or self._should_keep_story_ai_draft(job_id, payload))
                 if job_id and not keep_ai_draft_open and self._schedule_story_recovery(job_id, reported_error):
                     continue

@@ -91,7 +91,7 @@
     if(action==='queue'){minimize();callbacks.showQueue?.();}
     if(action==='pause'&&active(run)&&!pausePending){
       const id=run.id;pausePending=true;button.disabled=true;
-      try{await callbacks.pause?.(id);}catch(error){if(run?.id===id){q('#sp-run-stale').textContent=error.message;q('#sp-run-stale').hidden=false;}}
+      try{await callbacks.pause?.(id);}catch(error){if(run?.id===id){q('#sp-run-stale').textContent=window.smartflowSafeError?.(error.message)||'พักงานไม่สำเร็จ';q('#sp-run-stale').hidden=false;}}
       finally{pausePending=false;if(run?.id===id)button.disabled=run.status==='pausing';}
     }
   });

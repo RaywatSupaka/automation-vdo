@@ -18,7 +18,7 @@ const {chromium}=require('playwright'),fs=require('fs'),assert=require('assert/s
     {item_id:'story:D',content_kind:'drama',title:'ละครทดสอบ',kind_label:'ละครสั้น AI'},
     {item_id:'story:L',content_kind:'story',aspect_ratio:'16:9',title:'คลิปยาวทดสอบ',kind_label:'คลิปยาว'}]}};
    window.showPage=()=>document.querySelector('[data-view="facebook"]').classList.add('active');
-   window.confirmations=[];window.allowConfirm=true;window.confirm=t=>{confirmations.push(t);return allowConfirm;};window.calls=[];
+   window.confirmations=[];window.allowConfirm=true;window.smartflowConfirm=async t=>{confirmations.push(t);return allowConfirm;};window.calls=[];
    window.fixture={ok:true,page:{id:'123',name:'เพจตัวอย่าง'},posts:[],planner:{rows:[],revision:0,batch:{active:false}}};
    const result=()=>JSON.parse(JSON.stringify(fixture));
    window.fetch=async(url,options)=>{

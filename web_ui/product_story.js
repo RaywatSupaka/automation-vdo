@@ -1,6 +1,6 @@
 (() => {
-  pageMeta['product-cast']=['PRODUCT CAST','นายแบบ / นางแบบสินค้า'];
-  pageMeta.products=['SHOPEE VIDEO','ทำคลิปสินค้า shopee'];
+  pageMeta['product-cast']=['ตัวละครสินค้า','นายแบบ / นางแบบสินค้า'];
+  pageMeta.products=['คลิปสินค้า Shopee','ทำคลิปสินค้า Shopee'];
   document.querySelectorAll('[data-page="products"] span').forEach(n=>{if(n.textContent.includes('สินค้า')){const title=n.querySelector('strong');if(title)title.textContent='คลิปสินค้า Shopee';else n.textContent='คลิปสินค้า Shopee';}});
   const intro=document.querySelector('[data-view="products"] .page-intro');
   intro.querySelector('h1').textContent='ทำคลิปสินค้า shopee';
@@ -131,7 +131,7 @@
         card.append(outfit);}
       if(!a.approved){const b=document.createElement('button');b.textContent='บันทึกเข้าคลัง';b.onclick=()=>run(async()=>{await original('product_cast_save',{id:a.id});await assets();});card.append(b);}
       const rename=document.createElement('button');rename.textContent='เปลี่ยนชื่อ';rename.onclick=()=>run(async()=>{const name=prompt('ชื่อในคลัง',a.name);if(name!==null){await original('product_cast_edit',{id:a.id,name});await assets();}});card.append(rename);
-      const remove=document.createElement('button');remove.textContent='นำออกจากคลัง';remove.onclick=()=>run(async()=>{if(confirm('นำออกจากรายการเลือก? รูปของงานและคิวเดิมยังอยู่')){await original('product_cast_edit',{id:a.id,hidden:true});await assets();}});card.append(remove);q('#cast-assets').append(card);}
+      const remove=document.createElement('button');remove.textContent='นำออกจากคลัง';remove.onclick=()=>run(async()=>{if(await window.smartflowConfirm('นำออกจากรายการเลือก? รูปของงานและคิวเดิมยังอยู่',{title:'นำรูปออกจากรายการ?',acceptLabel:'นำออก'})){await original('product_cast_edit',{id:a.id,hidden:true});await assets();}});card.append(remove);q('#cast-assets').append(card);}
     q('#ps-cast').value=selected;
     for(const container of [q('#ps-cast-gallery'),q('#cast-assets')]){
       if(container.id==='ps-cast-gallery')container.replaceChildren();
@@ -149,7 +149,7 @@
     syncCastVisibility();
   }
   window.loadProductCastLibrary=assets;
-  async function run(fn){if(busy)return;busy=true;try{await fn();}catch(e){q('#cast-notice').textContent=e.message;toast(e.message,'error');}finally{busy=false;}}
+  async function run(fn){if(busy)return;busy=true;try{await fn();}catch(e){q('#cast-notice').textContent=window.smartflowSafeError?.(e.message)||'ทำรายการไม่สำเร็จ';toast(e.message,'error');}finally{busy=false;}}
   q('#cast-upload').onclick=()=>run(async()=>{const file=q('#cast-file').files[0];if(!file)throw Error('เลือกรูปก่อน');if(file.size>8*1024*1024)throw Error('รูปต้องไม่เกิน 8 MB');const image=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});await original('product_cast_upload',{name:q('#cast-name').value,image});await assets();q('#cast-notice').textContent='บันทึกรูปแล้ว';});
   q('#cast-generate').onclick=()=>run(async()=>{await original('product_cast_generate',{topic:q('#cast-name').value||'นายแบบ / นางแบบ AI',story_text:q('#cast-details').value,provider:q('#cast-provider').value});q('#cast-notice').textContent='ส่งสร้างภาพแล้ว รอผลใน AI Web และกดรีเฟรชคลังเมื่อเสร็จ';});
   q('#cast-refresh').onclick=()=>run(assets);
@@ -299,7 +299,7 @@
         queue?'ดูคิวสร้างคลิปเพื่อเริ่มงาน':'ติดตามสถานะในรายการงานต่อ • ไม่สร้างซ้ำ','ready');
       await poll(true);
     }catch(error){
-      showPreparation('ทำต่อจากสินค้าเดิมไม่ได้',String(error.message||error),'error');toast(error.message||String(error),'error');
+      showPreparation('ทำต่อจากสินค้าเดิมไม่ได้',window.smartflowSafeError?.(error.message||error)||'ทำรายการไม่สำเร็จ','error');toast(error.message||String(error),'error');
     }finally{clearInterval(elapsedTimer);productPreparing=false;window.productPreparationActive=productPreparationUnknown;}
   });
   if(location.hash==='#product-cast')showPage('product-cast');

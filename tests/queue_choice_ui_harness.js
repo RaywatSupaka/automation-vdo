@@ -10,15 +10,18 @@ const fs=require('fs'),assert=require('assert/strict');const {chromium}=require(
  for(const [key,action,payload,expected] of [
  ['product','create_product',{link:'https://s.shopee.co.th/test'},'creation_enqueue'],
  ['story','create_story',{topic:'rabbit',video_generation_mode:'google_flow'},'creation_enqueue'],
- ['long','create_story',{topic:'long',long_video:{duration_seconds:180},video_generation_mode:'google_flow'},'enqueue_long_video'],
- ['drama','create_drama_series',{title:'drama',render_options:{video_generation_mode:'google_flow'}},'create_drama_series']]){
+ ['long','create_story',{topic:'long',long_video:{duration_seconds:180},video_generation_mode:'google_flow'},'enqueue_long_video']]){
   await page.evaluate(({key})=>document.getElementById(key+'-queue-only').checked=true,{key});
   await page.evaluate(({action,payload})=>postAction(action,payload),{action,payload});
   const sent=await page.evaluate(()=>window.sent);assert.equal(sent.action,expected);assert.equal(sent.payload.queue_only,true);assert.equal(sent.payload.audio_choices.mode,'api');
  }
+ assert.equal(await page.locator('#drama-queue-only').count(),0,'drama has one explicit enqueue button');
+ await page.evaluate(()=>postAction('create_drama_series',{title:'drama',enqueue_only:true,render_options:{video_generation_mode:'google_flow'}}));
+ assert.equal(await page.evaluate(()=>sent.action),'create_drama_series');
+ assert.equal(await page.evaluate(()=>sent.payload.enqueue_only),true);
  await page.evaluate(()=>{const select=document.getElementById('story-video-mode');select.value='google_flow';select.dispatchEvent(new Event('change'));const panel=(select.closest('label')||select).nextElementSibling;panel.querySelector('[data-audio-keep]').checked=true;panel.querySelector('[data-audio-subtitle]').checked=false;});
  await page.evaluate(()=>postAction('create_story',{topic:'mixed',video_generation_mode:'google_flow'}));
  const mixed=await page.evaluate(()=>sent.payload);assert.equal(mixed.audio_choices.keep_video_audio,true);assert.equal(mixed.subtitle,false);
  await page.evaluate(()=>postAction('create_story',{job_id:'OLD'}));assert.equal(await page.evaluate(()=>sent.action),'create_story');assert.equal(await page.evaluate(()=>sent.payload.queue_only),undefined);
- assert.deepEqual(errors,[]);console.log('PASS four queue checkboxes, real postAction routing after audio capture, mix/subtitle preserved, old job unaffected');
+ assert.deepEqual(errors,[]);console.log('PASS three queue checkboxes and one drama enqueue button, real postAction routing after audio capture, mix/subtitle preserved, old job unaffected');
  }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

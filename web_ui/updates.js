@@ -11,15 +11,14 @@
     return false;
   };
   const button = document.createElement('button');
-  button.className = 'button ghost'; button.textContent = 'เวอร์ชัน / อัปเดต';
-  button.style.cssText = 'position:fixed;bottom:10px;right:18px;z-index:90;font-size:12px';
+  button.className = 'button ghost notification-update'; button.textContent = 'เวอร์ชัน / อัปเดต';
   const dialog = document.createElement('dialog'); dialog.className = 'modal';
   dialog.innerHTML = '<div class="modal-card" style="max-width:650px"><h2>เวอร์ชันและการอัปเดต</h2><p data-version></p><p data-extension></p><p data-notes style="white-space:pre-wrap"></p><p data-status role="status"></p><div class="modal-actions" style="flex-wrap:wrap"><button class="button" data-check>ตรวจสอบอีกครั้ง</button><button class="button" data-download="patch">ดาวน์โหลดแพตช์โปรแกรม</button><button class="button primary" data-install hidden>ติดตั้งและเปิดใหม่</button><button class="button ghost" data-close>ไว้ภายหลัง</button></div><details style="margin-top:18px"><summary>การจัดการ Extension</summary><p>ตรวจรุ่นที่เชื่อมต่อกับโปรแกรม เปิด chrome://extensions แล้วจัดการ Extension ตัวเดิมในโปรไฟล์เดิม หลังอัปเดตไฟล์ในโฟลเดอร์ที่ติดตั้งไว้ ให้กด Reload ที่ตัวเดิมและตรวจรุ่นอีกครั้ง</p></details></div>';
   const el = selector => dialog.querySelector(selector);
   const bundled = document.createElement('button');
   bundled.className = 'button'; bundled.textContent = 'เปิดไฟล์ Extension ที่มากับโปรแกรม';
   dialog.querySelector('.modal-actions').prepend(bundled);
-  bundled.onclick = async () => { const reply = await api.update_bundled_extension(); el('[data-status]').textContent = reply.message || reply.error; };
+  bundled.onclick = async () => { const reply = await api.update_bundled_extension(); el('[data-status]').textContent = reply.error ? (window.smartflowSafeError?.(reply.error)||'อัปเดตส่วนเสริมไม่สำเร็จ') : reply.message; };
   const busy = () => Boolean(state?.product_progress?.active || state?.story_progress?.active || state?.presenter_progress?.active || state?.creation_queue?.stuck_state_blocked_reason);
   async function check(show = true) {
     if (!api) return;
@@ -38,7 +37,7 @@
         el('[data-version]').textContent = `โปรแกรม ${result.local?.version || 'ชุดพัฒนา'}`;
         el('[data-extension]').textContent = `Extension ที่ต้องใช้: ${result.local?.extension_version || 'ดูสถานะระบบ'} • ที่เชื่อมต่อ: ${state?.system?.extension_version || 'ยังไม่พบ'}`;
         el('[data-download="patch"]').hidden = true;
-        el('[data-status]').textContent = result.error; return;
+        el('[data-status]').textContent = window.smartflowSafeError?.(result.error)||'ตรวจอัปเดตไม่สำเร็จ'; return;
       }
       el('[data-version]').textContent = `โปรแกรม ${result.local.version} • รุ่นเผยแพร่ ${result.release.version}`;
       const actual = state?.system?.extension_online ? state.system.extension_version : '';
@@ -70,17 +69,17 @@
     const timer = setInterval(async () => { const p = await api.update_progress(); if (p.busy) el('[data-status]').textContent = `ดาวน์โหลด ${p.percent || 0}%`; }, 800);
     try {
       const reply = await api.update_download('patch');
-      el('[data-status]').textContent = reply.message || reply.error;
+      el('[data-status]').textContent = reply.error ? (window.smartflowSafeError?.(reply.error)||'อัปเดตไม่สำเร็จ') : reply.message;
       if (reply.ok) el('[data-install]').hidden = false;
     } finally { clearInterval(timer); b.disabled = false; }
   };
   el('[data-install]').onclick = async () => {
-    if (!confirm('ติดตั้งอัปเดตและเปิดโปรแกรมใหม่? ระบบจะตรวจว่าไม่มีงานกำลังทำก่อน')) return;
+    if (!await window.smartflowConfirm('ติดตั้งอัปเดตและเปิดโปรแกรมใหม่? ระบบจะตรวจว่าไม่มีงานกำลังทำก่อน',{title:'ติดตั้งอัปเดต?',acceptLabel:'ติดตั้งและเปิดใหม่'})) return;
     const install = el('[data-install]');
     if (install.disabled) return;
     install.disabled = true;
     try {
-      const reply = await api.update_install(); el('[data-status]').textContent = reply.message || reply.error;
+      const reply = await api.update_install(); el('[data-status]').textContent = reply.error ? (window.smartflowSafeError?.(reply.error)||'ติดตั้งอัปเดตไม่สำเร็จ') : reply.message;
       if (!reply.ok) install.disabled = false;
     } catch (error) {
       el('[data-status]').textContent = String(error);
@@ -89,7 +88,8 @@
   };
   window.addEventListener('pywebviewready', () => {
     api = window.pywebview.api;
-    document.body.append(button, dialog);
+    document.querySelector('#notification-stack').append(button);
+    document.body.append(dialog);
     setTimeout(() => check(false), 7000);
     // Poll metadata only; never install or reload while an automation is active.
     setInterval(() => { if (!document.hidden) void check(false); }, checkInterval);

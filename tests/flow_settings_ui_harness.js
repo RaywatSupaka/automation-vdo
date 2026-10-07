@@ -33,7 +33,7 @@ const {chromium}=require('playwright');
   const pollCount=await page.evaluate(()=>window.calls.filter(c=>c.action==='flow_settings_result').length);
   await page.evaluate(()=>{window.blockFlowRead=true;});
   await page.locator('[data-flow-read]').click();
-  await page.waitForFunction(()=>document.querySelector('[data-flow-status]').textContent.includes('มีงานค้าง'));
+  await page.waitForFunction(()=>document.querySelector('[data-flow-status]').textContent.includes('ทำรายการไม่สำเร็จ'));
   assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.action==='flow_settings_result').length),pollCount,'Blocked inspection must not poll a null command');
   assert.equal(await page.locator('[data-flow-read]').isEnabled(),true);
   await page.evaluate(()=>{window.blockFlowRead=false;});

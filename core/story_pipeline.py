@@ -80,7 +80,7 @@ _CONTENT_RECOVERY_STOP_CODES = (
     "story_image_response_review", "flow_plan_review", "flow_video_settings_review",
     "story_image_audit_unconfirmed", "story_image_context_conflict",
     "story_analysis_checkpoint_review", "story_image_checkpoint_unreadable",
-    "story_image_receipt_review", "story_image_download_pending", "story_image_fallback_review",
+    "story_image_receipt_review", "story_image_stall_review", "story_image_download_pending", "story_image_fallback_review",
 )
 
 

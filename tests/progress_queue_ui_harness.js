@@ -169,15 +169,17 @@ async function main() {
     row.error=oldError;saved.ai_cover_state.request_id='saved-cover';
     saved.cover_revision='saved-cover';saved.cover_url='/api/desktop/media?kind=cover';
     c.renderCreationQueue(ui.state);
-    assert.match($('#creation-list').innerHTML,/ปก AI บันทึกแล้ว • กด Run Queue เพื่อทำคิวต่อ/);
+    assert.match($('#creation-list').innerHTML,/ปก AI บันทึกแล้ว • กดเริ่มคิวเพื่อทำต่อ/);
     assert.doesNotMatch($('#creation-list').innerHTML,/AI_IMAGE_REFERENCE_UNCONFIRMED/);
     assert.equal(row.error,oldError,'recovered presentation preserves the original queue error ledger');
     saved.cover_url='';c.renderCreationQueue(ui.state);
-    assert.match($('#creation-list').innerHTML,/AI_IMAGE_REFERENCE_UNCONFIRMED/,'ready state alone cannot hide the error');
+    assert.match($('#creation-list').innerHTML,/งานนี้สะดุด/,'ready state alone cannot hide the error');
+    assert.doesNotMatch($('#creation-list').innerHTML,/AI_IMAGE_REFERENCE_UNCONFIRMED/,'raw internal codes stay off cards');
     saved.cover_url='/api/desktop/media?kind=cover';saved.cover_revision='old-cover';c.renderCreationQueue(ui.state);
-    assert.match($('#creation-list').innerHTML,/AI_IMAGE_REFERENCE_UNCONFIRMED/,'old/manual cover is not proof of this request');
+    assert.match($('#creation-list').innerHTML,/งานนี้สะดุด/,'old/manual cover is not proof of this request');
     saved.cover_revision='saved-cover';row.error='UNRELATED_FLOW_ERROR';c.renderCreationQueue(ui.state);
-    assert.match($('#creation-list').innerHTML,/UNRELATED_FLOW_ERROR/,'successful cover cannot hide an unrelated error');
+    assert.match($('#creation-list').innerHTML,/งานนี้สะดุด/,'successful cover cannot hide an unrelated error');
+    assert.doesNotMatch($('#creation-list').innerHTML,/UNRELATED_FLOW_ERROR/,'unrelated internal code stays off cards');
     row.error=oldError;
     for(const phase of ['queued','claimed','running','ready','']){
       saved.ai_cover_state.phase=phase;c.renderCreationQueue(ui.state);

@@ -1,0 +1,88 @@
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+
+(async()=>{
+  const browser=await chromium.launch({headless:true});
+  try{
+    const page=await browser.newPage(),errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    await page.route('**/*',route=>route.abort());
+    const html=fs.readFileSync('web_ui/index.html','utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*>/gi,'');
+    await page.setContent(html);
+    await page.addStyleTag({content:fs.readFileSync('web_ui/create_wizard.css','utf8')});
+    const app=fs.readFileSync('web_ui/app.js','utf8');
+    const handler=app.match(/\$\('#create-story'\)\.addEventListener\('click', async \(\) => \{[\s\S]*?\r?\n\}\);/)[0];
+    await page.addScriptTag({content:`
+      const $=selector=>document.querySelector(selector);
+      const ui={state:{system:{extension_compatible:false,voice_configured:false,voice_reference_configured:false,subtitle_connected:false}},storyImage:''};
+      const calls=[];let choice={mode:'api',subtitle:true,music:false};
+      const mediaAudioChoice=()=>({...choice});
+      const setMediaAudioChoice=(_,value)=>{choice={...value};};
+      window.mediaAudioChoice=mediaAudioChoice;window.setMediaAudioChoice=setMediaAudioChoice;
+      const selectedAiModel=()=> 'auto';
+      const storyStylePayload=()=>({storytelling_options:{mode:document.querySelector('[data-storytelling=story] [data-telling=mode]').value}});
+      const postAction=async(action,payload)=>{calls.push({action,payload});return {ok:true};};
+      const poll=async()=>{},toast=()=>{},showPage=()=>{};
+      const speaker=document.createElement('fieldset');speaker.dataset.storytelling='story';
+      speaker.innerHTML='<select data-telling="mode"><option value="narrator">ผู้บรรยาย</option><option value="solo">ตัวละครพูดเอง</option></select>';
+      document.querySelector('[data-view=story]').append(speaker);
+      ${handler}
+    `});
+    await page.addScriptTag({content:fs.readFileSync('web_ui/create_wizard.js','utf8')});
+    await page.locator('#open-create-wizard').click();
+    await page.locator('[data-wizard-kind="story"]').click();
+    assert.equal(await page.locator('[data-wizard-next]').isDisabled(),false);
+    await page.locator('[data-wizard-next]').click();
+    assert.match(await page.locator('#create-wizard-error').textContent(),/กรุณากรอก/);
+    await page.locator('#wizard-main').fill('เรื่องเล่าทดสอบ');
+    assert.equal(await page.locator('#story-topic').inputValue(),'เรื่องเล่าทดสอบ');
+    await page.locator('[data-wizard-next]').click();
+    await page.locator('#wizard-speaker').selectOption('solo');
+    await page.locator('[data-wizard-next]').click();
+    await page.locator('#wizard-video').selectOption('image_motion');
+    assert.match(await page.locator('#wizard-video-warning').textContent(),/Google Flow/);
+    await page.locator('[data-wizard-next]').click();
+    assert.equal(await page.locator('#create-wizard-position').textContent(),'ขั้น 4 จาก 6 · ภาพและวิดีโอ');
+    await page.locator('#wizard-video').selectOption('google_flow');
+    await page.locator('#wizard-scenes').evaluate(node=>{node.value='8';node.dispatchEvent(new Event('input',{bubbles:true}));});
+    await page.locator('[data-wizard-next]').click();
+    await page.locator('#wizard-audio').selectOption('flow_original');
+    await page.locator('[data-wizard-extra="music"]').check();
+    await page.locator('[data-wizard-next]').click();
+    assert.match(await page.locator('#create-wizard-body').textContent(),/ก่อนเริ่ม ให้เข้าสู่ระบบ ChatGPT/);
+    assert.doesNotMatch(await page.locator('#create-wizard-body').textContent(),/เข้าสู่ระบบ ChatGPT แล้ว/);
+    assert.equal(await page.locator('[data-wizard-next]').isDisabled(),true);
+    await page.evaluate(()=>{ui.state.system.extension_compatible=true;ui.state.system.subtitle_connected=true;});
+    await page.locator('[data-wizard-back]').click();
+    await page.locator('[data-wizard-next]').click();
+    await page.locator('[data-wizard-next]').click();
+    const wizardCall=await page.evaluate(()=>calls.at(-1));
+    assert.equal(wizardCall.action,'create_story');
+    assert.equal(wizardCall.payload.scene_count,8);
+    assert.equal(wizardCall.payload.video_generation_mode,'google_flow');
+    // Read the same original fields through the real legacy click handler.
+    await page.locator('#create-story').click();
+    assert.deepEqual(await page.evaluate(()=>calls.at(-1)),wizardCall);
+    assert.equal(await page.evaluate(()=>calls.length),2);
+    await page.locator('#open-create-wizard').click();
+    await page.locator('[data-wizard-kind="product"]').click();
+    await page.locator('#wizard-main').fill('https://example.com/item');
+    await page.locator('[data-wizard-next]').click();
+    assert.match(await page.locator('#create-wizard-error').textContent(),/shopee.co.th/);
+    await page.locator('[data-wizard-close]').click();
+    await page.locator('#open-create-wizard').click();
+    await page.locator('[data-wizard-kind="drama"]').click();
+    assert.equal(await page.locator('#wizard-episodes').getAttribute('max'),'10');
+    await page.locator('[data-wizard-close]').click();
+    await page.locator('#open-create-wizard').click();
+    await page.locator('[data-wizard-kind="long"]').click();
+    await page.locator('#wizard-main').fill('คลิปยาวทดสอบ');
+    await page.locator('[data-wizard-next]').click();
+    await page.locator('[data-wizard-next]').click();
+    assert.equal(await page.locator('#wizard-video option[value="meta_ai"]').count(),0);
+    await page.locator('[data-wizard-close]').click();
+    assert.deepEqual(errors,[]);
+    console.log('Create wizard: six steps, blocked blank topic and incompatible speech mode, source field events, real legacy payload parity and no network passed');
+  }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

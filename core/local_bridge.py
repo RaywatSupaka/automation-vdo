@@ -16,7 +16,7 @@ from core.bridge_diagnostics import safe_ai_send_diagnostics, safe_ai_image_obse
 
 
 class LocalBridge:
-    REQUIRED_EXTENSION_VERSION = "0.15.513"
+    REQUIRED_EXTENSION_VERSION = "0.15.519"
     COMMAND_LEASE_SECONDS = 180
     FLOW_RUN_ACTIONS = {
         "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow",
@@ -25,7 +25,7 @@ class LocalBridge:
     }
     AI_RUN_ACTIONS = {
         "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt",
-        "resume_chatgpt", "restart_chatgpt_images", "inspect_chatgpt",
+        "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt",
         "focus_ai_web",
     }
 
@@ -689,7 +689,7 @@ class LocalBridge:
                     return dict(existing)
         if action == 'focus_browser' and job_id:
             raise ValueError('คำสั่งเปิดหน้าต่างไม่เปลี่ยนงาน')
-        allowed_actions = {"read_flow_settings", "capture_shopee_product", "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "inspect_chatgpt", "focus_ai_web", "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow", "resume_flow_workspace", "approve_flow_credit", "stop_flow_generation", "open_flow_result", "download_flow_result", "inspect_flow_result_dom", "close_automation_browser"}
+        allowed_actions = {"read_flow_settings", "capture_shopee_product", "open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web", "focus_flow_web", "debug_flow_dom", "open_flow", "inspect_flow", "resume_flow_workspace", "approve_flow_credit", "stop_flow_generation", "open_flow_result", "download_flow_result", "inspect_flow_result_dom", "close_automation_browser"}
         allowed_actions.add('focus_browser')
         allowed_actions.add('open_meta_video')
         if action not in allowed_actions:
@@ -710,7 +710,7 @@ class LocalBridge:
         ai_provider = requested_provider or "chatgpt"
         if ai_provider not in {"chatgpt", "gemini"}:
             raise ValueError("ผู้ให้บริการ AI Web ไม่ถูกต้อง")
-        if job_id and action in {"open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "inspect_chatgpt", "focus_ai_web"}:
+        if job_id and action in {"open_chatgpt", "open_story_chatgpt", "cancel_story_chatgpt", "resume_chatgpt", "restart_chatgpt_images", "recover_stalled_story_image", "inspect_chatgpt", "focus_ai_web"}:
             if job_id.startswith("PRESENTER-"):
                 if not self.presenters: raise ValueError("ยังไม่ได้เปิดคลังตัวละคร")
                 ai_package = self.presenters.plugin_request(job_id)

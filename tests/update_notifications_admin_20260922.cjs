@@ -6,6 +6,7 @@ const {chromium}=require('playwright');
   for(const scenario of ['current','new-app','new-extension','newer-installed','busy','network']){
    const page=await browser.newPage();await page.route('**/*',r=>r.abort());
    await page.goto('about:blank');
+   await page.setContent('<div id="notification-stack"></div>');
    await page.evaluate(mode=>{
     window.fixture={mode,calls:0,interval:null,timers:[],active:mode==='busy'};
     window.setInterval=(fn,ms)=>{if(ms===15*60*1000)fixture.interval=fn;return 1;};

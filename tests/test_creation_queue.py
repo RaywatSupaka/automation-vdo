@@ -25,6 +25,34 @@ class CreationQueueTests(unittest.TestCase):
         self.queue.resume()
         return self.queue.claim_next()
 
+    def test_direct_story_resume_reclaims_only_its_failed_queue_row(self):
+        row = self.queue.enqueue('story', ['เรื่องเดิม'], scene_count=6)['items'][0]
+        queued = self.queue.enqueue('story', ['เรื่องถัดไป'], scene_count=6)['items'][0]
+        self.running()
+        self.queue.attach_job(row['queue_id'], 'STORY-OLD')
+        self.queue.mark_failed_by_job('STORY-OLD', 'uncertain send')
+        self.queue.pause('review')
+        claimed = self.queue.claim_failed_story_for_direct_resume('STORY-OLD')
+        self.assertEqual(claimed['status'], 'running')
+        self.assertEqual(claimed['previous_error'], 'uncertain send')
+        self.assertEqual(self.queue.get_item(queued['queue_id'])['status'], 'queued')
+        self.assertTrue(self.queue.snapshot()['paused'])
+        self.assertIsNone(self.queue.claim_failed_story_for_direct_resume('STORY-OLD'))
+        self.assertEqual(self.queue.mark_completed_by_job('STORY-OLD', 'final.mp4')['status'], 'completed')
+
+    def test_direct_story_resume_refuses_another_running_owner(self):
+        first = self.queue.enqueue('story', ['เรื่องเดิม'], scene_count=6)['items'][0]
+        self.running()
+        self.queue.attach_job(first['queue_id'], 'STORY-OLD')
+        self.queue.mark_failed_by_job('STORY-OLD', 'uncertain send')
+        other = self.queue.enqueue('story', ['เรื่องอื่น'], scene_count=6)['items'][0]
+        self.queue.resume()
+        self.queue.claim_next()
+        self.queue.attach_job(other['queue_id'], 'STORY-OTHER')
+        with self.assertRaises(ValueError):
+            self.queue.claim_failed_story_for_direct_resume('STORY-OLD')
+        self.assertEqual(self.queue.get_item(first['queue_id'])['status'], 'failed')
+
     def test_mixed_fifo_one_owner_until_final(self):
         first = self.products('one')[0]
         self.queue.enqueue('story', ['เรื่องหมา'], scene_count=6, visual_style='anime')

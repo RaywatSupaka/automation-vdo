@@ -18,12 +18,13 @@
       jobs=data.jobs||[];if(readEpoch===defaultsEpoch)saved=data.defaults;loaded=true;$('#presenter-progress').textContent=data.progress?.message||'ยังไม่มีงานกำลังทำ';$('#presenter-cancel').hidden=!data.active;
       const next=JSON.stringify(jobs);if(next!==signature){signature=next;renderCards();updateChoices();}
       if(!draftLoaded){loadDraft(saved.settings);draftLoaded=true;}updateToggles();
-      $('#presenter-settings-status').textContent=saved.available?'ค่าที่บันทึกไว้: '+saved.name+' • ใช้ร่วมกับสินค้าและ Story Shorts':(saved.error||'เลือกตัวละครที่พร้อมใช้ แล้วบันทึกก่อนติ๊กใส่ผู้บรรยาย');
+      $('#presenter-settings-status').textContent=saved.available?'ค่าที่บันทึกไว้: '+saved.name+' • ใช้ร่วมกับสินค้าและ Story Shorts':(saved.error?(window.smartflowSafeError?.(saved.error)||'อ่านค่าผู้บรรยายไม่สำเร็จ'):'เลือกตัวละครที่พร้อมใช้ แล้วบันทึกก่อนติ๊กใส่ผู้บรรยาย');
     }catch(error){
-      $('#presenter-progress').textContent=error.message;
-      $('#presenter-settings-status').textContent=error.message;
-      const note=$('.presenter-save-note');if(note)note.textContent=error.message;
-      if(!loaded)for(const t of Object.values(toggles)){t.check.disabled=true;t.info.textContent=error.message;}
+      const safe=window.smartflowSafeError?.(error.message)||'อ่านสถานะตัวละครไม่สำเร็จ';
+      $('#presenter-progress').textContent=safe;
+      $('#presenter-settings-status').textContent=safe;
+      const note=$('.presenter-save-note');if(note)note.textContent=safe;
+      if(!loaded)for(const t of Object.values(toggles)){t.check.disabled=true;t.info.textContent=safe;}
     }finally{fetching=false;}
   }
   let librarySearch='',libraryFilter='all';
@@ -44,7 +45,7 @@
   async function libraryChange(job,state){
     const message=state==='trash'?`นำ “${job.name}” ไปถังขยะ?\nกู้คืนได้ ไฟล์ยังเก็บไว้ให้งานเก่าและคิวเดิมใช้งานต่อ ไม่ลบวิดีโอ Final`:
       state==='hidden'?`ซ่อน “${job.name}” จากคลังหลัก? งานเก่าไม่เปลี่ยน`:`นำ “${job.name}” กลับเข้าคลัง?`;
-    if(!window.confirm(message))return;
+    if(!await window.smartflowConfirm(message,{title:'จัดการรายการในคลัง?',acceptLabel:'ยืนยัน'}))return;
     try{await postAction('presenter_library_state',{id:job.id,state,confirmed:true});await refresh();toast(state==='trash'?'ย้ายเข้าถังขยะแล้ว • กู้คืนได้':'ปรับคลังแล้ว');}
     catch(e){toast(e.message,'error');}
   }
@@ -64,7 +65,7 @@
     const actions=node('div','','actions');actions.append(button('เปิดโฟลเดอร์',()=>postAction('presenter_open_folder',{id:job.id}).catch(e=>toast(e.message,'error'))));
     if(job.status==='ready'){const a=node('a','ดาวน์โหลดคลิปรวม','button secondary compact');a.href=url(job.id,'export');a.download=job.name+'-green-screen.mp4';actions.append(a);}
     actions.append(button('คัดลอก Log',()=>navigator.clipboard.writeText(JSON.stringify({service:'SmartFlow Presenter',id:job.id,status:job.status,stage:job.stage,error:job.error,intents:job.intents,clips:job.clips},null,2)).then(()=>toast('คัดลอก Log แล้ว')).catch(e=>toast(e.message,'error'))));detail.append(actions);
-    if(job.error){const more=node('details','');more.append(node('summary','รายละเอียดจุดที่หยุด'),node('p',job.error));detail.append(more);}
+    if(job.error){const more=node('details','');more.append(node('summary','รายละเอียดสำหรับทีมช่วยเหลือ'),node('p',job.error));detail.append(more);}
     if(!detail.open)detail.showModal();
   }
   function renderCards(){
@@ -111,7 +112,7 @@
     const save=node('button','บันทึกการตั้งค่า','button primary'),back=node('button','กลับไปสร้างคลิป','button secondary');save.type=back.type='button';
     const feedback=node('span','ยังไม่มีการเปลี่ยนแปลง','presenter-save-note');feedback.setAttribute('role','status');
     footer.append(save,back,feedback);panel.append(footer);
-    save.onclick=async()=>{save.disabled=true;defaultsEpoch++;try{const result=await postAction('presenter_save_settings',{settings:settingsValue()});saved={settings:result.settings,available:true,name:jobs.find(j=>j.id===result.settings.id)?.name||''};feedback.textContent='บันทึกแล้ว • ใช้กับงานใหม่ งานเดิมไม่เปลี่ยน';$('#presenter-settings-status').textContent='บันทึกแล้ว: '+saved.name;updateToggles();}catch(e){feedback.textContent=e.message;toast(e.message,'error');}finally{defaultsEpoch++;save.disabled=false;}};
+    save.onclick=async()=>{save.disabled=true;defaultsEpoch++;try{const result=await postAction('presenter_save_settings',{settings:settingsValue()});saved={settings:result.settings,available:true,name:jobs.find(j=>j.id===result.settings.id)?.name||''};feedback.textContent='บันทึกแล้ว • ใช้กับงานใหม่ งานเดิมไม่เปลี่ยน';$('#presenter-settings-status').textContent='บันทึกแล้ว: '+saved.name;updateToggles();}catch(e){feedback.textContent=window.smartflowSafeError?.(e.message)||'บันทึกไม่สำเร็จ';toast(e.message,'error');}finally{defaultsEpoch++;save.disabled=false;}};
     back.onclick=returnToCreation;
     panel.addEventListener('input',()=>{feedback.textContent='มีการเปลี่ยนแปลง • ยังไม่บันทึก';});
     const model={panel,x:95,y:95,video:$('video',panel),bg:$('video[data-bg]',panel),canvas:$('canvas',panel),playing:false,stamp:0};panels[mode]=model;
@@ -185,7 +186,7 @@
       const v=saved.settings||{};
       t.info.textContent=saved.available
         ?'ใช้: '+saved.name+' • '+(v.x<=10?'ล่างซ้าย':v.x>=90?'ล่างขวา':v.x===50&&v.y>=90?'ล่างกลาง':'ตำแหน่งที่บันทึก')+' • ขนาด '+v.size+'%'
-        :(saved.error||'ยังไม่มีผู้บรรยายที่บันทึกไว้ • ไปเลือกและบันทึกก่อน');
+        :(saved.error?(window.smartflowSafeError?.(saved.error)||'อ่านค่าผู้บรรยายไม่สำเร็จ'):'ยังไม่มีผู้บรรยายที่บันทึกไว้ • ไปเลือกและบันทึกก่อน');
     }
   }
   window.presenterPayload=(action,payload)=>{

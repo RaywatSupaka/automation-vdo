@@ -54,7 +54,7 @@
       if (result.ok) {
         lastBounds = key;
         status.textContent = '';
-      } else status.textContent = result.error || 'เปิด AI Chat ไม่สำเร็จ';
+      } else status.textContent = result.error ? (window.smartflowSafeError?.(result.error)||'เปิด AI Chat ไม่สำเร็จ') : 'เปิด AI Chat ไม่สำเร็จ';
     } catch (_) { status.textContent = 'เปิด AI Chat ไม่สำเร็จ'; }
     finally {
       pending = false;
@@ -82,7 +82,7 @@
       sendButton.disabled = true;
       try {
         const result = await api.provider_lab_start_test(prompt.value);
-        testStatus.textContent = result.message || result.error || 'เริ่มคำขอไม่สำเร็จ';
+        testStatus.textContent = result.error ? (window.smartflowSafeError?.(result.error)||'เริ่มคำขอไม่สำเร็จ') : result.message || 'เริ่มคำขอไม่สำเร็จ';
       } catch (_) { testStatus.textContent = 'เริ่มคำขอไม่สำเร็จ'; }
       finally { void testProgress(); }
     });

@@ -39,7 +39,7 @@ assert.doesNotMatch(old, /story-recovery-scene failed/);
 context.renderStories([{...job, id: 'STORY-ONE', title: 'ตัวอย่าง', status: 'error',
   last_error: 'STORY_IMAGE_RECEIPT_REVIEW • ภาพฉาก 3 • CHATGPT_IMAGE_RESULT_SEND_NOT_STARTED'}]);
 assert.doesNotMatch(elements['#story-list'].innerHTML, /story-recovery-item failed/);
-assert.match(elements['#story-list'].innerHTML, /ดูรายละเอียดข้อผิดพลาด/);
+assert.match(elements['#story-list'].innerHTML, /รายละเอียดสำหรับทีมช่วยเหลือ/);
 assert.match(elements['#story-list'].innerHTML, /ภาพฉาก 3 • ยังไม่ส่งคำขอ/);
 assert.match(elements['#story-list'].innerHTML, /ภาพฉากที่บันทึกแล้ว<\/b><span>2\/10 ฉาก/);
 assert.match(elements['#story-list'].innerHTML, /aria-valuenow="20"/);

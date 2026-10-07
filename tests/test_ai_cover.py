@@ -410,6 +410,10 @@ class AICoverTests(unittest.TestCase):
     def test_restart_preserves_unknown_and_deleted_job_does_not_block(self):
         request = self.service.request(self.job)
         self.assertEqual(self.manifest.read()['ai_cover_state']['phase'], 'queued')
+        self.service.recover_startup()
+        self.assertEqual(self.service.get(request['request_id'])['phase'], 'queued')
+        self.assertEqual([r['request_id'] for r in self.service.pending()],
+                         [request['request_id']])
         self.service.event(request['request_id'], {'phase':'claimed'})
         self.service.recover_startup()
         self.assertEqual(self.service.get(request['request_id'])['phase'], 'needs_review')

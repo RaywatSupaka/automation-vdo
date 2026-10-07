@@ -31,10 +31,14 @@ const {chromium} = require('playwright');
     await page.evaluate(() => {
       const done = Array.from({length:68},(_,i)=>({queue_id:'DONE-'+i,job_id:'STORY-DONE-'+i,status:'completed',mode:'story',topic:'งานสำเร็จ '+i}));
       ui.state = {creation_queue:{paused:true,can_clear_stuck_state:true,items:[...done,
+        {queue_id:'QUEUED',status:'queued',mode:'story',topic:'งานรอคิว'},
+        {queue_id:'FAILED',job_id:'STORY-FAILED',status:'failed',mode:'story',topic:'งานที่หยุด',finished_at:'2026-10-06'},
         {queue_id:'EMPTY',status:'cancelled',mode:'story',topic:'ยกเลิกก่อนเริ่ม'},
         {queue_id:'OLD',job_id:'STORY-OLD',status:'cancelled',mode:'story',topic:'งานเก่า',finished_at:'2026-09-19'},
         {queue_id:'PHILIPS',job_id:'STORY-PHILIPS',status:'cancelled',mode:'story',scene_count:7,topic:'Philips งานที่หยุดไว้',finished_at:'2026-09-20'}
-      ],counts:{completed:68,cancelled:3},recoverable_jobs:[]},story_progress:{active:false}};
+      ],counts:{completed:68,cancelled:3,queued:1,failed:1},recoverable_jobs:[
+        {job_id:'STORY-OUTSIDE',mode:'story',title:'งานเดิมนอกคิว',updated_at:'2026-10-06'}
+      ]},story_progress:{active:false}};
       window.originalQueue = JSON.stringify(ui.state.creation_queue);
       renderStories([{id:'STORY-OUTSIDE',title:'เรื่องเก่า',status:'error'}]);
       renderCreationQueue(ui.state);
@@ -54,8 +58,13 @@ const {chromium} = require('playwright');
     await page.locator('.story-queue-link [data-page="creation"]').click();
     assert.equal(await page.locator('[data-view="creation"]').isVisible(),true);
     assert.equal(await page.locator('.cq-recovery').getAttribute('open'),null);
-    assert.equal(await page.locator('#creation-list .cq-row').count(),2);
-    assert.match(await page.locator('#creation-list .cq-row').first().textContent(),/Philips/);
+    assert.equal(await page.locator('#creation-list .cq-row').count(),4);
+    assert.deepEqual(await page.locator('#creation-list .cq-row').allTextContents().then(rows =>
+      rows.map(row => /งานที่หยุด|Philips|งานเก่า|งานรอคิว/.exec(row)?.[0])),
+      ['งานที่หยุด','Philips','งานเก่า','งานรอคิว']);
+    assert.equal(await page.evaluate(() => Boolean(document.querySelector('#creation-old-panel')
+      .compareDocumentPosition(document.querySelector('#creation-list')) & Node.DOCUMENT_POSITION_FOLLOWING)),true,
+      'Recoverable jobs outside the queue appear above the backlog');
     await page.locator('[data-cq="retry"][data-id="PHILIPS"]').click();
     assert.deepEqual(await page.evaluate(()=>calls),[{action:'creation_retry',payload:{queue_id:'PHILIPS',direction:0}}]);
     assert.equal(await page.evaluate(()=>JSON.stringify(ui.state.creation_queue)===originalQueue),true);
@@ -66,7 +75,7 @@ const {chromium} = require('playwright');
     await page.selectOption('#creation-status-filter','completed');
     assert.equal(await page.locator('#creation-list .cq-row').count(),68);
     await page.selectOption('#creation-status-filter','all');
-    assert.equal(await page.locator('#creation-list .cq-row').count(),71);
+    assert.equal(await page.locator('#creation-list .cq-row').count(),73);
     await page.selectOption('#creation-filter','product');
     assert.equal(await page.locator('#creation-list .cq-row').count(),0);
     assert.match(await page.locator('#creation-list').textContent(),/ไม่มีรายการถูกลบ/);

@@ -28,6 +28,8 @@ def story_failure_timeline(story_root, job_id, *, max_events=200):
     rows = [row for row in rows if isinstance(row, dict) and row.get("job_id") == job_id]
     if not rows:
         return ""
+    analysis_accepted = any(row.get('action') == 'ai_send_accepted'
+                            and row.get('shot_index') == 0 for row in rows)
     omitted = max(0, len(rows) - max_events)
     rows = rows[-max_events:]
     lines = ["--- ลำดับเหตุการณ์ของงานนี้ (Extension trace) ---"]
@@ -82,7 +84,9 @@ def story_failure_timeline(story_root, job_id, *, max_events=200):
         saved_request = ""
     if saved_request:
         lines.extend(("", "--- คำขอวิเคราะห์ที่โปรแกรมบันทึกไว้ ---",
-                      "ไฟล์นี้เป็นต้นทางของคำขอ; trace ยืนยันการรับคำขอ แต่ไม่ได้เก็บข้อความบนเว็บแบบครบถ้วน",
+                      ("ไฟล์นี้เป็นต้นทางของคำขอ; trace ยืนยันการรับคำขอ แต่ไม่ได้เก็บข้อความบนเว็บแบบครบถ้วน"
+                       if analysis_accepted else
+                       "ไฟล์นี้เป็นคำขอที่เตรียมไว้; trace ที่บันทึกยังไม่ยืนยันว่าเว็บรับคำขอ"),
                       saved_request[:20000], "--- จบคำขอวิเคราะห์ ---"))
     lines.append("หมายเหตุ: policy_refusal เป็นคำตอบจากเว็บ; ถ้าเว็บไม่ระบุข้อห้ามเฉพาะ รายงานนี้ระบุสาเหตุเฉพาะไม่ได้")
     return "\n".join(lines)

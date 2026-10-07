@@ -49,7 +49,7 @@
       });
       const value = await response.json();
       if (response.ok && value.ok) render(value);
-      else message.textContent = value.error || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่';
+      else message.textContent = value.error ? (window.smartflowSafeError?.(value.error)||'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่') : 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่';
     } catch { message.textContent = 'ยังติดต่อโปรแกรมไม่ได้ กรุณารอสักครู่แล้วลองใหม่'; }
     finally { busy = false; input.disabled = false; submit.disabled = false; panel.removeAttribute('aria-busy'); }
   });
@@ -59,7 +59,7 @@
     if (!current?.desktop?.allowed) { await status(); return; }
     if (current.dev_mode) return;
     const expires = new Date(current.desktop.expires_at * 1000).toLocaleString('th-TH');
-    if (!window.confirm(`สิทธิ์ใช้งานถึง ${expires}\n\nต้องการออกจากระบบหรือไม่? งานที่ส่งแล้วจะเก็บผลไว้ งานใหม่จะรอเข้าสู่ระบบ`)) return;
+    if (!await window.smartflowConfirm(`สิทธิ์ใช้งานถึง ${expires}\n\nต้องการออกจากระบบหรือไม่? งานที่ส่งแล้วจะเก็บผลไว้ งานใหม่จะรอเข้าสู่ระบบ`,{title:'ออกจากระบบ?',acceptLabel:'ออกจากระบบ'})) return;
     revision++;
     try {
       await fetch('/api/membership/desktop/logout', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
