@@ -17,9 +17,12 @@ Use the Python interpreter from `.venv` if one exists. On Windows, for example:
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature test-runner
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature installer
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature webview2-prototype
+.venv\Scripts\python.exe tools\run_focused_tests.py --feature ui-foundation
 .venv\Scripts\python.exe tools\run_focused_tests.py --feature config-defaults
 .venv\Scripts\python.exe tools\run_focused_tests.py --changed
 ```
+
+`ui-foundation` checks the shared UI layer without a provider request: stylesheet order and the single token set, no text below 10px, the six-state status vocabulary and the plain-Thai queue pause reasons (including a guard that fails when the backend adds a pause reason without text), the grouped sidebar at 1360x860 (fits without scrolling, opens the group of the active page, keyboard toggle, 44px rows), 4.5:1 contrast for every status pill and the primary button, and the existing queue and creative-control harnesses that execute `creation_queue.js`. Browser checks need Node Playwright (see below). Screenshots are saved to `build/ui-foundation/`; they come from an isolated browser, not the installed customer window.
 
 `refactor` checks extracted UI and bridge helpers, browser module imports, and the paired source preflight without contacting a provider.
 

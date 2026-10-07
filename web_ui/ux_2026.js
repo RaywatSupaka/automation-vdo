@@ -24,9 +24,13 @@
     offline:'<path d="M2 7a16 16 0 0 1 20 0M5 11a11 11 0 0 1 14 0m-11 4a6 6 0 0 1 8 0m-4 4v1"/>',
     paused:'<path d="M8 5v14M16 5v14"/>',
     complete:'<path d="m5 12 5 5L20 7"/>',
+    text:'<path d="M4 7V5h16v2M12 5v14M9 19h6"/>',
+    music:'<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+    badge:'<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 15 4-8 4 8m-6-3h4"/>',
+    help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7M12 17h.01"/>',
   };
   const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${shapes[name] || shapes.sparkle}</svg>`;
-  const routes = {dashboard:'home',products:'bag',story:'story',drama:'clapper',presenter:'users',longvideo:'video',creation:'queue',library:'library','product-cast':'users',intro:'sparkle',green:'render','presenter-settings':'users',settings:'settings',facebook:'facebook',queue:'send',logs:'terminal'};
+  const routes = {dashboard:'home',products:'bag',story:'story',drama:'clapper',presenter:'users',longvideo:'video',creation:'queue',library:'library','product-cast':'users',intro:'sparkle',green:'render','presenter-settings':'users',settings:'settings',facebook:'facebook',queue:'send',logs:'terminal',voice:'voice',subtitle:'text',audio:'music',logo:'badge',guide:'help','ai-chat':'sparkle'};
   const $ = selector => document.querySelector(selector);
   document.querySelectorAll('.navigation .nav-item').forEach(button => {
     const el=button.querySelector('i');

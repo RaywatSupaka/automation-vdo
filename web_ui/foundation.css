@@ -1,0 +1,77 @@
+/* Foundation layer: one palette, one status vocabulary, one sidebar style.
+   Presentation only. Loaded last so it wins over styles.css and ux_2026.css. */
+
+/* 1. One token set. styles.css (--bg...) and ux_2026.css (--sf-*) now share these values. */
+:root {
+  --bg:#0B0F17; --sidebar:#0E131E; --panel:rgba(18,24,38,.92); --panel-solid:#121826;
+  --surface:#121826; --surface-2:#182033; --line:#26304A; --line-bright:#33405F;
+  --text:#E8ECF4; --muted:#A7B0C3; --dim:#8A94AA;
+  --cyan:#38BDF8; --blue:#38BDF8; --violet:#A78BFA; --magenta:#A78BFA;
+  --green:#34D399; --amber:#FBBF24; --danger:#F87171;
+  --gradient:linear-gradient(135deg,#38BDF8,#38BDF8);
+  --shadow:0 12px 32px rgba(0,0,0,.28);
+  --sf-surface:#121826; --sf-line:#26304A; --sf-copy:#E8ECF4; --sf-muted:#A7B0C3; --sf-cyan:#38BDF8; --sf-purple:#A78BFA;
+  --st-queued-bg:#1A2236; --st-queued-fg:#C9D1E0;
+  --st-running-bg:#0E2A3B; --st-running-fg:#7DD3FC;
+  --st-waiting-bg:#3A2E0B; --st-waiting-fg:#FCD34D;
+  --st-failed-bg:#3B1518; --st-failed-fg:#FCA5A5;
+  --st-paused-bg:#1F2433; --st-paused-fg:#A7B0C3;
+  --st-done-bg:#0D2E24; --st-done-fg:#6EE7B7;
+}
+html, body { background:var(--bg); }
+body { background:var(--bg); }
+
+/* Primary action: solid, not a gradient, with dark text that passes 4.5:1. */
+button.button.primary, .button.primary {
+  background:var(--cyan); color:#04121C; border:0; box-shadow:none;
+}
+button.button.primary:hover, .button.primary:hover { background:#7DD3FC; filter:none; translate:0 0; }
+button.button.primary:disabled, .button.primary:disabled { background:#26304A; color:#6B7590; }
+
+/* 2. One status vocabulary. Markup comes from status_vocabulary.js; legacy classes still work. */
+.sf-status {
+  display:inline-flex; align-items:center; gap:6px; border:0; border-radius:999px;
+  padding:4px 10px; font-size:12px; font-weight:600; line-height:1.4; white-space:nowrap;
+  background:var(--st-queued-bg); color:var(--st-queued-fg);
+}
+.sf-status[data-tone="none"] { background:transparent; color:var(--dim); box-shadow:inset 0 0 0 1px var(--line); }
+.sf-status[data-tone="running"] { background:var(--st-running-bg); color:var(--st-running-fg); }
+.sf-status[data-tone="waiting"] { background:var(--st-waiting-bg); color:var(--st-waiting-fg); }
+.sf-status[data-tone="failed"]  { background:var(--st-failed-bg);  color:var(--st-failed-fg); }
+.sf-status[data-tone="paused"]  { background:var(--st-paused-bg);  color:var(--st-paused-fg); }
+.sf-status[data-tone="done"]    { background:var(--st-done-bg);    color:var(--st-done-fg); }
+.sf-status::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; flex:none; }
+.sf-status[data-tone="none"]::before { display:none; }
+.sf-status.cq-status { margin-right:10px; }
+.sf-status.cq-status.running::before { margin-right:0; }
+@media (prefers-reduced-motion: no-preference) {
+  .sf-status[data-tone="running"]::before { animation:sf-status-pulse 1.8s ease-in-out infinite; }
+}
+@keyframes sf-status-pulse { 50% { opacity:.35; } }
+
+/* 3. Sidebar: quiet rows, grouped sections, readable text. */
+.sidebar { background:var(--sidebar); backdrop-filter:none; }
+/* ux_2026.css sizes the logo at 150px; that alone pushed the menu into a scroll at the default window. */
+.sidebar .brand { padding-bottom:8px; }
+.sidebar .brand img { height:96px; }
+@media (max-height:800px) { .sidebar .brand img { height:72px; } }
+.sidebar .nav-item.nav-creator { min-height:44px; margin:0; box-shadow:none; }
+.sidebar .nav-item.nav-creator::before, .sidebar .nav-item.nav-creator::after { display:none; }
+.sidebar .nav-item.nav-creator .nav-creator-icon { width:24px; height:24px; border:0; border-radius:0; background:none; box-shadow:none; color:inherit; }
+.sidebar .nav-item.nav-creator .nav-creator-copy small { display:none; }
+.sidebar .nav-item b { min-width:24px; font-size:12px; font-weight:600; color:var(--muted); }
+.sidebar .nav-item.active { background:#16263A !important; border-color:transparent !important; box-shadow:inset 3px 0 var(--cyan); color:var(--text); }
+.sidebar .nav-label { font-size:12px; font-weight:600; letter-spacing:.4px; color:var(--dim); margin:16px 12px 4px; }
+.nav-group { margin:6px 0 0; }
+.nav-group > summary {
+  list-style:none; display:flex; align-items:center; gap:10px; min-height:44px; padding:0 12px;
+  border-radius:10px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer; user-select:none;
+}
+.nav-group > summary::-webkit-details-marker { display:none; }
+.nav-group > summary:hover { background:rgba(255,255,255,.04); color:var(--text); }
+.nav-group > summary:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+.nav-group > summary::after { content:'›'; margin-left:auto; font-size:18px; line-height:1; transition:transform .15s ease; }
+.nav-group[open] > summary::after { transform:rotate(90deg); }
+.nav-group[open] > summary { color:var(--text); }
+.nav-group .nav-item { padding-left:18px; }
+@media (prefers-reduced-motion: reduce) { .nav-group > summary::after { transition:none; } }

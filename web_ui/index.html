@@ -44,27 +44,39 @@
         <img src="/api/desktop/media?item_id=__brand_full__&kind=preview" alt="SmartFlow AI • AI Clip Creator">
       </div>
       <nav class="navigation" aria-label="เมนูหลัก">
-        <button class="nav-item active" data-page="dashboard"><i>⌂</i><span>ภาพรวม</span></button>
+        <button class="nav-item active" data-page="dashboard"><i>⌂</i><span>หน้าแรก</span></button>
         <p class="nav-label">สร้าง</p>
-        <button class="nav-item nav-creator nav-affiliate" data-page="products"><i class="nav-creator-icon">▦</i><span class="nav-creator-copy"><strong>สร้างคลิปสินค้า</strong><small>Affiliate • คลิปปักตะกร้า</small></span><span class="nav-creator-arrow">→</span></button>
+        <button class="nav-item nav-creator nav-affiliate" data-page="products"><i class="nav-creator-icon">▦</i><span class="nav-creator-copy"><strong>คลิปสินค้า Shopee</strong><small>Affiliate • คลิปปักตะกร้า</small></span><span class="nav-creator-arrow">→</span></button>
         <button class="nav-item nav-creator nav-story" data-page="story"><i class="nav-creator-icon">◆</i><span class="nav-creator-copy"><strong>เล่าเรื่อง Shorts</strong><small>เรื่องเล่า • คอนเทนต์ต่อเนื่อง</small></span><span class="nav-creator-arrow">→</span></button>
         <button class="nav-item nav-creator nav-story" data-page="longvideo"><i class="nav-creator-icon">▰</i><span class="nav-creator-copy"><strong>คลิปยาว</strong><small>แนวนอน 16:9 • 3–10 นาที</small></span><span class="nav-creator-arrow">→</span></button>
         <button class="nav-item nav-creator nav-drama" data-page="drama"><i class="nav-creator-icon">✦</i><span class="nav-creator-copy"><strong>ละครสั้น AI</strong><small>ซีรีส์ • EP ต่อเนื่อง</small></span><span class="nav-creator-arrow">→</span></button>
-        <button class="nav-item nav-creator nav-story" data-page="presenter"><i class="nav-creator-icon">◉</i><span class="nav-creator-copy"><strong>ตัวละครผู้บรรยาย</strong><small>Green screen • ใช้ซ้ำได้</small></span><span class="nav-creator-arrow">→</span></button>
         <p class="nav-label">งานและผลงาน</p>
         <button class="nav-item" data-page="creation"><i>☷</i><span>คิวสร้างคลิป</span><b id="nav-creation-count">0</b></button>
         <button class="nav-item" data-page="library"><i>▶</i><span>คลังวิดีโอ</span><b id="nav-library-count">0</b></button>
         <button class="nav-item hidden" id="ai-chat-nav" data-page="ai-chat"><i>✦</i><span>AI Chat <small>ต้นแบบ DEV</small></span></button>
-        <p class="nav-label">ตกแต่งคลิป</p>
-        <button class="nav-item" data-page="product-cast"><i>◉</i><span>นายแบบ / นางแบบสินค้า</span></button>
-        <button class="nav-item" data-page="intro"><i>▷</i><span>อินโทรคลิป</span></button>
-        <button class="nav-item" data-page="green"><i>✧</i><span>กรีนสกรีน / แสง</span></button>
-        <button class="nav-item" data-page="presenter-settings"><i>◉</i><span>ตั้งค่าผู้บรรยาย</span></button>
-        <button class="nav-item" data-page="settings"><i>⚙</i><span>เสียง ซับ โลโก้ และคุณภาพ</span></button>
-        <p class="nav-label">ระบบ</p>
-        <button class="nav-item" data-page="facebook"><i>f</i><span>Auto Post เพจ Facebook</span></button>
-        <button class="nav-item" data-page="queue"><i>⇢</i><span>โพสนายหน้า Shopee</span></button>
-        <button class="nav-item" data-page="logs"><i>›_</i><span>ระบบและ Log</span></button>
+        <details class="nav-group" data-nav-group="publish">
+          <summary>เผยแพร่</summary>
+          <button class="nav-item" data-page="queue"><i>⇢</i><span>โพสต์ Shopee</span></button>
+          <button class="nav-item" data-page="facebook"><i>f</i><span>Auto Post เพจ Facebook</span></button>
+        </details>
+        <details class="nav-group" data-nav-group="cast">
+          <summary>ตัวละครและตกแต่ง</summary>
+          <button class="nav-item" data-page="presenter"><i>◉</i><span>ตัวละครผู้บรรยาย</span></button>
+          <button class="nav-item" data-page="presenter-settings"><i>◉</i><span>ตั้งค่าผู้บรรยาย</span></button>
+          <button class="nav-item" data-page="product-cast"><i>◉</i><span>นายแบบ / นางแบบสินค้า</span></button>
+          <button class="nav-item" data-page="intro"><i>▷</i><span>อินโทรคลิป</span></button>
+          <button class="nav-item" data-page="green"><i>✧</i><span>กรีนสกรีน / แสง</span></button>
+        </details>
+        <details class="nav-group" data-nav-group="settings">
+          <summary>ตั้งค่า</summary>
+          <button class="nav-item" data-page="settings"><i>⚙</i><span>ค่าเริ่มต้นและคุณภาพ</span></button>
+          <button class="nav-item" data-page="voice"><i>◉</i><span>เสียงพากย์ AI</span></button>
+          <button class="nav-item" data-page="subtitle"><i>字</i><span>ซับไตเติล</span></button>
+          <button class="nav-item" data-page="audio"><i>♪</i><span>เพลงและเสียงประกอบ</span></button>
+          <button class="nav-item" data-page="logo"><i>◈</i><span>โลโก้</span></button>
+          <button class="nav-item" data-page="guide"><i>?</i><span>ตั้งค่าครั้งแรกและคู่มือ</span></button>
+          <button class="nav-item" data-page="logs"><i>›_</i><span>ช่วยเหลือและบันทึกระบบ</span></button>
+        </details>
       </nav>
       <section class="side-status">
         <button type="button" id="extension-status-open" aria-haspopup="dialog" aria-controls="extension-status-modal"><i id="side-status-dot"></i><span>Extension<b id="side-status-text">กำลังเชื่อม...</b></span><span aria-hidden="true">↗</span></button>
@@ -75,7 +87,7 @@
     <div class="main-area">
       <header class="topbar">
         <button class="mobile-menu" id="mobile-menu" aria-label="เปิดเมนู" aria-controls="sidebar" aria-expanded="false">☰</button>
-        <div class="page-heading"><span id="page-kicker">SMARTFLOW CONTROL CENTER</span><strong id="page-title">ภาพรวม</strong></div>
+        <div class="page-heading"><span id="page-kicker">SMARTFLOW CONTROL CENTER</span><strong id="page-title">หน้าแรก</strong></div>
         <div class="top-actions">
           <div class="credit-dock" aria-label="เครดิตบริการ AI">
             <button class="credit-mini disconnected" data-page="voice" id="credit-voice-mini"><i>◉</i><span>เสียง<small id="credit-voice-note">ยังไม่เชื่อม</small></span><strong id="credit-voice-value">—</strong></button>
@@ -571,7 +583,7 @@
       <span class="eyebrow">SMARTFLOW • ERROR REPORT</span>
       <div class="automation-error-heading"><i>!</i><div><h2 id="automation-error-title">งานหยุดเพราะพบข้อผิดพลาด</h2><p id="automation-error-message">ระบบเก็บรายละเอียดไว้แล้ว</p></div></div>
       <pre id="automation-error-log"></pre>
-      <div class="modal-actions"><button class="button ghost" data-close-modal="automation-error-modal">ปิด</button><button class="button secondary" id="automation-error-return">กลับไปดูงาน</button><button class="button primary" id="automation-error-copy">คัดลอก Log สำหรับ Codex</button></div>
+      <div class="modal-actions"><button class="button ghost" data-close-modal="automation-error-modal">ปิด</button><button class="button secondary" id="automation-error-return">กลับไปดูงาน</button><button class="button primary" id="automation-error-copy">คัดลอกรายละเอียดให้ทีมช่วยเหลือ</button></div>
     </div>
   </dialog>
 
@@ -654,6 +666,7 @@
   <script src="/desktop/membership.js?v=3"></script>
   <link rel="stylesheet" href="/desktop/logo_editor.css?v=452">
   <script src="/desktop/logo_editor.js?v=452"></script>
+  <script src="/desktop/status_vocabulary.js?v=1"></script>
   <script src="/desktop/app.js?v=463"></script>
   <script src="/desktop/product_snapshot.js?v=451"></script>
   <script src="/desktop/android_wifi.js?v=2"></script>
@@ -696,5 +709,6 @@
   <script src="/desktop/storytelling.js?v=compact-brief-1"></script>
   <script src="/desktop/function_controls.js?v=2"></script>
   <script src="/desktop/generation_notice.js?v=426"></script>
+  <link rel="stylesheet" href="/desktop/foundation.css?v=1">
 </body>
 </html>

@@ -42,7 +42,7 @@ const shots=process.env.SF_UX_SCREENSHOTS;
   });
   assert.deepEqual(connections,['ready','ready','ready','warning','offline','offline']);cases+=6;
   const sidebar=await page.locator('.navigation .nav-item').evaluateAll(nodes=>nodes.map(n=>({route:n.dataset.page,icons:n.querySelectorAll('i svg').length})));
-  assert.deepEqual(sidebar.map(n=>n.route),['dashboard','products','story','longvideo','drama','presenter','creation','library','product-cast','intro','green','presenter-settings','settings','facebook','queue','logs'],'sidebar includes long video and excludes retired test routes');cases++;
+  assert.deepEqual(sidebar.map(n=>n.route),['dashboard','products','story','longvideo','drama','creation','library','ai-chat','queue','facebook','presenter','presenter-settings','product-cast','intro','green','settings','voice','subtitle','audio','logo','guide','logs'],'sidebar groups every page, including long video, voice, subtitle, audio, logo and guide');cases++;
   ok(sidebar.every(n=>n.icons===1),'every current sidebar route retains one local SVG icon');
   ok(await page.locator('.brand img').getAttribute('src').then(x=>x.includes('__brand_full__')),'full original brand route');
   await page.evaluate(()=>{

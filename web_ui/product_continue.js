@@ -49,7 +49,7 @@
     const active=[state.product_progress,state.story_progress].find(p=>p?.active&&p.job_id===j.id);
     const blocked=busy(state);
     const done=finished(j),cancelled=['cancelled','canceled'].includes(j.status)||j.automation_status==='cancelled';
-    const status=active?'กำลังทำงาน':done?'คลิปเสร็จแล้ว':cancelled?'ยกเลิกไว้ • ทำต่อได้':j.last_error?'งานสะดุด • ทำต่อได้':'ยังไม่เสร็จ • ทำต่อได้';
+    const status=active?'กำลังสร้าง':done?'เสร็จแล้ว':cancelled?'หยุดไว้':j.last_error?SmartFlowStatus.RESUMABLE_FAILED:'หยุดไว้';
      const total=Number(j.scene_count||j.segment_target_count||j.flow_target_clip_count||3),images=Number(j.image_count||j.generated_image_count||0),provider=(j.video_generation_mode||j.video_ai_provider)==='meta_ai'?'Meta AI':'Google Flow',videos=Number(provider==='Meta AI'?j.meta_clip_count||0:j.flow_clip_count||j.flow_count||0);
     const plan=j.video_plan_summary;
     const videoSummary=plan?`วิดีโอ ${Number(plan.completed||0)}/${total} • Flow ${Number(plan.flow||0)} / Meta ${Number(plan.meta||0)}${plan.local?` / ภาพเคลื่อนไหว ${Number(plan.local)}`:''}`:`${provider} ${videos}/${total}`;

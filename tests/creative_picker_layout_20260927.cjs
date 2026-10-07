@@ -36,7 +36,7 @@ function requireTrue(value,message){assert(value,message);checks++;}
         pickerChanges.push({id:options.id,value});return options.onChange?.(value);
       }});
     });
-    for(const file of ['creation_queue.js','media_audio.js','product_story.js','storytelling.js','creator_ux.js'])await page.addScriptTag({content:read(file)});
+    for(const file of ['status_vocabulary.js','creation_queue.js','media_audio.js','product_story.js','storytelling.js','creator_ux.js'])await page.addScriptTag({content:read(file)});
     await page.evaluate(catalog=>{renderCreativeCatalog(catalog);showPage('products');},catalog);
     same(errors,[],'All real controllers initialize');
     const defaultSummary=await page.locator('[data-view=story] .creator-review p').textContent();

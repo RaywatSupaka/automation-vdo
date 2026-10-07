@@ -112,6 +112,7 @@ async function main() {
   }
   {
     const {context:c,ui,$,calls}=fixture();
+    vm.runInContext(fs.readFileSync(path.join(root,'web_ui/status_vocabulary.js'),'utf8'),c);
     vm.runInContext(fs.readFileSync(path.join(root,'web_ui/creation_queue.js'),'utf8'),c);
     ui.state={...state('product','',0,false),creation_queue:{items:[],counts:{queued:1,failed:1},paused:true,
       unfinished_count:2,cancelable_count:2,can_clear_stuck_state:true,
@@ -143,6 +144,7 @@ async function main() {
   {
     const {context:c,ui,$,calls}=fixture(), opened=[];
     c.openClipCover=async id=>opened.push(id);
+    vm.runInContext(fs.readFileSync(path.join(root,'web_ui/status_vocabulary.js'),'utf8'),c);
     vm.runInContext(fs.readFileSync(path.join(root,'web_ui/creation_queue.js'),'utf8'),c);
     const row={queue_id:'CQ-COVER',mode:'story',job_id:'STORY-COVER',status:'queued'};
     const saved={item_id:'story:STORY-COVER',job_id:row.job_id,size_bytes:100,

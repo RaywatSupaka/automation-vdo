@@ -29,7 +29,7 @@ const catalog=JSON.parse(process.env.SMARTFLOW_CREATIVE_CATALOG);
     `});
     const app=read('app.js'),begin=app.indexOf('const fallbackAiModelOptions =');
     await page.addScriptTag({content:app.slice(begin,app.indexOf('function bindAiModelSelect(',begin))});
-    for(const file of ['creative_controls.js','product_snapshot.js','creation_queue.js','media_audio.js','product_story.js','storytelling.js','creator_ux.js'])await page.addScriptTag({content:read(file)});
+    for(const file of ['creative_controls.js','product_snapshot.js','status_vocabulary.js','creation_queue.js','media_audio.js','product_story.js','storytelling.js','creator_ux.js'])await page.addScriptTag({content:read(file)});
     await page.evaluate(catalog=>{renderCreativeCatalog(catalog);showPage('products');setMediaAudioChoice('product',{mode:'api',subtitle:false,music:false,sfx:false,keep_video_audio:false});},catalog);
     assert.deepEqual(errors,[]);
     await page.locator('#ps-creative-style').click();assert.equal(await page.locator('.creative-dialog[open] [data-creative-value]').count(),catalog.product.length);

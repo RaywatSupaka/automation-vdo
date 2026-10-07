@@ -14,6 +14,7 @@ const {chromium}=require('playwright');
  const postAction=async(action,payload)=>{calls.push({action,payload});return {ok:true};};
  const showPage=name=>$$('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===name));
  `});
+ await page.addScriptTag({content:fs.readFileSync('web_ui/status_vocabulary.js','utf8')});
  await page.addScriptTag({content:fs.readFileSync('web_ui/creation_queue.js','utf8')});
  assert.deepEqual(await page.locator('#creation-product-outfit-mode option').evaluateAll(nodes=>nodes.map(n=>n.value)),['auto','product','saved']);
  await page.evaluate(()=>{

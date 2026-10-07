@@ -26,6 +26,7 @@ const {chromium} = require('playwright');
       document.addEventListener('click',event=>{const b=event.target.closest('[data-page]');if(b)showPage(b.dataset.page);});
       ${app.slice(app.indexOf('let storyRecoveryClearing ='),app.indexOf('let dramaQueuePending'))}
     `});
+    await page.addScriptTag({content:fs.readFileSync('web_ui/status_vocabulary.js','utf8')});
     await page.addScriptTag({content:fs.readFileSync('web_ui/creation_queue.js','utf8')});
     await page.evaluate(() => {
       const done = Array.from({length:68},(_,i)=>({queue_id:'DONE-'+i,job_id:'STORY-DONE-'+i,status:'completed',mode:'story',topic:'งานสำเร็จ '+i}));

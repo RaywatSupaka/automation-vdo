@@ -1,7 +1,7 @@
 /* Shared desktop FIFO UI and saved-cover navigation; never controls AI tabs. */
 (() => {
   const esc = escapeHtml;
-  const labels = {queued:'รอทำงาน', running:'กำลังทำ', completed:'สำเร็จ', failed:'ต้องตรวจสอบ', cancelled:'ยกเลิกแล้ว'};
+  const labels = Object.fromEntries(['queued','running','completed','failed','cancelled'].map(code => [code, SmartFlowStatus.label(code)]));
   const kinds = {product:'คลิปสินค้า', story:'STORY SHORTS', drama:'ละครสั้น'};
   const kindLabel = row => row.long_video ? 'คลิปยาว' : kinds[row.mode || 'story'] || 'งานเดิม';
   const subtitleEnabled = row => {
@@ -349,8 +349,8 @@
     const active = Number(counts.queued || 0) + Number(counts.running || 0);
     $('#nav-creation-count').textContent = active;
     $('#creation-state').textContent = counts.running ? (queue.paused ? 'กำลังทำคลิปปัจจุบัน • พักก่อนงานถัดไป' : 'กำลังทำงานตามคิว') : active ? (queue.paused ? 'พักคิว • รอเริ่ม' : 'กำลังตรวจความพร้อม') : 'พร้อมเพิ่มงาน';
-    $('#creation-summary').textContent = items.length ? `สำเร็จ ${counts.completed || 0} • รอ ${counts.queued || 0} • ต้องตรวจสอบ ${counts.failed || 0} • ยกเลิก ${counts.cancelled || 0}` : 'ยังไม่มีรายการในคิว';
-    $('#creation-hint').textContent = active && queue.pause_reason === 'startup_review' ? 'กู้คิวจากครั้งก่อนแล้ว • กดเริ่มคิวเพื่อใช้ Job เดิมและไฟล์ที่เสร็จแล้ว' : 'งานที่กดหยุดไว้: กด “ทำต่อจากเดิม” ที่รายการนั้น • เริ่มคิวไม่คืนงานที่ยกเลิกให้อัตโนมัติ';
+    $('#creation-summary').textContent = items.length ? `เสร็จแล้ว ${counts.completed || 0} • รอคิว ${counts.queued || 0} • สะดุด ${counts.failed || 0} • ยกเลิก ${counts.cancelled || 0}` : 'ยังไม่มีรายการในคิว';
+    $('#creation-hint').textContent = (active && queue.paused && SmartFlowStatus.pauseReason(queue.pause_reason)) || 'งานที่กดหยุดไว้: กด “ทำต่อจากเดิม” ที่รายการนั้น • เริ่มคิวไม่คืนงานที่ยกเลิกให้อัตโนมัติ';
     $('#creation-start').disabled = queueBusy || !active || !queue.paused;
     $('#creation-pause').disabled = queueBusy || !active || queue.paused;
     $('#creation-cancel').disabled = queueBusy || !counts.running;
@@ -411,7 +411,7 @@
         const notice = creativeNote+(cover?.recovered ? '<div class="cq-meta">ปก AI บันทึกแล้ว • กด Run Queue เพื่อทำคิวต่อ</div>'
           : status === 'cancelled' && row.job_id ? '<div class="cq-meta">หยุดไว้ • บท ภาพ และคลิปที่บันทึกแล้วจะใช้ต่อจากงานเดิม</div>'
           : row.error ? `<div class="cq-error">${esc(row.error)}</div>` : '');
-        return `<article class="cq-row" role="listitem"><div class="cq-order">${status==='failed' ? '!' : status==='cancelled' ? '–' : position}</div><div><span class="cq-status ${status}">${status === 'cancelled' && row.job_id ? 'หยุดไว้ • ทำต่อได้' : labels[status]}</span><span class="cq-kind">${kindLabel(row)}</span><h3>${esc(row.topic || row.link || '')}</h3><div class="cq-meta">${row.provider === 'gemini' ? 'Gemini Web' : 'ChatGPT Web • โมเดลปัจจุบัน'} • ${row.mode === 'product' ? '3 ช็อต' : Number(row.scene_count || 10)+' ฉาก'} • ${subtitleEnabled(row) ? 'เปิดซับ' : 'ปิดซับ'}<br>${id}${row.job_id ? ' • '+esc(row.job_id) : ''}</div>${notice}${status === 'running' ? `<div class="cq-meta" data-cq-stage="${id}"></div><progress data-cq-progress="${id}" max="100" value="0" aria-label="ความคืบหน้าคลิป"></progress>` : ''}</div><div class="cq-row-actions">${actions}</div></article>`;
+        return `<article class="cq-row" role="listitem"><div class="cq-order">${status==='failed' ? '!' : status==='cancelled' ? '–' : position}</div><div><span class="cq-status sf-status ${status}" data-tone="${SmartFlowStatus.tone(status)}">${status === 'cancelled' && row.job_id ? 'หยุดไว้' : status === 'failed' && row.mode !== 'drama' ? SmartFlowStatus.RESUMABLE_FAILED : labels[status]}</span><span class="cq-kind">${kindLabel(row)}</span><h3>${esc(row.topic || row.link || '')}</h3><div class="cq-meta">${row.provider === 'gemini' ? 'Gemini Web' : 'ChatGPT Web • โมเดลปัจจุบัน'} • ${row.mode === 'product' ? '3 ช็อต' : Number(row.scene_count || 10)+' ฉาก'} • ${subtitleEnabled(row) ? 'เปิดซับ' : 'ปิดซับ'}<br>${id}${row.job_id ? ' • '+esc(row.job_id) : ''}</div>${notice}${status === 'running' ? `<div class="cq-meta" data-cq-stage="${id}"></div><progress data-cq-progress="${id}" max="100" value="0" aria-label="ความคืบหน้าคลิป"></progress>` : ''}</div><div class="cq-row-actions">${actions}</div></article>`;
       }).join('') : items.length ? '<div class="cq-empty"><strong>ไม่มีงานในตัวกรองนี้</strong>ดูงานเก่าได้ที่ “ประวัติทั้งหมด” • ไม่มีรายการถูกลบ</div>' : '<div class="cq-empty"><strong>คิวนี้ยังว่าง</strong>เพิ่มลิงก์สินค้าหรือหัวข้อ Shorts ได้เลย<br>ยังไม่เริ่มใช้บริการ AI จนกว่าจะกดเริ่มคิว</div>';
     }
     $$('#creation-list button[data-cq]').forEach(button => {

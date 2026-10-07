@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..'),read=file=>fs.readFileSync(path.join(root,'web_ui',file),'utf8');
-const files=new Set(['product_snapshot.js','creation_queue.js','presenter.js','media_audio.js',
+const files=new Set(['product_snapshot.js','status_vocabulary.js','creation_queue.js','presenter.js','media_audio.js',
   'flow_settings.js','flow_motion.js','ai_cover.js','video_intro.js','green_screen.js',
   'queue_choice.js','product_story.js','storytelling.js']);
 

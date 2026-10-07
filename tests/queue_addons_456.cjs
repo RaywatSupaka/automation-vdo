@@ -28,7 +28,7 @@ const backendState=process.argv[2]?JSON.parse(process.argv[2]):null;
   `});
   const app=source('app.js'),start=app.indexOf('const fallbackAiModelOptions ='),end=app.indexOf('function bindAiModelSelect(',start);
   await page.addScriptTag({content:app.slice(start,end)});
-  for(const file of ['creation_queue.js','media_audio.js','ai_cover.js','green_screen.js'])await page.addScriptTag({content:source(file)});
+  for(const file of ['status_vocabulary.js','creation_queue.js','media_audio.js','ai_cover.js','green_screen.js'])await page.addScriptTag({content:source(file)});
   if(backendState)await page.evaluate(state=>{
     window.rowA={...state.items[0],queue_id:'A'};window.rowB={...state.items[1],queue_id:'B'};
   },backendState);

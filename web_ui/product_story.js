@@ -1,7 +1,7 @@
 (() => {
   pageMeta['product-cast']=['PRODUCT CAST','นายแบบ / นางแบบสินค้า'];
   pageMeta.products=['SHOPEE VIDEO','ทำคลิปสินค้า shopee'];
-  document.querySelectorAll('[data-page="products"] span').forEach(n=>{if(n.textContent.includes('สินค้า')){const title=n.querySelector('strong');if(title)title.textContent='ทำคลิปสินค้า shopee';else n.textContent='ทำคลิปสินค้า shopee';}});
+  document.querySelectorAll('[data-page="products"] span').forEach(n=>{if(n.textContent.includes('สินค้า')){const title=n.querySelector('strong');if(title)title.textContent='คลิปสินค้า Shopee';else n.textContent='คลิปสินค้า Shopee';}});
   const intro=document.querySelector('[data-view="products"] .page-intro');
   intro.querySelector('h1').textContent='ทำคลิปสินค้า shopee';
   intro.querySelector('p').textContent='วางลิงก์สินค้า เลือกตัวละครและจำนวนฉาก แล้วสร้างคลิปอัตโนมัติ';

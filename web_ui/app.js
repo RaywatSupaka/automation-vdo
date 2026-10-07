@@ -44,21 +44,21 @@ const pageMeta = {
   intro: ['VIDEO INTRO', 'อินโทรคลิป'],
   presenter: ['PRESENTER STUDIO', 'ตัวละครผู้บรรยาย'],
   'presenter-settings': ['PRESENTER SETTINGS', 'ตั้งค่าผู้บรรยาย'],
-  dashboard: ['SMARTFLOW CONTROL CENTER', 'ภาพรวม'],
-  products: ['SHOPEE VIDEO', 'ทำคลิปสินค้า shopee'],
+  dashboard: ['SMARTFLOW CONTROL CENTER', 'หน้าแรก'],
+  products: ['SHOPEE VIDEO', 'คลิปสินค้า Shopee'],
   story: ['STORY SHORTS STUDIO', 'เล่าเรื่อง Shorts'],
   drama: ['AI DRAMA SERIES STUDIO', 'ละครสั้น AI'],
   library: ['FINAL OUTPUTS', 'คลังวิดีโอ'],
   creation: ['CREATION QUEUE', 'คิวสร้างคลิป'],
-  voice: ['AI VOICE', 'AI Voice / บทพูด'],
-  subtitle: ['AI SUBTITLE', 'Subtitle และรูปแบบข้อความ'],
-  audio: ['AUDIO MIX', 'เสียงประกอบ'],
-  logo: ['BRANDING', 'โลโก้วิดีโอ'],
-  queue: ['SHOPEE • ANDROID', 'โพสนายหน้า Shopee'],
-  settings: ['WORKSPACE SETTINGS', 'ตั้งค่างาน'],
-  guide: ['SETUP CENTER', 'คู่มือและ Extension'],
+  voice: ['AI VOICE', 'เสียงพากย์ AI'],
+  subtitle: ['AI SUBTITLE', 'ซับไตเติล'],
+  audio: ['AUDIO MIX', 'เพลงและเสียงประกอบ'],
+  logo: ['BRANDING', 'โลโก้'],
+  queue: ['SHOPEE • ANDROID', 'โพสต์ Shopee'],
+  settings: ['WORKSPACE SETTINGS', 'ค่าเริ่มต้นและคุณภาพ'],
+  guide: ['SETUP CENTER', 'ตั้งค่าครั้งแรกและคู่มือ'],
   'ai-chat': ['WEBVIEW2 PROTOTYPE', 'AI Chat'],
-  logs: ['LIVE ACTIVITY', 'ระบบและ Log'],
+  logs: ['LIVE ACTIVITY', 'ช่วยเหลือและบันทึกระบบ'],
   longvideo: ['LONG VIDEO', 'สร้างคลิปยาว 16:9'],
 };
 
@@ -275,7 +275,7 @@ function toast(message, kind = 'info') {
   $('span', node).textContent = message;
   requestAnimationFrame(() => node.classList.add('show'));
   clearTimeout(node._timer);
-  node._timer = setTimeout(() => node.classList.remove('show'), 4200);
+  node._timer = setTimeout(() => node.classList.remove('show'), kind === 'error' ? 12000 : 4200);
 }
 
 function showPage(page, updateHash = true) {
@@ -290,6 +290,8 @@ function showPage(page, updateHash = true) {
     node.classList.toggle('active', active);
     if (active) node.setAttribute('aria-current', 'page'); else node.removeAttribute('aria-current');
   });
+  $$('.nav-group').forEach(group => { if (group.querySelector('.nav-item.active')) group.open = true; });
+  $('.nav-item.active')?.scrollIntoView({block:'nearest'});
   $('#page-kicker').textContent = pageMeta[page][0];
   $('#page-title').textContent = pageMeta[page][1];
   if (updateHash && location.hash !== `#${page}`) history.replaceState(null, '', `#${page}`);
@@ -432,7 +434,7 @@ function renderSystem(state) {
     ? `Extension v${sys.extension_version || '?'} • ${sys.extension_page || 'online'}`
     : browserMessage || `Extension offline • ต้องใช้ v${state.app.extension_required}`;
   $('#top-live-dot').classList.toggle('ready', ready);
-  $('#top-live-text').textContent = ready ? 'AUTOMATION READY' : versionMismatch ? 'EXTENSION VERSION MISMATCH' : 'CHECK CONNECTION';
+  $('#top-live-text').textContent = ready ? 'พร้อมทำงาน' : versionMismatch ? 'ส่วนเสริม Chrome รุ่นไม่ตรง' : 'ตรวจการเชื่อมต่อ';
   $('#footer-dot').classList.toggle('ready', ready);
   $('#footer-status').textContent = sys.status || 'SmartFlow AI พร้อม';
   $('#footer-safe').textContent = 'สร้างคลิปไม่โพสต์อัตโนมัติ • โพสต์ Shopee ต้องยืนยันแยก';
@@ -471,18 +473,8 @@ function renderSystem(state) {
 }
 
 function pill(value) {
-  const raw = String(value || '').trim();
-  const key = raw.toLowerCase();
-  const labels = {
-    ready:'พร้อม', complete:'เสร็จแล้ว', completed:'เสร็จแล้ว', success:'เสร็จแล้ว', succeeded:'เสร็จแล้ว', posted:'โพสต์แล้ว',
-    queued:'รอคิว', running:'กำลังทำ', waiting:'กำลังรอ', pending:'กำลังรอ', request_ready:'พร้อมส่ง AI',
-    missing:'ยังไม่มี', deleted:'ลบแล้ว', video_deleted:'ลบวิดีโอแล้ว', cancelled:'ยกเลิกแล้ว', canceled:'ยกเลิกแล้ว',
-    error:'ผิดพลาด', failed:'ผิดพลาด', login_required:'ต้องเข้าสู่ระบบ', credit_exhausted:'เครดิตหมด',
-  };
-  const ready = ['ready','complete','completed','success','succeeded','posted'].includes(key);
-  const error = ['error','failed','login_required','credit_exhausted'].includes(key);
-  const waiting = !ready && !error && !['missing','deleted','video_deleted','cancelled','canceled','—',''].includes(key);
-  return `<span class="status-pill ${ready ? 'ready' : error ? 'error' : waiting ? 'wait' : ''}">${escapeHtml(labels[key] || raw || '—')}</span>`;
+  // One shared vocabulary (status_vocabulary.js). `status-pill` keeps the old layout hooks.
+  return SmartFlowStatus.pill(value, {extraClass: 'status-pill'});
 }
 
 function renderWorkspaceIssues(snapshot = {}) {
@@ -677,7 +669,7 @@ function renderLongVideoRecovery(stories, storyProgress = {}) {
     const clips = mode === 'meta_ai' ? ` • คลิป Meta ${Number(job.meta_clip_count || 0)}/${total}`
       : mode === 'google_flow' ? ` • คลิป Flow ${Number(job.flow_clip_count || 0)}/${total}` : '';
     const stage = stages[job.pipeline_stage] || 'ทำส่วนที่เหลือต่อ';
-return `<article class="story-recovery-item"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title || job.topic || 'คลิปยาว')}</h3></div><span class="story-recovery-badge ${active ? 'running' : 'paused'}">${active ? 'กำลังทำงาน' : 'พร้อมทำต่อ'}</span></header><div class="story-recovery-checkpoint"><b>${escapeHtml(stage)}</b><span>ภาพ ${images}/${total}${clips}</span></div>${job.last_error ? `<div class="story-recovery-error">${escapeHtml(job.last_error)}</div>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button><button class="button primary compact" data-retry-story="${escapeHtml(job.id)}" ${storyProgress.active ? 'disabled' : ''}>${active ? 'กำลังดำเนินการ' : '↻ ทำส่วนที่เหลือต่อ'}</button>${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
+return `<article class="story-recovery-item"><header><div><small>${escapeHtml(job.id)}</small><h3>${escapeHtml(job.title || job.topic || 'คลิปยาว')}</h3></div><span class="story-recovery-badge sf-status ${active ? 'running' : 'paused'}" data-tone="${active ? 'running' : 'paused'}">${active ? 'กำลังสร้าง' : 'หยุดไว้'}</span></header><div class="story-recovery-checkpoint"><b>${escapeHtml(stage)}</b><span>ภาพ ${images}/${total}${clips}</span></div>${job.last_error ? `<div class="story-recovery-error">${escapeHtml(job.last_error)}</div>` : ''}<footer><button class="button ghost compact" data-open-job="${escapeHtml(job.id)}">เปิดโฟลเดอร์งาน</button><button class="button primary compact" data-retry-story="${escapeHtml(job.id)}" ${storyProgress.active ? 'disabled' : ''}>${active ? 'กำลังดำเนินการ' : '↻ ทำส่วนที่เหลือต่อ'}</button>${metaSequenceAction(job, Boolean(storyProgress.active))}</footer></article>`;
   }).join('');
 }
 
@@ -776,7 +768,7 @@ function renderStories(stories, storyProgress = {}) {
     const stage = stageLabels[String(job.pipeline_stage || '').toLowerCase()] || 'ทำ Story Shorts ต่อ';
     const error = String(job.last_error || '').trim();
     const creativeLabel=window.creativeJobLabel?.(job)||'';
-    const badge = isActive ? '<span class="story-recovery-badge running">กำลังทำงาน</span>' : failed ? '<span class="story-recovery-badge failed">หยุดที่ขั้นหนึ่ง</span>' : '<span class="story-recovery-badge paused">พร้อมทำต่อ</span>';
+    const badge = isActive ? '<span class="story-recovery-badge sf-status running" data-tone="running">กำลังสร้าง</span>' : failed ? '<span class="story-recovery-badge sf-status failed" data-tone="failed">สะดุด · ทำต่อได้</span>' : '<span class="story-recovery-badge sf-status paused" data-tone="paused">หยุดไว้</span>';
     const action = isActive
       ? '<button class="button secondary compact" disabled>กำลังดำเนินการ</button>'
       : `<button class="button primary compact" data-retry-story="${escapeHtml(job.id)}">↻ ทำต่อจากจุดเดิม</button>`;
@@ -1428,7 +1420,7 @@ async function poll(full = true) {
     ui.pollFailures = 0;
   } catch (error) {
     ui.pollFailures += 1;
-    $('#top-live-text').textContent = ui.pollFailures >= 3 ? 'ENGINE OFFLINE' : 'ENGINE BUSY';
+    $('#top-live-text').textContent = ui.pollFailures >= 3 ? 'โปรแกรมเบื้องหลังหยุดตอบสนอง' : 'โปรแกรมเบื้องหลังกำลังยุ่ง';
     if (ui.pollFailures >= 3) $('#top-live-dot').classList.remove('ready');
     $('#footer-status').textContent = ui.pollFailures >= 3 ? error.message : 'กำลังรอระบบหลักตอบกลับ • โปรแกรมจะลองใหม่อัตโนมัติ';
   } finally {
@@ -2177,7 +2169,7 @@ $('#progress-result').addEventListener('click',()=>{const presenter=ui.progressT
 $('#progress-close').addEventListener('click',()=>{if(ui.progressType==='presenter'&&!ui.state?.presenter_progress?.active){window.dismissPresenterProgress?.();dismissProgressResult();}else minimizeProgress()});
 $('#progress-minimized').addEventListener('click',restoreProgress);
 $('#progress-modal').addEventListener('cancel',event=>{event.preventDefault();minimizeProgress()});
-$('#automation-error-copy').addEventListener('click',()=>{copyText($('#automation-error-log').textContent);toast('คัดลอก Log สำหรับ Codex แล้ว','success')});
+$('#automation-error-copy').addEventListener('click',()=>{copyText($('#automation-error-log').textContent);toast('คัดลอกรายละเอียดสำหรับทีมช่วยเหลือแล้ว','success')});
 $('#automation-error-open').addEventListener('click',()=>{if(ui.state?.automation_error_log?.text&&!$('#automation-error-modal').open)$('#automation-error-modal').showModal()});
 $('#automation-error-return').addEventListener('click',()=>{$('#automation-error-modal').close();showPage(ui.automationErrorPage)});
 $('#confirm-accept').addEventListener('click',async()=>{
@@ -2199,6 +2191,7 @@ function setSidebarOpen(open) {
   $('#mobile-menu').setAttribute('aria-expanded', String(open));
   if (open) $('.nav-item', $('#sidebar'))?.focus();
 }
+$$('.nav-group').forEach(group => group.addEventListener('toggle', () => { if (group.open) group.lastElementChild?.scrollIntoView({block:'nearest'}); }));
 $('#mobile-menu').addEventListener('click',()=>setSidebarOpen(true));
 $('#sidebar-backdrop').addEventListener('click',()=>setSidebarOpen(false));
 document.addEventListener('keydown', event => {

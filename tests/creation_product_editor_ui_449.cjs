@@ -34,6 +34,7 @@ const source = file => fs.readFileSync(path.join(root, 'web_ui', file), 'utf8');
     const helperEnd = app.indexOf('function bindAiModelSelect(', helperStart);
     assert(helperStart >= 0 && helperEnd > helperStart);
     await page.addScriptTag({content:app.slice(helperStart, helperEnd)});
+    await page.addScriptTag({content:source('status_vocabulary.js')});
     await page.addScriptTag({content:source('creation_queue.js')});
     await page.addScriptTag({content:source('media_audio.js')});
     await page.evaluate(() => {
